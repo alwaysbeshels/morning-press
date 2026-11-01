@@ -1,0 +1,1 @@
+ALTER TABLE "connected_accounts" ADD COLUMN "email_filter" text DEFAULT 'all' NOT NULL;

@@ -1,0 +1,205 @@
+# Mon Journal du Matin
+
+Plateforme web personnelle qui prépare chaque matin un **journal en PDF**, en français ou en anglais, à partir de vos comptes Google, Outlook et Apple (courriels et calendriers), de la météo et des actualités. En mode 2 pages, le jeu du jour (sudoku, mots croisés ou mots codés) est sur la première page. La deuxième présente les actualités résumées par section (locale, provinciale, nationale, américaine, internationale), puis la solution du jeu en bas, à l'envers. Le journal se consulte et se télécharge depuis le site ; l'impression et l'envoi par courriel viendront plus tard.
+
+Le cahier des charges complet est dans [morning-newspaper-spec.md](./morning-newspaper-spec.md).
+
+## Fonctionnement
+
+| Élément | Technologie | Rôle |
+| --- | --- | --- |
+| Site et API | Cloudflare Workers (React + Hono) | Un seul Worker sert l'interface et l'API |
+| Connexion | Cloudflare Access (Zero Trust) | Seules les adresses autorisées entrent sur le site |
+| Comptes | Nylas v3 | Google, Outlook et iCloud via une API unique, en lecture seule |
+| Données | Neon Postgres + Drizzle | Comptes connectés, calendriers, préférences, historique |
+| Horaire | Cron Trigger (toutes les 5 min) | Lance l'édition à l'heure locale choisie |
+| Génération | Cloudflare Workflows | Étapes reprises automatiquement en cas d'échec |
+| PDF | Browser Run (Browser Rendering) | Transforme le journal HTML en PDF format Lettre |
+| Fichiers | Workers KV | HTML et PDF conservés 30 jours |
+| Météo / actualités | Open-Meteo, Google Actualités et Bing Actualités (RSS) | Gratuits, sans clé |
+
+Tout tient dans les forfaits gratuits de Cloudflare et de Neon pour un usage personnel.
+
+## Mise en route
+
+La base Neon (`morning-press`) et l'espace KV existent déjà, et les migrations `0000` et `0001` sont appliquées. Il reste à configurer Nylas, Cloudflare Access et les secrets.
+
+### 1. Neon : récupérer la chaîne de connexion
+
+1. Ouvrez [console.neon.tech](https://console.neon.tech) > projet **morning-press** > **Connect**.
+2. Cochez **Connection pooling** et copiez la chaîne (`postgresql://USER:PASSWORD@HOST/DATABASE?sslmode=require`).
+3. Gardez-la pour l'étape 4 (`DATABASE_URL`).
+
+### 2. Nylas : créer l'application
+
+1. Créez un compte sur [dashboard-v3.nylas.com](https://dashboard-v3.nylas.com) et une application (région **US**, sinon modifiez `NYLAS_API_URI` dans `wrangler.jsonc`).
+2. **API Keys** : générez une clé → `NYLAS_API_KEY`. Copiez aussi le **Client ID** → `NYLAS_CLIENT_ID`.
+3. **Hosted Authentication > Callback URIs** : ajoutez
+   - `https://morning-press.alwaysbeshels.workers.dev/api/connections/callback`
+   - `http://localhost:5173/api/connections/callback` (développement)
+4. **Connectors** : vérifiez que **Google** et **Microsoft** sont présents, puis ajoutez **iCloud**.
+5. Pour iCloud, créez un [mot de passe pour app](https://account.apple.com) (Connexion et sécurité > Mots de passe pour app). Nylas le demandera lors de la connexion du compte Apple.
+
+> Le Sandbox Nylas est gratuit mais limité à **5 comptes connectés**. Au-delà, il faut passer à un forfait payant.
+
+Le site demande uniquement des autorisations en lecture (`gmail.readonly`, `calendar.readonly`, `Mail.Read`, `Calendars.Read`).
+
+### 3. Cloudflare Access : protéger le site
+
+1. Tableau de bord Cloudflare > **Zero Trust**. La première fois, choisissez un nom d'équipe et le forfait **Free** (une carte peut être demandée, sans frais).
+2. Notez le domaine d'équipe (Zero Trust > **Settings** > *Team name and domain*), par exemple `monequipe.cloudflareaccess.com` → `ACCESS_TEAM_DOMAIN`.
+3. **Workers & Pages** > **morning-press** > onglet **Access** > **Protect this Worker behind Access** > **All traffic**.
+4. Politique : autorisez seulement votre adresse courriel (méthode *One-time PIN* ou Google), puis **Apply Access**.
+5. Zero Trust > **Access** > **Applications** > l'application créée : copiez l'**Application Audience (AUD) Tag** → `ACCESS_AUD`.
+
+Le Worker vérifie lui-même le jeton signé par Access à chaque requête et refuse tout ce qui n'est pas valide, même si Access était désactivé par erreur.
+
+### 4. Secrets Cloudflare
+
+Depuis ce dossier :
+
+```sh
+npx wrangler secret put DATABASE_URL        # chaîne Neon (étape 1)
+npx wrangler secret put NYLAS_API_KEY       # étape 2
+npx wrangler secret put NYLAS_CLIENT_ID     # étape 2
+npx wrangler secret put ACCESS_TEAM_DOMAIN  # étape 3
+npx wrangler secret put ACCESS_AUD          # étape 3
+npx wrangler secret put ALLOWED_EMAILS      # votre adresse (plusieurs : séparées par des virgules)
+```
+
+Tant qu'un secret vaut `A_CONFIGURER` (valeur du premier déploiement), la fonction concernée reste désactivée et le site affiche un message explicatif.
+
+### 5. Utiliser le site
+
+1. Ouvrez <https://morning-press.alwaysbeshels.workers.dev> et connectez-vous via Access.
+2. **Comptes** : connectez chaque compte Google, Outlook et Apple, puis choisissez les calendriers à inclure et, pour les courriels, le filtre du compte : *tous*, *non lus*, *importants* ou *importants et non lus*. Décochez « Courriels » pour exclure un compte du journal.
+3. **Préférences** :
+   - langue (français ou anglais, pour le journal et le site) et nombre de pages (1 ou 2) ;
+   - heure, jours, fuseau horaire, ville ;
+   - lecture rapide : une section par portée (locale, provinciale, nationale, américaine, internationale) avec le lieu ou le sujet à suivre, plus vos propres sujets ;
+   - courriels : interrupteur global, mots-clés prioritaires, expéditeurs ignorés ;
+   - jeu du jour (mode 2 pages seulement) : jeux possibles, choisis au hasard chaque jour ; grille en page 1 et solution à l'envers dans un encadré au bas de la troisième colonne de la page 2 ;
+   - cuisine optionnelle : repas et protéines à choix multiples, ingrédients à exclure, végétarien ou vegan, photo illustrative lorsque disponible ;
+   - exercices optionnels : une idée à la maison sans équipement sportif, avec une alternative de marche dehors.
+4. **Tableau de bord** > *Générer maintenant* pour tester. L'édition apparaît dans **Éditions** (consulter ou télécharger le PDF).
+
+Les filtres portent sur les courriels reçus depuis 24 heures, dans la limite choisie. « Tous » inclut aussi les courriels ordinaires déjà lus ; « Importants » utilise les mots-clés, les catégories détectées et les étoiles. Le tri des promotions est heuristique : ajoutez un expéditeur ou son domaine à la liste des exclusions si une infolettre passe le filtre.
+
+La première page contient aussi :
+
+- la météo de **6–12 h, 12–18 h, 18–24 h, puis 0–6 h le lendemain**, dans le fuseau choisi ; minimum/maximum, condition et probabilité maximale de précipitations par période ;
+- les rendez-vous et échéances du calendrier de **demain au septième jour inclus**, y compris les événements sur plusieurs jours ; les échéances sont repérées dans les titres, pas inventées depuis les courriels ;
+- une citation traditionnelle et un fait amusant avec un lien vers sa source (NASA, USGS ou NOAA).
+
+Les prévisions horaires utilisent deux jours Open-Meteo. Une probabilité inconnue reste inconnue, jamais remplacée par zéro. Les jours calendaires sont calculés dans le fuseau local, y compris aux changements d'heure. Les priorités du jour et les rappels de demain conservent leur horizon antérieur. Nylas récupère jusqu'à deux pages de 100 événements par calendrier ; si cette limite ne suffit pas, la source est signalée indisponible plutôt que tronquée silencieusement.
+
+La première page compare **deux et trois colonnes selon la hauteur réelle**. Le jeu n'impose plus automatiquement trois colonnes. Les listes personnelles sont réduites seulement au besoin, dans les limites choisies, et chaque section indique les éléments supplémentaires non imprimés. Recette, exercices, fait du jour et météo restent entiers. Les longs titres personnels peuvent être abrégés avec une ellipse, mais pas les recettes ou paragraphes d'actualité. En mode 1 page, au plus deux brèves résumées sont candidates à l'impression et le jeu reste absent.
+
+#### Catalogue intégré et sécurité alimentaire
+
+Cuisine et exercices sont **désactivés par défaut**, tout comme végétarien et vegan. Le catalogue contient 18 recettes originales bilingues avec quantités pour deux personnes, durée et étapes. Tous les repas/protéines sont sélectionnés au départ ; les critères sont combinés, jamais assouplis. Vegan est le filtre le plus strict si les deux régimes sont cochés. Les protéines animales ignorées par un régime restent mémorisées pour un éventuel retour au régime précédent. Sans recette compatible, le journal et le statut de l'édition le signalent.
+
+Les exclusions portent sur les ingrédients du catalogue, pas sur les traces, les marques ou les contaminations croisées. Vérifiez les étiquettes et vos besoins alimentaires. Les salades de viande et poisson utilisent des aliments **déjà cuits et refroidis** ; respectez leur conservation. Les exercices sont des idées générales douces, à adapter aux capacités et aux conditions extérieures, pas un programme médical.
+
+Les deux variantes de gruau ont une petite photo illustrative de Bill Ebbesen, [Oatmeal.jpg sur Wikimedia Commons](https://commons.wikimedia.org/wiki/File:Oatmeal.jpg), publiée dans le **domaine public par son auteur** (fiche vérifiée le 1er novembre 2026). Le fichier est réduit à 360 px et embarqué en `data:` ; il reste visible hors ligne, sans requête externe ni changement de CSP. Les autres recettes n'ont pas de photo. Aucun service de recettes, abonnement ou clé supplémentaire n'est nécessaire.
+
+La page 2 utilise trois colonnes fixes :
+
+- **Locale et provinciale** dans la première, sans quota égal par rubrique.
+- **Pays et États-Unis** dans la deuxième, selon le même principe.
+- **Internationale et mes sujets** dans la troisième : une brève internationale, puis autant de sujets personnels que possible ; une deuxième internationale seulement si elle tient sans retirer un sujet personnel. Les doublons entre ces deux rubriques vont aux sujets personnels.
+
+La solution garde sa taille dans un petit encadré au bas de la troisième colonne seulement. Les deux autres colonnes restent disponibles sur toute leur hauteur. Jusqu'à 16 candidats sont conservés par flux/rubrique, sans requête supplémentaire par article. Les deux premières colonnes réservent d'abord une brève à chaque rubrique disponible, puis privilégient les publications récentes lorsque leur date est connue. La place restante peut accueillir un article plus court. Il n'y a plus de plafond global de 9 ou 12 brèves.
+
+Browser Run mesure les hauteurs après chargement des polices et des images, en média `print`, avec **une seule action `content` pour les deux pages**. Le modèle et les statistiques sont ensuite reconstruits avec les seuls éléments retenus, puis le HTML statique est enregistré et converti en PDF. Aucun script n'est publié et la CSP du journal reste inchangée. Ce passage précède le PDF, également en mode une page. Une mesure invalide provoque un échec explicite et une reprise, jamais un succès avec du texte masqué.
+
+Chaque actualité imprimée contient une ou deux phrases complètes du descriptif RSS de l'éditeur, dans une limite de 320 caractères. Les balises et entités HTML sont nettoyées. Les descriptions absentes, les simples répétitions du titre et les extraits sans phrase complète sont écartés : aucun résumé n'est inventé. Les flux Google composés seulement de titres déclenchent aussi le recours à Bing ou aux éditeurs. Aucun téléchargement supplémentaire d'article ni service de résumé IA n'est nécessaire.
+
+Les préférences sont stockées en JSON : les anciens réglages reçoivent les nouveaux defaults, sans migration SQL. Les éditions déjà générées sont immuables ; générez une nouvelle édition pour voir ces ajouts.
+
+Google peut refuser les requêtes venant de Cloudflare (HTTP 503). L'édition utilise alors Bing RSS comme source de secours pour les flux restants, sans réessayer Google pour chaque sujet (quota de requêtes du forfait gratuit). La rubrique, le sujet et la langue choisie sont conservés. Les accents sont retirés uniquement de la recherche Bing, pas des libellés affichés. Les réponses HTML et les redirections Bing vers une page vide ne sont jamais traitées comme un flux vide valide. Chaque flux a sa propre étape et des secours bornés, sans rejouer la chaîne complète : une panne n'efface pas les autres rubriques. Les fournisseurs utilisés sont indiqués dans le journal et les erreurs précisent la rubrique concernée.
+
+Il s'agit de recherches par mots-clés et de rubriques RSS, pas d'une classification géographique ou éditoriale indépendante : une recherche « Québec » peut aussi parler de la ville. Les recherches Google demandent les dernières 24 heures ; Bing demande les sept derniers jours avec tri par date. Sans éditeur de secours, un refus Bing déclenche une seule recherche simplifiée, conservant le sujet, la langue et le tri, mais retirant le paramètre temporel `qft`. Les articles Bing dont la date connue dépasse sept jours sont filtrés localement. Les flux de grands titres et d'éditeurs suivent leur propre fenêtre de publication.
+
+Pour les rubriques Canada et International par défaut, les flux directs de La Presse et Radio-Canada (français), ou CBC (anglais), prennent le relais si Bing échoue aussi. Ce secours ne remplace jamais une recherche personnalisée (France, Europe, etc.) par des nouvelles d'une autre portée.
+
+En français, des secours directs existent aussi pour Montréal (Radio-Canada, Grand Montréal), Québec (Le Devoir, **politique québécoise**) et États-Unis (La Presse). Le secours provincial est donc spécialisé en politique, pas en toute l'actualité québécoise. Ces flux ne remplacent pas des lieux personnalisés tels que Laval, Ontario ou Californie. Les refus HTTP 307 vers `brdr=1` restent rejetés : la cible répond en HTML vide, pas en RSS.
+
+## Développement local
+
+```sh
+brew install cloudflared         # une seule fois (voir ci-dessous)
+npm install
+cp .dev.vars.example .dev.vars   # puis remplissez DATABASE_URL, NYLAS_* et DEV_AUTH_EMAIL
+npm run dev                      # http://localhost:5173
+```
+
+`DEV_AUTH_EMAIL` remplace Cloudflare Access, **uniquement sur localhost**.
+
+Browser Run n'existe pas en local, et la base Neon est partagée avec la production : les liaisons `BROWSER` et `EDITIONS` (KV) utilisent donc les services distants (connexion Wrangler requise). Comme le Worker est protégé par Access, Wrangler ouvre cette connexion distante avec `cloudflared access login` : au premier `npm run dev`, une page de connexion Access s'ouvre dans le navigateur, puis le jeton est mis en cache. Dans un terminal non interactif (CI, tâche automatisée), définissez plutôt `CLOUDFLARE_ACCESS_CLIENT_ID` et `CLOUDFLARE_ACCESS_CLIENT_SECRET` avec un [jeton de service Access](https://developers.cloudflare.com/cloudflare-one/access-controls/service-credentials/service-tokens/).
+
+| Commande | Rôle |
+| --- | --- |
+| `npm run typecheck` | Vérification TypeScript (client et Worker) |
+| `npm test` | Tests unitaires (Vitest) |
+| `npm run lint` | Lint (oxlint) |
+| `npm run build` | Build de production |
+| `npm run deploy` | Build et déploiement sur Cloudflare |
+| `npx wrangler types` | Régénère `worker-configuration.d.ts` après un changement de `wrangler.jsonc` |
+
+Les tests PDF utilisent le Chrome installé, sans comptes ni services Cloudflare. Ils exécutent le même script de mesure que Browser Run et vérifient le nombre réel de pages, le remplissage des colonnes, les résumés entiers, les rubriques fixes, les volumes inégaux, les trois jeux et l'encadré des réponses renversées, en français et en anglais :
+
+```sh
+CHROME_PATH="/Applications/Google Chrome.app/Contents/MacOS/Google Chrome" npm test -- worker/edition/print.test.ts
+# Linux : CHROME_PATH=google-chrome npm test -- worker/edition/print.test.ts
+```
+
+Sans `CHROME_PATH`, seuls les tests PDF sont ignorés. Ils sont activés dans la CI.
+
+### Base de données
+
+Le schéma est dans `worker/db/schema.ts`. Après une modification :
+
+```sh
+npm run db:generate   # crée une migration SQL dans drizzle/
+npm run db:migrate    # l'applique sur Neon (lit DATABASE_URL dans .dev.vars)
+```
+
+## Structure
+
+```text
+src/            Interface React (TanStack Router/Query, shadcn/ui, Tailwind)
+shared/         Types et schémas Zod communs au client et au Worker
+worker/
+  api/          API Hono (comptes, connexions Nylas, préférences, éditions)
+  auth/         Validation du jeton Cloudflare Access
+  db/           Schéma Drizzle et requêtes
+  edition/      Sélection du contenu, mise en page HTML (1 ou 2 pages), traductions, proverbes
+  daily/        Recettes originales, photo du domaine public, faits sourcés et exercices
+  games/        Jeu du jour : sudoku, mots croisés, mots codés (génération et rendu)
+  nylas/        Client Nylas v3 (lecture seule)
+  schedule/     Calcul des horaires et Cron
+  sources/      Comptes, météo, actualités
+  workflow/     Workflow de génération (données → HTML → PDF)
+drizzle/        Migrations SQL
+```
+
+## Limites du forfait gratuit
+
+- **Browser Run** : 10 minutes par jour, largement assez pour une ou deux éditions.
+- **Workflows** : 10 ms de CPU par étape ; chaque compte est traité dans sa propre étape.
+- **KV** : 1 000 écritures par jour (environ 2 par édition).
+- **Neon** : la base se met en veille quand elle est inutilisée ; le Cron consulte d'abord KV pour éviter de la réveiller toutes les 5 minutes.
+- Les éditions de plus de 180 jours sont supprimées automatiquement.
+
+## Sécurité
+
+- Dépôt privé ; aucun secret dans le code (`.dev.vars` est ignoré par Git).
+- Accès en lecture seule aux courriels et calendriers ; le journal n'affiche que l'expéditeur, l'objet et un court résumé.
+- Publicités, infolettres et codes de vérification exclus ; les envois en masse des commerçants ne sont gardés que pour une facture, une livraison, une réservation ou un changement.
+- Contenu du journal systématiquement échappé et affiché dans une iframe isolée (`sandbox`).
+
+## À venir
+
+- Impression automatique (l'imprimante HP Smart Tank 6000 ne prend pas en charge HP ePrint ; il faudra un relais local).
+- Envoi du PDF par courriel.

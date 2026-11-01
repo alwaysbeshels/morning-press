@@ -1,0 +1,62 @@
+/**
+ * Configuration Wrangler — Mon Journal du Matin
+ * https://developers.cloudflare.com/workers/wrangler/configuration/
+ */
+{
+	"$schema": "node_modules/wrangler/config-schema.json",
+	"name": "morning-press",
+	"main": "worker/index.ts",
+	"compatibility_date": "2026-10-23",
+	"workers_dev": true,
+	// Les URL de prévisualisation ne seraient pas couvertes par la politique Access.
+	"preview_urls": false,
+	"assets": {
+		"binding": "ASSETS",
+		"not_found_handling": "single-page-application",
+		// Toutes les requêtes passent par le Worker, qui vérifie Cloudflare Access avant de servir le site.
+		"run_worker_first": true
+	},
+	"observability": {
+		"enabled": true
+	},
+	"upload_source_maps": true,
+	// Le Cron vérifie toutes les 5 minutes (UTC) si une édition est due ; l'heure locale est gérée dans le code.
+	"triggers": {
+		"crons": ["*/5 * * * *"]
+	},
+	"kv_namespaces": [
+		{
+			"binding": "EDITIONS",
+			"id": "cad12532fe0f4c56a4b44b12df83b53e",
+			// La base Neon est partagée avec la production : les fichiers doivent l'être aussi en développement.
+			"remote": true
+		}
+	],
+	"browser": {
+		"binding": "BROWSER",
+		// Browser Run ne fonctionne pas en local : en développement, la liaison utilise le service distant.
+		"remote": true
+	},
+	"workflows": [
+		{
+			"name": "morning-press-edition",
+			"binding": "EDITION_WORKFLOW",
+			"class_name": "EditionWorkflow"
+		}
+	],
+	"vars": {
+		"NYLAS_API_URI": "https://api.us.nylas.com",
+		// Vide en production. En local, .dev.vars peut le remplir pour contourner Access (localhost seulement).
+		"DEV_AUTH_EMAIL": ""
+	},
+	"secrets": {
+		"required": [
+			"DATABASE_URL",
+			"NYLAS_API_KEY",
+			"NYLAS_CLIENT_ID",
+			"ACCESS_TEAM_DOMAIN",
+			"ACCESS_AUD",
+			"ALLOWED_EMAILS"
+		]
+	}
+}
