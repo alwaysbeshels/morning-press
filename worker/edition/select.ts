@@ -389,6 +389,7 @@ export function buildNewspaper(input: BuildInput): Newspaper {
   for (const provider of newsProviders) sources.push(newsProviderName(language, provider));
 
   return fitPageOne({
+    design: { newspaperStyle: preferences.newspaperStyle, colorIntensity: preferences.colorIntensity },
     generatedAt: input.generatedAt,
     timezone: tz,
     language,

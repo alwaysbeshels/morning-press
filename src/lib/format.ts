@@ -23,6 +23,11 @@ export function formatDateTime(iso: string | null | undefined, language: Languag
   return iso ? formatter(language, { dateStyle: "long", timeStyle: "short" }).format(new Date(iso)) : "—";
 }
 
+/** Heure d'un horodatage : « 9 h 05 » / « 9:05 a.m. » */
+export function formatTime(iso: string, language: Language): string {
+  return formatter(language, { hour: "numeric", minute: "2-digit" }).format(new Date(iso));
+}
+
 /** « 2026-10-31 » → « Samedi 31 octobre 2026 » / « Saturday, October 31, 2026 » */
 export function formatEditionDate(localDate: string, language: Language): string {
   const [year, month, day] = localDate.split("-").map(Number);

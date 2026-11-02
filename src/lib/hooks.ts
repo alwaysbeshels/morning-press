@@ -24,3 +24,20 @@ export function useGenerateEdition() {
     onError: (error) => toast.error(errorMessage(error)),
   });
 }
+
+/** `onDeleted` s'exécute avant l'oubli des détails en cache, pour quitter d'abord une page qui les affiche. */
+export function useDeleteEditions(onDeleted?: () => unknown) {
+  const queryClient = useQueryClient();
+  const { t } = useI18n();
+  return useMutation({
+    mutationFn: api.deleteEditions,
+    onSuccess: async ({ deleted, editions }) => {
+      queryClient.setQueryData(queryKeys.editions, editions);
+      void queryClient.invalidateQueries({ queryKey: queryKeys.dashboard });
+      toast.success(t.editions.deleted(deleted.length));
+      await onDeleted?.();
+      for (const id of deleted) queryClient.removeQueries({ queryKey: queryKeys.edition(id), exact: true });
+    },
+    onError: (error) => toast.error(errorMessage(error)),
+  });
+}

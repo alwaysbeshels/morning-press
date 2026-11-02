@@ -1,12 +1,15 @@
 import type {
   AccountDto,
   DashboardDto,
+  EditionDeletionDto,
   EditionDto,
   MeDto,
   SettingsDto,
+  Language,
 } from "@shared/types";
 import type { AccountUpdate, SettingsUpdate } from "@shared/schemas";
 import { getLanguage, messages } from "@/lib/i18n";
+import type { NewspaperDesign } from "@shared/newspaper-design";
 
 export class ApiError extends Error {
   readonly status: number;
@@ -66,6 +69,7 @@ export const api = {
   editions: () => request<EditionDto[]>("/api/editions"),
   edition: (id: string) => request<EditionDto>(`/api/editions/${id}`),
   createEdition: () => request<EditionDto>("/api/editions", json("POST")),
+  deleteEditions: (ids: string[]) => request<EditionDeletionDto>("/api/editions", json("DELETE", { ids })),
 };
 
 export const queryKeys = {
@@ -82,6 +86,9 @@ export const editionUrls = {
   pdf: (id: string) => `/api/editions/${id}/pdf`,
   download: (id: string) => `/api/editions/${id}/pdf?telecharger=1`,
 };
+
+export const newspaperPreviewUrl = (design: NewspaperDesign, language: Language) =>
+  `/api/newspaper-preview?${new URLSearchParams({ ...design, language })}`;
 
 export const connectUrl = (provider: string, accountId?: string) => {
   const params = new URLSearchParams({ provider });

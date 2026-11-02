@@ -9,6 +9,7 @@ import { generateGame, renderGame } from "../games";
 import { buildNewspaper, fitPageOne } from "./select";
 import { layoutNewspaper } from "./layout";
 import type { Newspaper } from "./types";
+import { COLOR_INTENSITIES, NEWSPAPER_PALETTES, NEWSPAPER_STYLES } from "../../shared/newspaper-design";
 
 function fixture(language: Language, pages: 1 | 2, kind: GameKind | null, dense: boolean, profile: "regular" | "uneven" | "recent" | "empty" | "calm" = "regular", extras: "none" | "all" | "recipe" | "exercise" = "none"): Newspaper {
   const generatedAt = Date.parse("2026-10-31T10:30:00Z");
@@ -121,7 +122,7 @@ describe.skipIf(!process.env.CHROME_PATH)("PDF Lettre dans Chrome", () => {
     if (profile) await rm(profile, { recursive: true, force: true, maxRetries: 5, retryDelay: 100 });
   });
 
-  const cases = (["fr", "en"] as const).flatMap((language) => [
+  const legacyCases = (["fr", "en"] as const).flatMap((language) => [
     ...[
       { language, pages: 1 as const, kind: null, dense: false },
       { language, pages: 1 as const, kind: null, dense: true },
@@ -140,7 +141,17 @@ describe.skipIf(!process.env.CHROME_PATH)("PDF Lettre dans Chrome", () => {
     })),
   ]);
 
-  it.each(cases)("$language / $pages pages / $kind / dense=$dense / $profile / $extras", async ({ language, pages, kind, dense, profile, extras }) => {
+  const cases = [
+    ...legacyCases.map((test) => ({ ...test, newspaperStyle: "base" as const, colorIntensity: "subtle" as const })),
+    ...NEWSPAPER_STYLES.flatMap((newspaperStyle, index) => COLOR_INTENSITIES
+      .filter((intensity) => newspaperStyle !== "base" || intensity !== "subtle")
+      .flatMap((colorIntensity) => (["fr", "en"] as const).flatMap((language) => ([1, 2] as const).map((pages) => ({
+        newspaperStyle, colorIntensity, language, pages, kind: pages === 2 ? GAME_KINDS[index % GAME_KINDS.length] : null,
+        dense: true, profile: "regular" as const, extras: "all" as const,
+      }))))),
+  ];
+
+  it.each(cases)("$language / $pages pages / $kind / dense=$dense / $profile / $extras / $newspaperStyle / $colorIntensity", async ({ language, pages, kind, dense, profile, extras, newspaperStyle, colorIntensity }) => {
     const target = await fetch(`${endpoint}/json/new?about:blank`, { method: "PUT" }).then((r) => r.json()) as {
       id: string; webSocketDebuggerUrl: string;
     };
@@ -167,6 +178,7 @@ describe.skipIf(!process.env.CHROME_PATH)("PDF Lettre dans Chrome", () => {
     });
     try {
       const candidates = fixture(language, pages, kind, dense, profile, extras);
+      candidates.design = { newspaperStyle, colorIntensity };
       const { frameTree } = await send<{ frameTree: { frame: { id: string } } }>("Page.getFrameTree");
       await send("Emulation.setEmulatedMedia", { media: "print" });
       const { paper, html } = await layoutNewspaper(candidates, {
@@ -187,7 +199,7 @@ describe.skipIf(!process.env.CHROME_PATH)("PDF Lettre dans Chrome", () => {
       const metrics = await send<{ result: { value: {
         outside: string[]; events: number; emails: number; news: number; summaries: number; clipped: string[];
         game: number; gamePage: string | null; solutionPage: string | null; solutionAtBottom: boolean;
-        omitted: number; rotation: string | null;
+        omitted: number; rotation: string | null; ink: string; gridInks: string[];
         firstPageColumns: number; forecastPeriods: number; imagesLoaded: boolean; pageOneText: string;
         columns: { groups: string[]; fill: number; bottom: number; answers: number; answersInside: boolean }[];
       } } }>("Runtime.evaluate", {
@@ -215,6 +227,8 @@ describe.skipIf(!process.env.CHROME_PATH)("PDF Lettre dans Chrome", () => {
           const solution = document.querySelector('.g-solution');
           const solutionPage = solution?.closest('.page');
           return {
+            ink: getComputedStyle(document.body).color,
+            gridInks: [...document.querySelectorAll('.g-grid')].map(grid => getComputedStyle(grid).color),
             outside, events: document.querySelectorAll('.event').length,
             emails: document.querySelectorAll('.emails > li').length,
             news: document.querySelectorAll('.news > li').length,
@@ -249,11 +263,15 @@ describe.skipIf(!process.env.CHROME_PATH)("PDF Lettre dans Chrome", () => {
       const pdf = await send<{ data: string }>("Page.printToPDF", { preferCSSPageSize: true, printBackground: true });
       const bytes = Buffer.from(pdf.data, "base64");
       if (process.env.PRINT_PREVIEW_DIR) {
-        const name = `${language}-${pages}-${kind ?? "no-game"}-${dense ? "dense" : "normal"}-${profile}-${extras}`;
+        const name = `${language}-${pages}-${kind ?? "no-game"}-${dense ? "dense" : "normal"}-${profile}-${extras}-${newspaperStyle}-${colorIntensity}`;
         await writeFile(join(process.env.PRINT_PREVIEW_DIR, `${name}.html`), html);
         await writeFile(join(process.env.PRINT_PREVIEW_DIR, `${name}.pdf`), bytes);
       }
       expect(metrics.result.value.outside).toEqual([]);
+      expect(paper.design).toEqual({ newspaperStyle, colorIntensity });
+      const ink = NEWSPAPER_PALETTES[newspaperStyle].ink;
+      expect(metrics.result.value.ink).toBe(`rgb(${[1, 3, 5].map((start) => Number.parseInt(ink.slice(start, start + 2), 16)).join(", ")})`);
+      expect(metrics.result.value.gridInks.every((color) => color === "rgb(26, 26, 26)")).toBe(true);
       expect(bytes.toString("latin1").match(/\/Type\s*\/Page\b/g)).toHaveLength(pages);
       expect(metrics.result.value.events).toBe(paper.events.length);
       expect(metrics.result.value.emails).toBe(paper.emails.length);

@@ -129,5 +129,7 @@
     }
   html {
     @apply font-sans;
+    /* Garde les éléments ciblés ou focalisés visibles sous la barre de menu collante. */
+    scroll-padding-top: calc(var(--app-header-height, 0px) + 1rem);
     }
 }

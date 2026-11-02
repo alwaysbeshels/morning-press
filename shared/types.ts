@@ -1,3 +1,5 @@
+import type { NewspaperDesign } from "./newspaper-design";
+
 export const LANGUAGES = ["fr", "en"] as const;
 export type Language = (typeof LANGUAGES)[number];
 
@@ -56,7 +58,7 @@ export function isProteinAllowed(diet: Pick<CookingPreferences, "vegetarian" | "
   return diet.vegan ? plant : !diet.vegetarian || plant || protein === "eggs" || protein === "dairy";
 }
 
-export interface Preferences {
+export interface Preferences extends NewspaperDesign {
   /** Langue du journal et de l'interface. */
   language: Language;
   /** 2 = page 2 consacrée aux actualités et aux réponses du jeu. */
@@ -164,6 +166,11 @@ export interface EditionDto {
   completedAt: string | null;
 }
 
+export interface EditionDeletionDto {
+  deleted: string[];
+  editions: EditionDto[];
+}
+
 export interface DashboardDto {
   email: string;
   latestEdition: EditionDto | null;
@@ -179,6 +186,12 @@ export interface MeDto {
 
 /** Durée de conservation des PDF et HTML dans Workers KV. */
 export const EDITION_RETENTION_DAYS = 30;
+
+/** Une édition « en cours » plus ancienne est vérifiée auprès du Workflow (arrêt possible sans mise à jour). */
+export const STALE_EDITION_MS = 15 * 60_000;
+
+/** Nombre maximal d'éditions listées (et supprimables en une requête). */
+export const EDITION_LIST_LIMIT = 60;
 
 export const DEFAULT_TIMEZONE = "America/Toronto";
 
@@ -198,6 +211,8 @@ export const DEFAULT_NEWS_SECTIONS: Record<NewsSectionKey, NewsSection> = {
 };
 
 export const DEFAULT_PREFERENCES: Preferences = {
+  newspaperStyle: "base",
+  colorIntensity: "subtle",
   language: "fr",
   pages: 1,
   city: "Montréal",

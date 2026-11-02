@@ -71,10 +71,10 @@ Tant qu'un secret vaut `A_CONFIGURER` (valeur du premier déploiement), la fonct
 
 ### 5. Utiliser le site
 
-1. Ouvrez <https://morning-press.alwaysbeshels.workers.dev> et connectez-vous via Access.
+1. Ouvrez <https://morning-press.alwaysbeshels.workers.dev> et connectez-vous via Access. Le bouton **FR / EN** du menu change la langue du site ; ce choix est retenu dans le navigateur. À la première visite, le site prend la langue du journal.
 2. **Comptes** : connectez chaque compte Google, Outlook et Apple, puis choisissez les calendriers à inclure et, pour les courriels, le filtre du compte : *tous*, *non lus*, *importants* ou *importants et non lus*. Décochez « Courriels » pour exclure un compte du journal.
 3. **Préférences** :
-   - langue (français ou anglais, pour le journal et le site) et nombre de pages (1 ou 2) ;
+   - langue du journal (français ou anglais, indépendante de celle du site) et nombre de pages (1 ou 2) ;
    - heure, jours, fuseau horaire, ville ;
    - lecture rapide : une section par portée (locale, provinciale, nationale, américaine, internationale) avec le lieu ou le sujet à suivre, plus vos propres sujets ;
    - courriels : interrupteur global, mots-clés prioritaires, expéditeurs ignorés ;
@@ -82,6 +82,8 @@ Tant qu'un secret vaut `A_CONFIGURER` (valeur du premier déploiement), la fonct
    - cuisine optionnelle : repas et protéines à choix multiples, ingrédients à exclure, végétarien ou vegan, photo illustrative lorsque disponible ;
    - exercices optionnels : une idée à la maison sans équipement sportif, avec une alternative de marche dehors.
 4. **Tableau de bord** > *Générer maintenant* pour tester. L'édition apparaît dans **Éditions** (consulter ou télécharger le PDF).
+
+**Éditions** regroupe les journaux par date. Chaque date propose le PDF de l'édition la plus récente ; les autres éditions du même jour s'affichent en dépliant « N autres éditions ce jour-là ». La corbeille supprime une édition, après confirmation (aussi depuis sa page). Une fois la section dépliée, toutes les éditions d'une date peuvent être supprimées ensemble. La suppression est définitive : la ligne Neon, le HTML et le PDF dans KV disparaissent. Une édition en cours de génération ne peut pas être supprimée, sauf si elle est restée bloquée plus de 15 minutes et que son Workflow est arrêté.
 
 Les filtres portent sur les courriels reçus depuis 24 heures, dans la limite choisie. « Tous » inclut aussi les courriels ordinaires déjà lus ; « Importants » utilise les mots-clés, les catégories détectées et les étoiles. Le tri des promotions est heuristique : ajoutez un expéditeur ou son domaine à la liste des exclusions si une infolettre passe le filtre.
 
@@ -116,6 +118,16 @@ Browser Run mesure les hauteurs après chargement des polices et des images, en 
 Chaque actualité imprimée contient une ou deux phrases complètes du descriptif RSS de l'éditeur, dans une limite de 320 caractères. Les balises et entités HTML sont nettoyées. Les descriptions absentes, les simples répétitions du titre et les extraits sans phrase complète sont écartés : aucun résumé n'est inventé. Les flux Google composés seulement de titres déclenchent aussi le recours à Bing ou aux éditeurs. Aucun téléchargement supplémentaire d'article ni service de résumé IA n'est nécessaire.
 
 Les préférences sont stockées en JSON : les anciens réglages reçoivent les nouveaux defaults, sans migration SQL. Les éditions déjà générées sont immuables ; générez une nouvelle édition pour voir ces ajouts.
+
+Chaque section de Préférences a son bouton **Enregistrer**. Seules ses modifications sont appliquées par-dessus les réglages déjà enregistrés ; celles des autres sections restent en attente. **Tout enregistrer**, en bas de la page, applique toutes les sections. Quitter la page avec des modifications non enregistrées (menu, lien ou bouton Précédent) ouvre une fenêtre qui les liste (avant → après) et propose de rester, de les annuler ou de tout enregistrer. Fermer ou recharger l'onglet déclenche l'avertissement du navigateur.
+
+#### Styles et aperçu
+
+Préférences propose six styles : **Base**, **Éditorial** (marine/bordeaux), **Nature** (sauge/terracotta), **Magazine** (pétrole/corail), **Rétro** (sépia) et **Minimal** (prune). L'intensité **Discret / Affirmé** se choisit indépendamment. Base + Discret reste exactement le rendu d'origine et le défaut des anciens réglages ; Base + Affirmé reste dans des tons neutres. Les styles jouent sur les manchettes, typographies, filets et petits encadrés, sans colorer toute la feuille. Les palettes conservent un contraste de texte d'au moins 4,5:1 sur leurs fonds ; les grilles et réponses des jeux restent noires sur blanc. Ces règles sont rappelées dans l'infobulle du bouton ⓘ à côté de « Intensité du design » (survol, focus clavier ou toucher sur mobile).
+
+La mesure adaptative utilise le style choisi avant de sélectionner les éléments, pour conserver une ou deux pages et les paragraphes complets. Un design plus affirmé peut donc laisser un peu moins de place au contenu. Il faut **enregistrer les préférences** pour appliquer le choix aux prochaines éditions ; les anciennes ne changent pas.
+
+L'aperçu de deux pages utilise exclusivement des données fictives, dont une recette et un exercice de démonstration. Il suit le style, l'intensité et la langue du formulaire **sans sauvegarde**. Sur grand écran (≥ 1024 px), l'intensité est placée à côté des styles. L'aperçu, plus compact, s'affiche automatiquement en dessous. Cette colonne reste visible sous la barre de menu pendant le défilement, et l'aperçu défile à l'intérieur pour afficher la page 2. Sur petit écran, le bouton « Voir un exemple » l'ouvre sous les choix. Pendant qu'un nouveau style se charge, le rendu précédent reste affiché. Sa route GET `/api/newspaper-preview` est authentifiée mais placée avant le middleware de base : aucun accès Neon, KV, Browser Run ou compte connecté. La mise en page est calculée dans le navigateur, dans une iframe isolée (`sandbox="allow-scripts"`, sans `allow-same-origin`) avec un script à nonce. Les éditions publiées restent sans script et leur CSP est inchangée. Un chargement impossible est signalé avec une action Réessayer.
 
 Google peut refuser les requêtes venant de Cloudflare (HTTP 503). L'édition utilise alors Bing RSS comme source de secours pour les flux restants, sans réessayer Google pour chaque sujet (quota de requêtes du forfait gratuit). La rubrique, le sujet et la langue choisie sont conservés. Les accents sont retirés uniquement de la recherche Bing, pas des libellés affichés. Les réponses HTML et les redirections Bing vers une page vide ne sont jamais traitées comme un flux vide valide. Chaque flux a sa propre étape et des secours bornés, sans rejouer la chaîne complète : une panne n'efface pas les autres rubriques. Les fournisseurs utilisés sont indiqués dans le journal et les erreurs précisent la rubrique concernée.
 
@@ -188,7 +200,7 @@ drizzle/        Migrations SQL
 
 - **Browser Run** : 10 minutes par jour, largement assez pour une ou deux éditions.
 - **Workflows** : 10 ms de CPU par étape ; chaque compte est traité dans sa propre étape.
-- **KV** : 1 000 écritures par jour (environ 2 par édition).
+- **KV** : 1 000 écritures par jour (environ 2 par édition) et 1 000 clés supprimées par jour (2 par édition supprimée).
 - **Neon** : la base se met en veille quand elle est inutilisée ; le Cron consulte d'abord KV pour éviter de la réveiller toutes les 5 minutes.
 - Les éditions de plus de 180 jours sont supprimées automatiquement.
 

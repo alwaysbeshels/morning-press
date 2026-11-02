@@ -1,13 +1,15 @@
 import { useQuery } from "@tanstack/react-query";
-import { getRouteApi, Link } from "@tanstack/react-router";
-import { ArrowLeftIcon, DownloadIcon, ExternalLinkIcon, Loader2Icon } from "lucide-react";
+import { getRouteApi, Link, useNavigate } from "@tanstack/react-router";
+import { ArrowLeftIcon, DownloadIcon, ExternalLinkIcon, Loader2Icon, Trash2Icon } from "lucide-react";
+import { DeleteEditionsDialog } from "@/components/delete-editions-dialog";
 import { EditionStatusBadge } from "@/components/edition-status";
 import { PageHeader } from "@/components/layout";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { api, editionUrls, queryKeys } from "@/lib/api";
-import { formatDateTime, formatEditionDate } from "@/lib/format";
+import { canDeleteEdition } from "@/lib/editions";
+import { formatDateTime, formatEditionDate, formatTime } from "@/lib/format";
 import { errorMessage } from "@/lib/hooks";
 import { describeSourceError, useI18n } from "@/lib/i18n";
 
@@ -15,6 +17,7 @@ const route = getRouteApi("/editions/$id");
 
 export function EditionPage() {
   const { id } = route.useParams();
+  const navigate = useNavigate();
   const { t, language } = useI18n();
   const e = t.edition;
   const edition = useQuery({
@@ -56,18 +59,35 @@ export function EditionPage() {
         title={date}
         description={e.generatedOn(formatDateTime(data.createdAt, language))}
         actions={
-          available && data.hasPdf ? (
+          (available && data.hasPdf) || canDeleteEdition(data) ? (
             <>
-              <Button asChild variant="outline">
-                <a href={editionUrls.pdf(data.id)} target="_blank" rel="noopener">
-                  <ExternalLinkIcon /> {e.openPdf}
-                </a>
-              </Button>
-              <Button asChild>
-                <a href={editionUrls.download(data.id)}>
-                  <DownloadIcon /> {e.download}
-                </a>
-              </Button>
+              {available && data.hasPdf && (
+                <>
+                  <Button asChild variant="outline">
+                    <a href={editionUrls.pdf(data.id)} target="_blank" rel="noopener">
+                      <ExternalLinkIcon /> {e.openPdf}
+                    </a>
+                  </Button>
+                  <Button asChild>
+                    <a href={editionUrls.download(data.id)}>
+                      <DownloadIcon /> {e.download}
+                    </a>
+                  </Button>
+                </>
+              )}
+              {canDeleteEdition(data) && (
+                <DeleteEditionsDialog
+                  ids={[data.id]}
+                  title={t.editions.deleteTitle}
+                  description={t.editions.deleteText(date, formatTime(data.createdAt, language))}
+                  onDeleted={() => navigate({ to: "/editions" })}
+                  trigger={(pending) => (
+                    <Button variant="outline" className="text-destructive hover:text-destructive" disabled={pending}>
+                      {pending ? <Loader2Icon className="animate-spin" /> : <Trash2Icon />} {e.delete}
+                    </Button>
+                  )}
+                />
+              )}
             </>
           ) : undefined
         }

@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { accountUpdateSchema, preferencesSchema, validationMessage } from "./schemas";
 import { DEFAULT_COOKING, DEFAULT_PREFERENCES, EMAIL_FILTERS, withDefaultPreferences } from "./types";
+import { COLOR_INTENSITIES, NEWSPAPER_STYLES } from "./newspaper-design";
 
 describe("préférences du journal", () => {
   it("conserve les valeurs anciennes et complète les nouvelles", () => {
@@ -12,6 +13,28 @@ describe("préférences du journal", () => {
   it.each(EMAIL_FILTERS)("accepte le filtre %s", (emailFilter) => {
     expect(accountUpdateSchema.parse({ emailFilter })).toEqual({ emailFilter });
   });
+
+  it("garde Base + Discret pour les anciens réglages, sans changer leurs autres valeurs", () => {
+    const { newspaperStyle: _style, colorIntensity: _intensity, ...legacy } = DEFAULT_PREFERENCES;
+    expect(preferencesSchema.parse(legacy)).toEqual(DEFAULT_PREFERENCES);
+    expect(withDefaultPreferences({ city: "Laval" })).toMatchObject({
+      newspaperStyle: "base", colorIntensity: "subtle", city: "Laval",
+    });
+  });
+
+  it.each(NEWSPAPER_STYLES.flatMap((newspaperStyle) => COLOR_INTENSITIES.map((colorIntensity) => ({ newspaperStyle, colorIntensity }))))(
+    "conserve le style $newspaperStyle et l'intensité $colorIntensity indépendamment",
+    (design) => {
+      expect(preferencesSchema.parse({ ...DEFAULT_PREFERENCES, ...design })).toMatchObject(design);
+      expect(withDefaultPreferences(design)).toMatchObject(design);
+    },
+  );
+
+  it.each([{ newspaperStyle: "unknown" }, { colorIntensity: "bright" }, { newspaperStyle: null }])(
+    "refuse un choix de design invalide : %j", (design) => {
+      expect(preferencesSchema.safeParse({ ...DEFAULT_PREFERENCES, ...design }).success).toBe(false);
+    },
+  );
 
   it("complète les anciens réglages de cuisine sans activer les options", () => {
     const preferences = withDefaultPreferences({ cooking: { showPhoto: false } });

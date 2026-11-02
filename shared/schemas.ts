@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { en, fr } from "zod/locales";
-import { DEFAULT_COOKING, EMAIL_FILTERS, FOOD_RESTRICTIONS, GAME_KINDS, isProteinAllowed, LANGUAGES, MEAL_TYPES, PROTEIN_CHOICES, type Language } from "./types";
+import { COLOR_INTENSITIES, NEWSPAPER_STYLES } from "./newspaper-design";
+import { DEFAULT_COOKING, EDITION_LIST_LIMIT, EMAIL_FILTERS, FOOD_RESTRICTIONS, GAME_KINDS, isProteinAllowed, LANGUAGES, MEAL_TYPES, PROTEIN_CHOICES, type Language } from "./types";
 
 const shortText = (max: number) => z.string().trim().min(1).max(max);
 
@@ -12,6 +13,11 @@ export const scheduleSchema = z.object({
 });
 
 const newsSectionSchema = z.object({ enabled: z.boolean(), query: z.string().trim().max(80) });
+
+export const newspaperDesignSchema = z.object({
+  newspaperStyle: z.enum(NEWSPAPER_STYLES).default("base"),
+  colorIntensity: z.enum(COLOR_INTENSITIES).default("subtle"),
+});
 
 export const cookingSchema = z.object({
   enabled: z.boolean().default(false),
@@ -29,6 +35,7 @@ export const cookingSchema = z.object({
 
 export const preferencesSchema = z
   .object({
+    ...newspaperDesignSchema.shape,
     language: z.enum(LANGUAGES),
     pages: z.union([z.literal(1), z.literal(2)]),
     city: shortText(80),
@@ -80,6 +87,10 @@ export const accountUpdateSchema = z
 
 export const calendarSelectionSchema = z.object({
   selectedIds: z.array(z.uuid()).max(100),
+});
+
+export const editionDeletionSchema = z.object({
+  ids: z.array(z.uuid()).min(1).max(EDITION_LIST_LIMIT).transform((ids) => [...new Set(ids)]),
 });
 
 export type SettingsUpdate = z.infer<typeof settingsUpdateSchema>;

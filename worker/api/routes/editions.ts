@@ -1,24 +1,15 @@
 import { Hono } from "hono";
-import { and, desc, eq, gt } from "drizzle-orm";
-import type { EditionDto } from "../../../shared/types";
-import { getSettings, isEditionExpired, toEditionDto } from "../../db/queries";
+import { and, eq, gt, inArray } from "drizzle-orm";
+import { editionDeletionSchema } from "../../../shared/schemas";
+import { STALE_EDITION_MS, type EditionDeletionDto, type EditionDto } from "../../../shared/types";
+import { deleteEditions, getSettings, isEditionExpired, listEditions, toEditionDto } from "../../db/queries";
 import { editions, type Edition } from "../../db/schema";
 import { startEdition } from "../../schedule/scheduler";
 import { editionKeys } from "../../workflow/edition-workflow";
-import { isUuid, jsonError, type AppContext, type AppEnv } from "../context";
+import { newspaperHtmlCsp } from "../../edition/html";
+import { isUuid, jsonError, readJson, type AppContext, type AppEnv } from "../context";
 
-const MINUTE_MS = 60_000;
-const RUNNING_LOCK_MS = 10 * MINUTE_MS;
-const STALE_RUNNING_MS = 15 * MINUTE_MS;
-
-const HTML_CSP = [
-  "sandbox",
-  "default-src 'none'",
-  "style-src 'unsafe-inline' https://fonts.googleapis.com",
-  "font-src https://fonts.gstatic.com",
-  "img-src data:",
-  "frame-ancestors 'self'",
-].join("; ");
+const RUNNING_LOCK_MS = 10 * 60_000;
 
 async function findOwnedEdition(c: AppContext): Promise<Edition | undefined> {
   const id = c.req.param("id");
@@ -30,7 +21,7 @@ async function findOwnedEdition(c: AppContext): Promise<Edition | undefined> {
 
 /** Corrige une édition restée « en cours » si le Workflow s'est arrêté sans la mettre à jour. */
 async function reconcile(c: AppContext, edition: Edition): Promise<Edition> {
-  if (edition.status !== "running" || Date.now() - edition.createdAt.getTime() < STALE_RUNNING_MS) return edition;
+  if (edition.status !== "running" || Date.now() - edition.createdAt.getTime() < STALE_EDITION_MS) return edition;
   let workflowStatus: string = "unknown";
   try {
     workflowStatus = (await (await c.env.EDITION_WORKFLOW.get(edition.id)).status()).status;
@@ -52,14 +43,32 @@ async function reconcile(c: AppContext, edition: Edition): Promise<Edition> {
 }
 
 export const editionRoutes = new Hono<AppEnv>()
-  .get("/", async (c) => {
-    const rows = await c.get("db").query.editions.findMany({
-      where: eq(editions.userId, c.get("userId")),
-      orderBy: desc(editions.createdAt),
-      limit: 60,
-    });
+  .get("/", async (c) => c.json<EditionDto[]>(await listEditions(c.get("db"), c.get("userId"))))
+
+  .delete("/", async (c) => {
+    const parsed = editionDeletionSchema.safeParse(await readJson(c));
+    if (!parsed.success) return jsonError(c, 422, "invalidData");
+    const db = c.get("db");
+    const userId = c.get("userId");
+    const { ids } = parsed.data;
+    const owned = await db.query.editions.findMany({ where: and(eq(editions.userId, userId), inArray(editions.id, ids)) });
+    if (owned.length === 0) return jsonError(c, 404, "editionNotFound");
+    // Une génération figée est d'abord marquée en échec, ce qui permet de la supprimer.
+    for (const edition of owned) await reconcile(c, edition);
+    const deleted = await deleteEditions(db, userId, ids);
+    if (deleted.length === 0) return jsonError(c, 409, "editionDeleteRunning");
+
     const now = Date.now();
-    return c.json<EditionDto[]>(rows.map((row) => toEditionDto(row, now)));
+    // Les deux clés sont effacées : un PDF ou un HTML peut exister même si l'édition a échoué ensuite.
+    const removals = await Promise.allSettled(
+      deleted
+        .filter((edition) => !isEditionExpired(edition, now))
+        .flatMap(({ id }) => [c.env.EDITIONS.delete(editionKeys.html(id)), c.env.EDITIONS.delete(editionKeys.pdf(id))]),
+    );
+    const failures = removals.filter((result) => result.status === "rejected").length;
+    // Le contenu orphelin reste inaccessible (la ligne n'existe plus) et expire avec le TTL de KV.
+    if (failures > 0) console.warn(`[editions] ${failures} suppression(s) KV en échec`);
+    return c.json<EditionDeletionDto>({ deleted: deleted.map(({ id }) => id), editions: await listEditions(db, userId, now) });
   })
 
   .post("/", async (c) => {
@@ -104,7 +113,7 @@ export const editionRoutes = new Hono<AppEnv>()
     if (!html) return jsonError(c, 404, "editionExpired");
     return c.body(html, 200, {
       "Content-Type": "text/html; charset=utf-8",
-      "Content-Security-Policy": HTML_CSP,
+      "Content-Security-Policy": newspaperHtmlCsp(),
       "Cache-Control": "private, no-store",
       "X-Frame-Options": "SAMEORIGIN",
     });

@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import type { Language } from "@shared/types";
-import { applyLanguage, getLanguage, I18nContext, i18nValue } from "@/lib/i18n";
+import { applyLanguage, getLanguage, I18nContext, i18nValue, rememberLanguage } from "@/lib/i18n";
 
 export function I18nProvider({ children }: { children: React.ReactNode }) {
   const [language, setLanguageState] = useState<Language>(getLanguage);
@@ -10,6 +10,7 @@ export function I18nProvider({ children }: { children: React.ReactNode }) {
   const setLanguage = useCallback((next: Language) => {
     // Appliquée tout de suite pour que les requêtes suivantes envoient la bonne langue.
     applyLanguage(next);
+    rememberLanguage(next);
     setLanguageState(next);
   }, []);
 

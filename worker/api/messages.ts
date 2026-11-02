@@ -22,6 +22,10 @@ export const API_MESSAGES = {
   invalidData: { fr: "Données invalides", en: "Invalid data" },
   editionRunning: { fr: "Une édition est déjà en cours de génération.", en: "An edition is already being generated." },
   editionNotFound: { fr: "Édition introuvable", en: "Edition not found" },
+  editionDeleteRunning: {
+    fr: "Une édition en cours de génération ne peut pas être supprimée.",
+    en: "An edition that is still being generated cannot be deleted.",
+  },
   editionExpired: { fr: "Édition introuvable ou expirée", en: "Edition not found or expired" },
   pdfNotFound: { fr: "PDF introuvable ou expiré", en: "PDF not found or expired" },
   accountNotFound: { fr: "Compte introuvable", en: "Account not found" },

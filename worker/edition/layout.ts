@@ -3,7 +3,7 @@ import { newsProviderName } from "./i18n";
 import { NEWS_COLUMNS, PAGE_ONE_SECTIONS, pageOneSectionKeys, renderNewspaper } from "./render";
 import type { Newspaper } from "./types";
 
-// Script autonome : il s'exécute uniquement dans Browser Run, jamais dans le journal publié.
+// Script autonome : Browser Run ou iframe de démonstration, jamais une édition publiée.
 export const NEWS_LAYOUT_SCRIPT = String.raw`(async () => {
   await Promise.all([...document.querySelectorAll('link[rel="stylesheet"]')].map(link => link.sheet ? Promise.resolve() :
     new Promise((resolve, reject) => {

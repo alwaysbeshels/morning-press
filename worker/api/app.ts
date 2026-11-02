@@ -9,6 +9,7 @@ import { accountRoutes } from "./routes/accounts";
 import { connectionRoutes } from "./routes/connections";
 import { editionRoutes } from "./routes/editions";
 import { settingsRoutes } from "./routes/settings";
+import { newspaperPreviewRoutes } from "./routes/newspaper-preview";
 
 const APP_CSP = [
   "default-src 'self'",
@@ -54,6 +55,9 @@ app.use("*", async (c, next) => {
   c.set("email", result.email);
   await next();
 });
+
+// L'aperçu est authentifié, mais ne doit ni ouvrir la base ni créer d'utilisateur.
+app.route("/api/newspaper-preview", newspaperPreviewRoutes);
 
 app.use("/api/*", async (c, next) => {
   const method = c.req.method;

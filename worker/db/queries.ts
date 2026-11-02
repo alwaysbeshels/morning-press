@@ -1,7 +1,8 @@
-import { and, asc, eq, notInArray } from "drizzle-orm";
+import { and, asc, desc, eq, inArray, ne, notInArray } from "drizzle-orm";
 import {
   DEFAULT_PREFERENCES,
   DEFAULT_SCHEDULE,
+  EDITION_LIST_LIMIT,
   EDITION_RETENTION_DAYS,
   withDefaultPreferences,
   type AccountDto,
@@ -11,7 +12,7 @@ import {
 import { findInboxFolderId, type NylasClient } from "../nylas/client";
 import { nextRunAt } from "../schedule/time";
 import type { Db } from "./client";
-import { calendars, connectedAccounts, settings, users, type Calendar, type ConnectedAccount, type Edition, type Settings } from "./schema";
+import { calendars, connectedAccounts, editions, settings, users, type Calendar, type ConnectedAccount, type Edition, type Settings } from "./schema";
 
 const DAY_MS = 86_400_000;
 
@@ -100,6 +101,23 @@ export function toEditionDto(edition: Edition, now = Date.now()): EditionDto {
     createdAt: edition.createdAt.toISOString(),
     completedAt: edition.completedAt?.toISOString() ?? null,
   };
+}
+
+export async function listEditions(db: Db, userId: string, now = Date.now()): Promise<EditionDto[]> {
+  const rows = await db.query.editions.findMany({
+    where: eq(editions.userId, userId),
+    orderBy: desc(editions.createdAt),
+    limit: EDITION_LIST_LIMIT,
+  });
+  return rows.map((row) => toEditionDto(row, now));
+}
+
+/** Supprime les éditions de l'utilisateur, sauf celles encore en cours de génération. */
+export async function deleteEditions(db: Db, userId: string, ids: string[]): Promise<Pick<Edition, "id" | "createdAt">[]> {
+  return db
+    .delete(editions)
+    .where(and(eq(editions.userId, userId), inArray(editions.id, ids), ne(editions.status, "running")))
+    .returning({ id: editions.id, createdAt: editions.createdAt });
 }
 
 export async function listAccounts(db: Db, userId: string): Promise<AccountDto[]> {

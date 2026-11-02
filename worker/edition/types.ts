@@ -1,6 +1,7 @@
 import type { EmailFilter, GameKind, Language, NewsSectionKey, PageCount, WeatherPeriodKey } from "../../shared/types";
 import type { DailyExercise, DailyFact } from "../daily/content";
 import type { DailyRecipe } from "../daily/recipes";
+import type { NewspaperDesign } from "../../shared/newspaper-design";
 
 /** Données normalisées passées entre les étapes du Workflow (toutes sérialisables). */
 
@@ -115,6 +116,7 @@ export interface ReminderItem {
 }
 
 export interface Newspaper {
+  design?: NewspaperDesign;
   generatedAt: number;
   timezone: string;
   language: Language;

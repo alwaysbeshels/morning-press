@@ -4,6 +4,7 @@ import { formatLongDate, formatTemperature, formatTime, formatTimeRange, truncat
 import { journalText, type JournalText } from "./i18n";
 import type { EventItem, Newspaper, NewsGroup } from "./types";
 import { localDateString } from "../schedule/time";
+import { newspaperDesignCss } from "./design";
 
 export { escapeHtml };
 
@@ -246,7 +247,7 @@ export function renderNewspaper(paper: Newspaper): string {
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=Source+Serif+4:opsz,wght@8..60,400;8..60,600&display=swap" rel="stylesheet">
-<style>${STYLES}${paper.game ? GAME_STYLES : ""}</style>
+<style>${STYLES}${paper.game ? GAME_STYLES : ""}${newspaperDesignCss(paper.design)}</style>
 </head>
 <body class="${twoPages ? "two-pages" : "one-page"}">
 <main class="page page-1${paper.daily ? " daily" : ""}${compact ? " compact" : ""}">

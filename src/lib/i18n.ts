@@ -34,6 +34,7 @@ const fr = {
     editions: "Éditions",
     accounts: "Comptes",
     preferences: "Préférences",
+    siteLanguage: "Langue du site",
   },
   notFound: { title: "Page introuvable", back: "Retour au tableau de bord" },
   common: {
@@ -119,6 +120,20 @@ const fr = {
     empty: "Aucune édition pour l’instant.",
     unavailable: (sources: string) => `${sources} indisponible(s)`,
     downloadPdf: "Télécharger le PDF",
+    latest: "Plus récente",
+    olderToggle: (editions: number) => `${count(editions, "autre édition", "autres éditions", "fr")} ce jour-là`,
+    at: (time: string) => `Édition de ${time}`,
+    deleteOne: (time: string) => `Supprimer l’édition de ${time}`,
+    deleteTitle: "Supprimer cette édition?",
+    deleteText: (date: string, time: string) =>
+      `${date}, ${time}. Le PDF et la version web seront supprimés définitivement.`,
+    deleteGroup: (editions: number) => `Supprimer les ${editions} éditions de cette date`,
+    deleteGroupTitle: (editions: number) => `Supprimer les ${editions} éditions de cette date?`,
+    deleteGroupText: (date: string) =>
+      `${date}. Toutes ces éditions, avec leurs PDF et leurs versions web, seront supprimées définitivement.`,
+    deleteConfirm: "Supprimer",
+    cancel: "Annuler",
+    deleted: (editions: number) => (editions <= 1 ? "Édition supprimée." : `${editions} éditions supprimées.`),
   },
   edition: {
     back: "Toutes les éditions",
@@ -126,6 +141,7 @@ const fr = {
     generatedOn: (when: string) => `Générée le ${when}`,
     openPdf: "Ouvrir le PDF",
     download: "Télécharger",
+    delete: "Supprimer",
     preparing: "Votre journal est en cours de préparation…",
     failedTitle: "La génération a échoué",
     failedText: "Réessayez depuis le tableau de bord. Si le problème persiste, vérifiez vos comptes connectés.",
@@ -183,6 +199,39 @@ const fr = {
     primary: "(principal)",
     autosave: "Les modifications sont enregistrées automatiquement.",
   },
+  newspaperDesign: {
+    title: "Le style de ton journal",
+    description: "Même contenu, nouvelle ambiance. Choisis la typographie, les couleurs et les encadrés de tes prochaines éditions.",
+    stylesLegend: "Style du journal",
+    styleNames: { base: "Base", editorial: "Éditorial", nature: "Nature", magazine: "Magazine", retro: "Rétro", minimal: "Minimal" },
+    styleDescriptions: {
+      base: "Le journal actuel, intemporel et sobre.",
+      editorial: "Bleu marine, bordeaux et belle manchette.",
+      nature: "Vert sauge, terracotta et contours doux.",
+      magazine: "Bleu pétrole, corail et titres graphiques.",
+      retro: "Encre sépia et esprit des gazettes.",
+      minimal: "Prune, typographie nette et lignes fines.",
+    },
+    intensityLegend: "Intensité du design",
+    intensities: { subtle: "Discret", expressive: "Affirmé" },
+    intensityDescriptions: {
+      subtle: "Accents sur les titres et les traits; peu d'encre.",
+      expressive: "Manchettes et encadrés plus colorés.",
+    },
+    intensityInfo: "À propos de l'intensité du design",
+    baseHint: "Base + Discret garde exactement l'apparence actuelle. Les autres combinaisons restent lisibles en noir et blanc; les grilles de jeu restent noires sur blanc.",
+    previewOpen: "Voir un exemple sur 2 pages",
+    previewClose: "Fermer l'aperçu",
+    previewTitle: "Aperçu du style",
+    previewInfo: "À propos de l'aperçu",
+    previewNote: "Données fictives, sans accès à tes comptes. Aucun réglage n'est enregistré et aucune édition n'est créée. L'espace disponible peut modifier le nombre d'éléments imprimés.",
+    previewLoading: "Préparation de l'aperçu…",
+    previewUpdating: "Mise à jour de l'aperçu…",
+    previewError: "L'aperçu n'a pas pu être affiché. Réessaie ou recharge la page si ta session a expiré.",
+    retry: "Réessayer",
+    saveHint: "Enregistre les préférences pour appliquer le style aux prochaines éditions. Les journaux déjà générés ne changent pas.",
+    miniature: "LE JOURNAL",
+  },
   preferences: {
     title: "Préférences",
     description: "Horaire de génération et contenu de votre journal.",
@@ -190,6 +239,31 @@ const fr = {
     saved: "Préférences enregistrées.",
     form: "Formulaire",
     invalidValue: "valeur invalide",
+    saveSection: (section: string) => `Enregistrer la section « ${section} »`,
+    sectionUnsaved: "Modifications non enregistrées",
+    saveAll: "Tout enregistrer",
+    unsavedSections: (sections: number) => count(sections, "section modifiée", "sections modifiées", "fr"),
+    changes: {
+      yes: "Oui",
+      no: "Non",
+      none: "Aucun",
+      empty: "(vide)",
+      before: "Avant :",
+      after: "Après :",
+      newsSection: (name: string) => `Actualité ${name.toLocaleLowerCase("fr-CA")}`,
+      topics: "Mes sujets",
+      keywords: "Mots-clés prioritaires",
+      ignored: "Expéditeurs ignorés",
+      photo: "Photo de la recette",
+    },
+    leave: {
+      title: "Modifications non enregistrées",
+      description: (sections: number) =>
+        `Vous avez des modifications non enregistrées dans ${count(sections, "section", "sections", "fr")}. Voulez-vous les enregistrer avant de quitter cette page?`,
+      stay: "Rester sur la page",
+      discard: "Annuler les changements",
+      saveAll: "Tout enregistrer",
+    },
     scheduleTitle: "Horaire",
     nextEdition: (when: string | null) =>
       `Prochaine édition : ${when ?? "aucune"}. La génération peut prendre jusqu’à 5 minutes après l’heure choisie.`,
@@ -198,8 +272,8 @@ const fr = {
     timezone: "Fuseau horaire",
     days: "Jours",
     layoutTitle: "Langue et mise en page",
-    layoutDescription: "La langue s’applique au journal et à ce site.",
-    language: "Langue",
+    layoutDescription: "Cette langue s’applique au journal. Celle du site se change avec le bouton FR / EN du menu.",
+    language: "Langue du journal",
     pages: "Nombre de pages",
     onePage: "1 page",
     twoPages: "2 pages",
@@ -292,7 +366,7 @@ const en: Messages = {
   locale: "en-CA",
   colon: ": ",
   languageNames: fr.languageNames,
-  nav: { label: "Main navigation", dashboard: "Dashboard", editions: "Editions", accounts: "Accounts", preferences: "Preferences" },
+  nav: { label: "Main navigation", dashboard: "Dashboard", editions: "Editions", accounts: "Accounts", preferences: "Preferences", siteLanguage: "Site language" },
   notFound: { title: "Page not found", back: "Back to the dashboard" },
   common: {
     generateNow: "Generate now",
@@ -376,6 +450,20 @@ const en: Messages = {
     empty: "No edition yet.",
     unavailable: (sources) => `${sources} unavailable`,
     downloadPdf: "Download the PDF",
+    latest: "Latest",
+    olderToggle: (editions) => `${count(editions, "more edition", "more editions")} that day`,
+    at: (time) => `${time} edition`,
+    deleteOne: (time) => `Delete the ${time} edition`,
+    deleteTitle: "Delete this edition?",
+    // « p.m. » finit déjà par un point : l'heure n'est pas placée en fin de phrase.
+    deleteText: (date, time) => `The ${time} edition from ${date} will be permanently deleted, including its PDF and web version.`,
+    deleteGroup: (editions) => `Delete all ${editions} editions from this date`,
+    deleteGroupTitle: (editions) => `Delete all ${editions} editions from this date?`,
+    deleteGroupText: (date) =>
+      `${date}. All these editions, including their PDFs and web versions, will be permanently deleted.`,
+    deleteConfirm: "Delete",
+    cancel: "Cancel",
+    deleted: (editions) => (editions === 1 ? "Edition deleted." : `${editions} editions deleted.`),
   },
   edition: {
     back: "All editions",
@@ -383,6 +471,7 @@ const en: Messages = {
     generatedOn: (when) => `Generated ${when}`,
     openPdf: "Open the PDF",
     download: "Download",
+    delete: "Delete",
     preparing: "Your paper is being prepared…",
     failedTitle: "Generation failed",
     failedText: "Try again from the dashboard. If the problem persists, check your connected accounts.",
@@ -439,6 +528,39 @@ const en: Messages = {
     primary: "(primary)",
     autosave: "Changes are saved automatically.",
   },
+  newspaperDesign: {
+    title: "Your paper's style",
+    description: "Same content, a new mood. Choose the typography, colours and panels for your next editions.",
+    stylesLegend: "Newspaper style",
+    styleNames: { base: "Base", editorial: "Editorial", nature: "Nature", magazine: "Magazine", retro: "Retro", minimal: "Minimal" },
+    styleDescriptions: {
+      base: "The original paper: timeless and understated.",
+      editorial: "Navy, burgundy and an elegant masthead.",
+      nature: "Sage, terracotta and softer edges.",
+      magazine: "Deep teal, coral and graphic headings.",
+      retro: "Sepia ink with a vintage gazette feel.",
+      minimal: "Plum, clean typography and fine rules.",
+    },
+    intensityLegend: "Design intensity",
+    intensities: { subtle: "Subtle", expressive: "Expressive" },
+    intensityDescriptions: {
+      subtle: "Accents on headings and rules; less ink.",
+      expressive: "More colourful mastheads and panels.",
+    },
+    intensityInfo: "About design intensity",
+    baseHint: "Base + Subtle keeps the current appearance unchanged. Other combinations remain readable in grayscale; puzzle grids stay black on white.",
+    previewOpen: "Preview a two-page example",
+    previewClose: "Close preview",
+    previewTitle: "Style preview",
+    previewInfo: "About the preview",
+    previewNote: "Fictional data, with no access to your accounts. No settings are saved and no edition is created. Available space may affect how many items are printed.",
+    previewLoading: "Preparing the preview…",
+    previewUpdating: "Updating the preview…",
+    previewError: "The preview could not be displayed. Try again, or reload the page if your session has expired.",
+    retry: "Try again",
+    saveHint: "Save preferences to apply this style to future editions. Previously generated papers do not change.",
+    miniature: "THE PAPER",
+  },
   preferences: {
     title: "Preferences",
     description: "Generation schedule and content of your paper.",
@@ -446,6 +568,31 @@ const en: Messages = {
     saved: "Preferences saved.",
     form: "Form",
     invalidValue: "invalid value",
+    saveSection: (section) => `Save the “${section}” section`,
+    sectionUnsaved: "Unsaved changes",
+    saveAll: "Save all",
+    unsavedSections: (sections) => count(sections, "section changed", "sections changed"),
+    changes: {
+      yes: "Yes",
+      no: "No",
+      none: "None",
+      empty: "(empty)",
+      before: "Before:",
+      after: "After:",
+      newsSection: (name) => `${name} news`,
+      topics: "My topics",
+      keywords: "Priority keywords",
+      ignored: "Ignored senders",
+      photo: "Recipe photo",
+    },
+    leave: {
+      title: "Unsaved changes",
+      description: (sections) =>
+        `You have unsaved changes in ${count(sections, "section", "sections")}. Do you want to save them before leaving this page?`,
+      stay: "Stay on this page",
+      discard: "Discard changes",
+      saveAll: "Save all",
+    },
     scheduleTitle: "Schedule",
     nextEdition: (when) => `Next edition: ${when ?? "none"}. Generation can take up to 5 minutes after the chosen time.`,
     autoGenerate: "Generate automatically every morning",
@@ -453,8 +600,8 @@ const en: Messages = {
     timezone: "Time zone",
     days: "Days",
     layoutTitle: "Language and layout",
-    layoutDescription: "The language applies to the paper and to this site.",
-    language: "Language",
+    layoutDescription: "This language applies to the paper. Change the site language with the FR / EN button in the menu.",
+    language: "Paper language",
     pages: "Number of pages",
     onePage: "1 page",
     twoPages: "2 pages",
@@ -543,14 +690,32 @@ const en: Messages = {
 const MESSAGES: Record<Language, Messages> = { fr, en };
 const STORAGE_KEY = "morning-press.language";
 
-function detectLanguage(): Language {
+function storedLanguage(): Language | null {
   try {
     const stored = localStorage.getItem(STORAGE_KEY);
     if (stored === "fr" || stored === "en") return stored;
   } catch {
     // stockage indisponible (navigation privée stricte)
   }
-  return navigator.language?.toLowerCase().startsWith("en") ? "en" : "fr";
+  return null;
+}
+
+function detectLanguage(): Language {
+  return storedLanguage() ?? (navigator.language?.toLowerCase().startsWith("en") ? "en" : "fr");
+}
+
+/** Vrai quand une langue du site est déjà retenue sur ce navigateur. */
+export function hasRememberedLanguage(): boolean {
+  return storedLanguage() !== null;
+}
+
+/** Retient la langue du site sur ce navigateur ; elle est indépendante de celle du journal. */
+export function rememberLanguage(language: Language) {
+  try {
+    localStorage.setItem(STORAGE_KEY, language);
+  } catch {
+    // ignoré
+  }
 }
 
 /** Langue courante, aussi utilisée hors de React (requêtes API, messages d'erreur). */
@@ -569,11 +734,6 @@ export function applyLanguage(language: Language) {
   currentLanguage = language;
   document.documentElement.lang = MESSAGES[language].locale;
   document.title = MESSAGES[language].appName;
-  try {
-    localStorage.setItem(STORAGE_KEY, language);
-  } catch {
-    // ignoré
-  }
 }
 
 export interface I18nValue {

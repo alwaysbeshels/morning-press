@@ -6,3 +6,14 @@ export function escapeHtml(value: string): string {
     .replace(/"/g, "&quot;")
     .replace(/'/g, "&#39;");
 }
+export function newspaperHtmlCsp(scriptNonce?: string): string {
+  return [
+    scriptNonce ? "sandbox allow-scripts" : "sandbox",
+    "default-src 'none'",
+    "style-src 'unsafe-inline' https://fonts.googleapis.com",
+    "font-src https://fonts.gstatic.com",
+    "img-src data:",
+    "frame-ancestors 'self'",
+    ...(scriptNonce ? [`script-src 'nonce-${scriptNonce}'`, "base-uri 'none'", "form-action 'none'"] : []),
+  ].join("; ");
+}
