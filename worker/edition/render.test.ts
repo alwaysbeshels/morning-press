@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { WEATHER_PERIODS } from "../../shared/types";
 import { escapeHtml, renderNewspaper } from "./render";
 import type { Newspaper } from "./types";
 
@@ -158,6 +159,31 @@ describe("renderNewspaper", () => {
       .toContain("3 autres éléments non imprimés");
     expect(renderNewspaper({ ...base, language: "en", omitted: { events: 1, emails: 0, priorities: 0, reminders: 0 } }))
       .toContain("1 more item not printed");
+  });
+
+  it("illustre la météo du jour et de chaque période par une icône", () => {
+    const html = renderNewspaper({
+      ...base,
+      weather: {
+        ...base.weather!, code: 61,
+        periods: WEATHER_PERIODS.map((key) => ({
+          key, date: "2026-10-31", min: 2, max: 8, description: key === "night" ? "Ciel dégagé" : "Pluie légère",
+          precipitationProbability: 60, code: key === "night" ? 0 : 61, isDay: key !== "night",
+        })),
+      },
+    });
+    const header = html.slice(html.indexOf('<div class="weather">'), html.indexOf('<div class="forecast">'));
+    expect(header).toContain('data-weather-icon="rain"');
+    const periods = [...html.matchAll(/data-weather-period="(\w+)">(<svg[^>]*data-weather-icon="([\w-]+)")?/g)];
+    expect(periods.map((match) => [match[1], match[3]])).toEqual([
+      ["morning", "rain"], ["afternoon", "rain"], ["evening", "rain"], ["night", "moon"],
+    ]);
+    expect(html).toContain('aria-hidden="true"');
+  });
+
+  it("omet l'icône quand le code météo est absent ou inconnu", () => {
+    expect(renderNewspaper(base)).not.toContain("data-weather-icon");
+    expect(renderNewspaper({ ...base, weather: { ...base.weather!, code: 1234 } })).not.toContain("data-weather-icon");
   });
 });
 

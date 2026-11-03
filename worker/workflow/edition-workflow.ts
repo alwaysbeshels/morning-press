@@ -18,7 +18,7 @@ import { generateGame, renderGame } from "../games";
 import { createNylas, NylasError } from "../nylas/client";
 import { localDateString, startOfLocalDay } from "../schedule/time";
 import { fetchAccountData, type AccountSource } from "../sources/accounts";
-import { fetchFeed, newsFeeds, type FeedResult } from "../sources/news";
+import { fetchFeatured, fetchFeed, newsFeeds, type FeaturedTitles, type FeedResult } from "../sources/news";
 import { fetchWeather } from "../sources/weather";
 
 export interface EditionParams {
@@ -149,6 +149,12 @@ export class EditionWorkflow extends WorkflowEntrypoint<Env, EditionParams> {
       });
 
     const feeds = newsEnabled ? newsFeeds(context.preferences) : [];
+    // Une seule lecture de chaque une pour toutes les rubriques ; sans elle, chaque rubrique garde son ordre.
+    const featured: FeaturedTitles = feeds.some((feed) => feed.publishers?.some((publisher) => publisher.featuredUrl))
+      ? await step
+          .do("à la une", { retries: { limit: 0, delay: "5 seconds" }, timeout: "30 seconds" }, () => fetchFeatured(feeds))
+          .catch(() => ({}))
+      : {};
     const news: FeedResult[] = [];
     let newsProvider: "google" | "bing" = "google";
     // fetchFeed borne ses secours ; les rejouer doublerait le budget de sous-requêtes.
@@ -157,11 +163,11 @@ export class EditionWorkflow extends WorkflowEntrypoint<Env, EditionParams> {
         const result = await step.do(
           `actualités ${index + 1}`,
           { retries: { limit: 0, delay: "5 seconds" }, timeout: "60 seconds", sensitive: "output" },
-          () => fetchFeed(feed, newsProvider),
+          () => fetchFeed(feed, newsProvider, featured),
         );
         news.push(result);
         // Une fois Google indisponible, ne pas gaspiller le quota en le réessayant pour chaque sujet.
-        if (result.provider && result.provider !== "google") newsProvider = "bing";
+        if (result.provider === "bing") newsProvider = "bing";
       } catch (error) {
         newsProvider = "bing";
         const detail = feed.label || t.newsSections[feed.group];

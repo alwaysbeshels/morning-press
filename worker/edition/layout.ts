@@ -138,8 +138,8 @@ export const NEWS_LAYOUT_SCRIPT = String.raw`(async () => {
     } else {
       for (const group of groups) addOne(group);
       const remaining = groups.flatMap(group => group.items.map((item, index) => ({ group, item, index })));
-      remaining.sort((a, b) => Number(b.item.dataset.published) - Number(a.item.dataset.published) ||
-        a.index - b.index || a.group.order - b.group.order);
+      // Les articles arrivent classés (la une d'abord) : on remplit par rang, pas par date de parution.
+      remaining.sort((a, b) => a.index - b.index || a.group.order - b.group.order);
       for (const { group, item } of remaining) if (!item.isConnected) add(group, item);
     }
     for (const group of groups) if (!group.count) group.section.remove();

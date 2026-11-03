@@ -5,6 +5,7 @@ import { journalText, type JournalText } from "./i18n";
 import type { EventItem, Newspaper, NewsGroup } from "./types";
 import { localDateString } from "../schedule/time";
 import { newspaperDesignCss } from "./design";
+import { weatherIconSvg } from "./weather-icons";
 
 export { escapeHtml };
 
@@ -105,7 +106,7 @@ function renderNewsGroup(group: NewsGroup, t: JournalText): string {
   const items = group.items
     .map((item, index) => {
       const meta = group.key === "topics" ? `${item.source} · ${item.topic}` : item.source;
-      return `<li data-news-item="${group.key}:${index}" data-published="${item.publishedAt ?? 0}"><div class="title">${escapeHtml(truncate(item.title, 140))}</div><p class="news-summary">${escapeHtml(item.summary)}</p><div class="meta">${escapeHtml(meta)}</div></li>`;
+      return `<li data-news-item="${group.key}:${index}"><div class="title">${escapeHtml(truncate(item.title, 140))}</div><p class="news-summary">${escapeHtml(item.summary)}</p><div class="meta">${escapeHtml(meta)}</div></li>`;
     })
     .join("");
   return `<section class="news-group" data-news-group="${group.key}"><h3>${heading}</h3><ul class="news">${items}</ul></section>`;
@@ -147,15 +148,18 @@ export function renderNewspaper(paper: Newspaper): string {
 
   const weatherHtml = weather
     ? `<div class="weather">
-  <div class="temp">${escapeHtml(formatTemperature(weather.current))}</div>
-  <div>${escapeHtml(weather.description)}</div>
-  <div class="meta">${escapeHtml(
-    t.weatherLine(
-      formatTemperature(weather.min),
-      formatTemperature(weather.max),
-      weather.precipitationProbability !== null && weather.precipitationProbability > 0 ? weather.precipitationProbability : null,
-    ),
-  )}</div>
+  ${weatherIconSvg(weather.code)}
+  <div class="wx-text">
+    <div class="temp">${escapeHtml(formatTemperature(weather.current))}</div>
+    <div>${escapeHtml(weather.description)}</div>
+    <div class="meta">${escapeHtml(
+      t.weatherLine(
+        formatTemperature(weather.min),
+        formatTemperature(weather.max),
+        weather.precipitationProbability !== null && weather.precipitationProbability > 0 ? weather.precipitationProbability : null,
+      ),
+    )}</div>
+  </div>
 </div>`
     : `<div class="weather"><div class="meta">${escapeHtml(t.weatherUnavailable)}</div></div>`;
 
@@ -234,9 +238,9 @@ export function renderNewspaper(paper: Newspaper): string {
     ]).map((keys) => keys.map((key) => dailySections[key] ?? "").join(""));
   }
   const forecast = weather?.periods?.length ? `<div class="forecast">${weather.periods.map((period) =>
-    `<div data-weather-period="${period.key}"><strong>${escapeHtml(t.daily.periods[period.key])}</strong>
+    `<div data-weather-period="${period.key}">${weatherIconSvg(period.code, period.isDay)}<div class="wx-text"><strong>${escapeHtml(t.daily.periods[period.key])}</strong>
       <div>${escapeHtml(`${formatTemperature(period.min)} – ${formatTemperature(period.max)}`)}</div>
-      <div>${escapeHtml(period.description)}</div><div class="meta">${escapeHtml(t.daily.precipitation(period.precipitationProbability))}</div></div>`).join("")}</div>` : "";
+      <div>${escapeHtml(period.description)}</div><div class="meta">${escapeHtml(t.daily.precipitation(period.precipitationProbability))}</div></div></div>`).join("")}</div>` : "";
 
   return `<!doctype html>
 <html lang="${t.htmlLang}">
@@ -305,8 +309,11 @@ body {
 h1 { font-family: "Playfair Display", Georgia, serif; font-weight: 900; font-size: 34pt; text-align: center; margin: 4pt 0 6pt; letter-spacing: -0.01em; }
 .subhead { display: flex; justify-content: space-between; align-items: center; gap: 16pt; border-top: 1px solid #1a1a1a; padding-top: 5pt; }
 blockquote { margin: 0; font-style: italic; flex: 1; }
-.weather { text-align: right; min-width: 1.9in; }
+.weather { display: flex; align-items: center; justify-content: flex-end; gap: 6pt; text-align: right; min-width: 1.9in; }
 .weather .temp { font-family: "Playfair Display", Georgia, serif; font-size: 16pt; font-weight: 700; line-height: 1; }
+.wx-icon { display: block; flex: none; color: var(--accent, #1a1a1a); }
+.wx-cloud { fill: var(--wx-bg, #fff); }
+.weather .wx-icon { width: 30pt; height: 30pt; }
 .columns { display: grid; grid-template-columns: 1.15fr 1fr; gap: 14pt; }
 .col + .col { border-left: 1px solid #c8c2b5; padding-left: 14pt; }
 section { margin-bottom: 9pt; break-inside: avoid; }
@@ -390,5 +397,8 @@ footer { margin-top: 6pt; padding-top: 4pt; border-top: 1px solid #1a1a1a; text-
 .quote-label { display: block; font-size: 7pt; font-style: normal; font-weight: 600; text-transform: uppercase; margin-bottom: 2pt; }
 .forecast { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8pt; border-top: 1px solid #c8c2b5; margin-top: 6pt; padding-top: 5pt; font-size: 8pt; line-height: 1.2; }
 .forecast strong { display: block; margin-bottom: 2pt; }
+.forecast > div { display: flex; align-items: center; gap: 4pt; }
+.forecast .wx-icon { width: 20pt; height: 20pt; }
+.forecast .wx-text { min-width: 0; }
 .forecast .meta { font-size: 7pt; }
 `;

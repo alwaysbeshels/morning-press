@@ -83,10 +83,11 @@ export function buildDesignPreview(design: NewspaperDesign, language: Language):
       }],
     }],
     weather: {
-      current: 8, min: 3, max: 13, description: copy.condition, precipitationProbability: 20, precipitationSum: 0,
+      current: 8, min: 3, max: 13, description: copy.condition, code: 2, precipitationProbability: 20, precipitationSum: 0,
       periods: WEATHER_PERIODS.map((key, index) => ({
         key, date: key === "night" ? "2026-11-03" : "2026-11-02",
         min: [5, 10, 6, 3][index], max: [10, 13, 9, 5][index], description: copy.condition, precipitationProbability: [10, 20, 10, 0][index],
+        code: 2, isDay: index < 2,
       })),
     },
     news: [...NEWS_SECTIONS, "topics" as const].map((group, index) => ({

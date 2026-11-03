@@ -26,7 +26,7 @@ export const GAME_STYLES = `
 .g-sudoku.g-mini tr.g-b3 td { border-bottom-width: 0.9pt; }
 
 .g-cross td { width: 0.25in; height: 0.25in; border: none; }
-.g-cross td.g-cell { border: 1px solid #1a1a1a; }
+.g-cross td.g-cell { border: 1px solid #1a1a1a; background: #e9e3d3; }
 .g-cross.g-mini td { width: 0.1in; height: 0.1in; font-size: 5.5pt; }
 .g-cross.g-mini td.g-cell { border-width: 0.5pt; }
 

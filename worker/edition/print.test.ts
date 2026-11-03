@@ -11,7 +11,13 @@ import { layoutNewspaper } from "./layout";
 import type { Newspaper } from "./types";
 import { COLOR_INTENSITIES, NEWSPAPER_PALETTES, NEWSPAPER_STYLES } from "../../shared/newspaper-design";
 
-function fixture(language: Language, pages: 1 | 2, kind: GameKind | null, dense: boolean, profile: "regular" | "uneven" | "recent" | "empty" | "calm" = "regular", extras: "none" | "all" | "recipe" | "exercise" = "none"): Newspaper {
+/** Chaque article doit traiter un sujet distinct : sinon la déduplication par sujet n'en garderait qu'un seul. */
+function distinctText(text: string, serial: number): string {
+  const salt = String.fromCharCode(97 + (serial % 26), 97 + (Math.floor(serial / 26) % 26));
+  return text.replace(/\p{L}{4,}/gu, (word) => salt + word.slice(2));
+}
+
+function fixture(language: Language, pages: 1 | 2, kind: GameKind | null, dense: boolean, profile: "regular" | "uneven" | "older" | "empty" | "calm" = "regular", extras: "none" | "all" | "recipe" | "exercise" = "none"): Newspaper {
   const generatedAt = Date.parse("2026-10-31T10:30:00Z");
   const game = kind ? generateGame({ seed: "print-regression", language, kinds: [kind] }) : null;
   const longText = language === "fr"
@@ -57,15 +63,15 @@ function fixture(language: Language, pages: 1 | 2, kind: GameKind | null, dense:
         source: "Example account",
       })),
     }],
-    news: [...NEWS_SECTIONS, "topics" as const].map((group) => ({
+    news: [...NEWS_SECTIONS, "topics" as const].map((group, groupIndex) => ({
       group,
       label: longText.slice(0, 80),
       items: Array.from({ length: profile === "empty" ? 0 : profile === "uneven" && group === "local" ? 1 : 16 }, (_, i) => ({
-        title: `${group} ${i + 1}. ${dense ? longText.repeat(2) : longText.slice(0, 55)}`,
+        title: `${group} ${i + 1}. ${distinctText(dense ? longText.repeat(2) : longText.slice(0, 55), groupIndex * 16 + i)}`,
         summary: dense ? summary : language === "fr"
           ? "Le projet améliorera les déplacements des résidents. Les travaux commenceront cet automne."
           : "The project will improve travel for local residents. Construction will begin this autumn.",
-        publishedAt: generatedAt - i * 60_000 - (profile === "recent" && group === "provincial" ? 86_400_000 : 0),
+        publishedAt: generatedAt - i * 60_000 - (profile === "older" && group === "provincial" ? 86_400_000 : 0),
         source: "Example news agency",
         topic: longText.slice(0, 80),
       })),
@@ -130,7 +136,7 @@ describe.skipIf(!process.env.CHROME_PATH)("PDF Lettre dans Chrome", () => {
       ...GAME_KINDS.flatMap((kind) => [false, true].map((dense) => ({ language, pages: 2 as const, kind, dense }))),
     ].map((test) => ({ ...test, profile: "regular" as const, extras: "none" as const })),
     { language, pages: 2 as const, kind: "sudoku" as const, dense: false, profile: "uneven" as const, extras: "none" as const },
-    { language, pages: 2 as const, kind: "sudoku" as const, dense: false, profile: "recent" as const, extras: "none" as const },
+    { language, pages: 2 as const, kind: "sudoku" as const, dense: false, profile: "older" as const, extras: "none" as const },
     { language, pages: 2 as const, kind: "codeword" as const, dense: false, profile: "empty" as const, extras: "none" as const },
     { language, pages: 2 as const, kind: "sudoku" as const, dense: false, profile: "calm" as const, extras: "none" as const },
     ...GAME_KINDS.flatMap((kind) => [false, true].map((dense) => ({
@@ -307,9 +313,13 @@ describe.skipIf(!process.env.CHROME_PATH)("PDF Lettre dans Chrome", () => {
             expect(paper.newsGroups.find((group) => group.key === "local")!.items).toHaveLength(1);
             expect(paper.newsGroups.find((group) => group.key === "provincial")!.items.length).toBeGreaterThan(1);
           }
-          if (profile === "recent") {
-            expect(paper.newsGroups.find((group) => group.key === "local")!.items.length).toBeGreaterThan(1);
-            expect(paper.newsGroups.find((group) => group.key === "provincial")!.items).toHaveLength(1);
+          if (profile === "older") {
+            // Les articles sont déjà classés (la une d'abord) : la date de parution ne doit pas favoriser une rubrique.
+            for (const key of ["local", "provincial"]) {
+              const titles = paper.newsGroups.find((group) => group.key === key)!.items.map((item) => item.title);
+              expect(titles.length).toBeGreaterThan(1);
+              expect(titles[0]).toMatch(new RegExp(`^${key} 1\\.`));
+            }
           }
         }
         if (kind) {

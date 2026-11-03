@@ -49,10 +49,15 @@ export interface Weather {
   min: number;
   max: number;
   description: string;
+  /** Code WMO de la journée (absent des anciennes éditions mises en cache). */
+  code?: number;
   precipitationProbability: number | null;
   precipitationSum: number | null;
   periods?: {
     key: WeatherPeriodKey; date: string; min: number; max: number; description: string; precipitationProbability: number | null;
+    code?: number;
+    /** Faux quand la période est surtout nocturne : l'icône montre alors la lune. */
+    isDay?: boolean;
   }[];
 }
 

@@ -69,7 +69,7 @@ ${design.colorIntensity === "expressive" ? `
 .minihead { background: var(--accent); color: #ffffff; padding: 6pt 7pt; border: 0; }
 .minihead h2 { color: #ffffff; }
 .daily .columns h2, .news-group h3 { background: var(--wash); padding: 0 4pt 2pt; border-bottom: 1.5px solid var(--secondary); }
-.forecast { background: var(--wash); padding: 5pt 5pt 0; border: 0; }
+.forecast { background: var(--wash); --wx-bg: var(--wash); padding: 5pt 5pt 0; border: 0; }
 .game-slot { border-top: 3px solid var(--secondary); }
 .g-title { background: var(--wash); padding: 0 5pt 2pt; border-bottom: 1.5px solid var(--accent); }
 .solution-slot { border-color: var(--secondary); }

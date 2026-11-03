@@ -106,6 +106,23 @@ describe("renderGame", () => {
     }
   });
 
+  it("colore les cases à remplir des mots croisés, grille et solution, mais pas les cases vides", () => {
+    expect(GAME_STYLES).toMatch(/\.g-cross td\.g-cell\s*\{[^}]*background:\s*#[0-9a-f]{6}/i);
+    expect(GAME_STYLES).not.toMatch(/\.g-cross td\s*\{[^}]*background/);
+    const crossword: CrosswordGame = {
+      kind: "crossword", width: 3, height: 1, solution: [["A", null, "B"]], numbers: [[1, null, 2]],
+      across: [{ number: 1, clue: "Une", answer: "A", row: 0, col: 0 }, { number: 2, clue: "Deux", answer: "B", row: 0, col: 2 }],
+      down: [],
+    };
+    const { html, solutionHtml } = renderGame(crossword, "fr");
+    for (const markup of [html, solutionHtml]) {
+      expect(markup.match(/<td class="g-cell">/g)).toHaveLength(2);
+      expect(markup.match(/<td><\/td>/g)).toHaveLength(1);
+      expect(markup).toContain('class="g-grid g-cross');
+    }
+    expect(solutionHtml).toContain("g-cross g-mini");
+  });
+
   it("a des libellés localisés", () => {
     expect(GAME_LABELS.fr).toEqual({ sudoku: "Sudoku", crossword: "Mots croisés", codeword: "Mots codés" });
     expect(GAME_LABELS.en).toEqual({ sudoku: "Sudoku", crossword: "Crossword", codeword: "Codeword" });

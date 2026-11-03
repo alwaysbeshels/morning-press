@@ -84,6 +84,7 @@ const weatherSchema = z.object({
   hourly: z.object({
     time: z.array(z.string().regex(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/)),
     temperature_2m: values, weather_code: values, precipitation_probability: values,
+    is_day: values.optional(),
   }),
 });
 export type OpenMeteoResponse = z.infer<typeof weatherSchema>;
@@ -103,7 +104,7 @@ export async function fetchWeather(
     "weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max,precipitation_sum",
   );
   url.searchParams.set("timezone", timezone);
-  url.searchParams.set("hourly", "temperature_2m,weather_code,precipitation_probability");
+  url.searchParams.set("hourly", "temperature_2m,weather_code,precipitation_probability,is_day");
   url.searchParams.set("forecast_days", "2");
 
   const response = await fetch(url, { headers: { Accept: "application/json" } });
@@ -141,11 +142,18 @@ export function parseWeather(input: unknown, language: Language = "fr"): Weather
       throw new Error(`Open-Meteo : période ${key} incomplète`);
     }
     const rain = indices.map((index) => hourly.precipitation_probability[index]).filter((value) => value !== null);
+    const worst = Math.max(...codes.filter((value) => value !== null));
+    // Période de jour si au moins la moitié de ses heures sont ensoleillées ; sans série is_day, on ne tranche pas.
+    const daylight = hourly.is_day?.length === hourly.time.length
+      ? indices.filter((index) => hourly.is_day?.[index] === 1).length * 2 >= indices.length
+      : null;
     return {
       key, date,
       min: Math.round(Math.min(...temperatures.filter((value) => value !== null))),
       max: Math.round(Math.max(...temperatures.filter((value) => value !== null))),
-      description: describeWeatherCode(Math.max(...codes.filter((value) => value !== null)), language),
+      description: describeWeatherCode(worst, language),
+      code: worst,
+      ...(daylight === null ? {} : { isDay: daylight }),
       precipitationProbability: rain.length === indices.length ? Math.max(...rain) : null,
     };
   });
@@ -154,6 +162,7 @@ export function parseWeather(input: unknown, language: Language = "fr"): Weather
     min: Math.round(min),
     max: Math.round(max),
     description: describeWeatherCode(code, language),
+    ...(code >= 0 ? { code } : {}),
     precipitationProbability: daily.precipitation_probability_max?.[0] ?? null,
     precipitationSum: daily.precipitation_sum?.[0] ?? null,
     periods,

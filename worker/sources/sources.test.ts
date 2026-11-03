@@ -114,6 +114,28 @@ describe("news", () => {
       ["international", ["Sommet international"]], ["topics", ["Une découverte mondiale"]],
     ]);
   });
+
+  it("écarte un même sujet repris sous un autre titre", () => {
+    const item = (title: string) => ({ title, summary: SUMMARY, source: "s", topic: "t" });
+    const a = [item("Sept policiers du SPVM congédiés après une enquête interne"), item("Tempête de neige sur le Saguenay")];
+    const b = [item("7 policiers congédiés au SPVM : la Ville confirme"), item("Budget fédéral : les syndicats réagissent")];
+    expect(pickNews([a, b], 4).map((picked) => picked.title)).toEqual([a[0].title, a[1].title, b[1].title]);
+  });
+
+  it("ne répète pas dans une rubrique un sujet déjà affiché dans une autre", () => {
+    const item = (title: string, topic: string) => ({ title, summary: SUMMARY, source: "s", topic });
+    const groups = groupNews([
+      {
+        group: "national", label: "Canada",
+        items: [item("Hydro-Québec annonce une hausse des tarifs", "Canada"), item("Budget fédéral : les syndicats réagissent", "Canada")],
+      },
+      { group: "provincial", label: "Québec", items: [item("Hausse des tarifs d'Hydro-Québec : l'opposition dénonce", "Québec")] },
+    ], 4);
+    expect(groups.map((group) => [group.key, group.items.map((picked) => picked.title)])).toEqual([
+      ["provincial", ["Hausse des tarifs d'Hydro-Québec : l'opposition dénonce"]],
+      ["national", ["Budget fédéral : les syndicats réagissent"]],
+    ]);
+  });
 });
 
 describe("weather", () => {
@@ -139,9 +161,34 @@ describe("weather", () => {
       min: 3,
       max: 10,
       description: describeWeatherCode(61),
+      code: 61,
       precipitationProbability: 80,
       precipitationSum: 4.2,
     });
+  });
+  it("garde le code WMO de la journée et de chaque période pour l'icône", () => {
+    const body = forecast();
+    body.hourly.weather_code[8] = 63;
+    const weather = parseWeather(body);
+    expect(weather.code).toBe(61);
+    expect(weather.periods!.map((period) => period.code)).toEqual([63, 61, 61, 61]);
+    expect(weather.periods![0].description).toBe(describeWeatherCode(63));
+    body.daily.weather_code = [null];
+    body.current.weather_code = 2;
+    expect(parseWeather(body).code).toBe(2);
+    body.current.weather_code = null;
+    expect(parseWeather(body)).not.toHaveProperty("code");
+  });
+  it("distingue les périodes de jour et de nuit avec l'ensoleillement horaire", () => {
+    const body = forecast();
+    body.hourly.is_day = body.hourly.time.map((time) => Number(time.slice(11, 13)) >= 7 && Number(time.slice(11, 13)) < 19 ? 1 : 0);
+    expect(parseWeather(body).periods!.map((period) => period.isDay)).toEqual([true, true, false, false]);
+    body.hourly.is_day = body.hourly.is_day.map(() => null);
+    expect(parseWeather(body).periods!.map((period) => period.isDay)).toEqual([false, false, false, false]);
+    body.hourly.is_day.pop();
+    expect(parseWeather(body).periods!.every((period) => !("isDay" in period))).toBe(true);
+    delete body.hourly.is_day;
+    expect(parseWeather(body).periods!.every((period) => !("isDay" in period))).toBe(true);
   });
   it("sépare les quatre périodes et la nuit suivante sans conversion UTC", () => {
     const body = forecast();
@@ -186,6 +233,7 @@ describe("weather", () => {
     expect(url.searchParams.get("forecast_days")).toBe("2");
     expect(url.searchParams.get("timezone")).toBe("America/Toronto");
     expect(url.searchParams.get("hourly")).toContain("precipitation_probability");
+    expect(url.searchParams.get("hourly")).toContain("is_day");
   });
 
   it("décrit la météo en anglais", () => {

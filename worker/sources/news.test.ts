@@ -1,7 +1,11 @@
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { DEFAULT_PREFERENCES } from "../../shared/types";
+import type { NewsItem } from "../edition/types";
 import { buildNewspaper } from "../edition/select";
-import { bingNewsUrl, fetchFeed, newsFeeds, newsSummary, parseRss, type NewsFeed } from "./news";
+import {
+  bingNewsUrl, featuredTitles, fetchFeatured, fetchFeed, mergeNews, newsFeeds, newsSummary, parseRss,
+  type NewsFeed, type NewsPublisher,
+} from "./news";
 
 const SUMMARY = "Le parc comprendra des sentiers accessibles et une aire de jeux pour les familles.";
 const RSS = `<rss><channel>
@@ -31,6 +35,7 @@ function mockResponses(...responses: Array<Response | Error>) {
 afterEach(() => {
   vi.unstubAllGlobals();
   vi.restoreAllMocks();
+  vi.useRealTimers();
 });
 
 describe("flux d'actualités de secours", () => {
@@ -39,7 +44,9 @@ describe("flux d'actualités de secours", () => {
     expect(url.searchParams.get("q")).toBe("montreal ingenierie");
     expect(url.searchParams.get("format")).toBe("rss");
     expect(url.searchParams.get("mkt")).toBe("fr-CA");
-    expect(url.searchParams.get("qft")).toBe('interval="7"');
+    expect(url.searchParams.get("sortbydate")).toBe("1");
+    // Bing RSS renvoie un flux vide avec un filtre de date.
+    expect(url.searchParams.has("qft")).toBe(false);
     expect(new URL(bingNewsUrl("Montreal", "en")).searchParams.get("mkt")).toBe("en-CA");
     const feeds = newsFeeds(DEFAULT_PREFERENCES);
     expect(feeds.every((item) => new URL(item.alternateUrl!).hostname === "www.bing.com")).toBe(true);
@@ -72,49 +79,65 @@ describe("flux d'actualités de secours", () => {
 
   it("ne suit pas les redirections Bing vers une page non RSS", async () => {
     vi.spyOn(console, "warn").mockImplementation(() => {});
-    const fetch = mockResponses(
-      new Response(null, { status: 302, headers: { Location: "https://www.bing.com/?brdr=1" } }),
-      new Response(null, { status: 302 }),
-    );
+    const fetch = mockResponses(new Response(null, { status: 302, headers: { Location: "https://www.bing.com/?brdr=1" } }));
     await expect(fetchFeed(feed, "bing")).rejects.toThrow("bing RSS : HTTP 302");
-    expect(fetch).toHaveBeenCalledTimes(2);
+    expect(fetch).toHaveBeenCalledTimes(1);
     expect(fetch.mock.calls.every(([url]) => !String(url).includes("brdr"))).toBe(true);
   });
 
-  it("utilise un flux éditeur national sans mélanger les pays personnalisés", async () => {
-    vi.spyOn(console, "warn").mockImplementation(() => {});
-    const national = newsFeeds(DEFAULT_PREFERENCES).find((item) => item.group === "national")!;
-    const fetch = mockResponses(new Response(null, { status: 302 }), new Response(`<rss><channel><item><title>Actualité nationale</title><description>${SUMMARY}</description></item></channel></rss>`));
-    const result = await fetchFeed(national, "bing");
-    expect(fetch.mock.calls.map(([url]) => url)).toEqual([national.alternateUrl, national.publisher?.url]);
-    expect(result.items).toEqual([{
-      title: "Actualité nationale", summary: SUMMARY, source: "La Presse", topic: "Canada", provider: "lapresse",
-    }]);
+  it("choisit les éditeurs de chaque rubrique par défaut, dans la langue demandée", () => {
+    const providers = (feeds: NewsFeed[], group: string) =>
+      feeds.find((item) => item.group === group)?.publishers?.map((publisher) => publisher.provider);
+    const french = newsFeeds(DEFAULT_PREFERENCES);
+    expect(providers(french, "local")).toEqual(["radio-canada", "lapresse"]);
+    expect(providers(french, "provincial")).toEqual(["radio-canada", "ledevoir"]);
+    expect(providers(french, "national")).toEqual(["lapresse", "ledevoir", "radio-canada"]);
+    expect(providers(french, "american")).toEqual(["lapresse", "ledevoir"]);
+    expect(providers(french, "international")).toEqual(["radio-canada", "lapresse", "ledevoir"]);
+    expect(providers(french, "topics")).toBeUndefined();
+
+    const english = newsFeeds({ ...DEFAULT_PREFERENCES, language: "en" });
+    for (const group of ["local", "national", "international"]) expect(providers(english, group)).toEqual(["cbc"]);
+    for (const group of ["provincial", "american", "topics"]) expect(providers(english, group)).toBeUndefined();
+  });
+
+  it("lit la rubrique de chaque éditeur avec le flux de sa une quand il en a un", () => {
+    const publishers = (group: string) => newsFeeds(DEFAULT_PREFERENCES).find((item) => item.group === group)!.publishers!;
+    expect(publishers("local").map(({ url }) => url)).toEqual([
+      "https://ici.radio-canada.ca/info/rss/grandmontreal/en-continu",
+      "https://www.lapresse.ca/actualites/grand-montreal/rss",
+    ]);
+    expect(publishers("provincial").map(({ url }) => url)).toContain("https://www.ledevoir.com/rss/section/politique/quebec.xml");
+    expect(publishers("american").map(({ url }) => url)).toContain("https://www.lapresse.ca/international/etats-unis/rss");
+    expect(publishers("local")[0].featuredUrl).toBe("https://ici.radio-canada.ca/info/rss/info/a-la-une");
+    expect(publishers("local")[1].featuredUrl).toBeUndefined();
+    expect(publishers("international")[2].featuredUrl).toBe("https://www.ledevoir.com/rss/manchettes.xml");
+    const english = newsFeeds({ ...DEFAULT_PREFERENCES, language: "en" });
+    expect(english.find((item) => item.group === "international")?.publishers?.[0]).toMatchObject({
+      url: "https://www.cbc.ca/webfeed/rss/rss-world", source: "CBC", featuredUrl: "https://www.cbc.ca/webfeed/rss/rss-topstories",
+    });
+  });
+
+  it("n'impose aucun éditeur aux lieux et aux sujets personnalisés", () => {
     const custom = newsFeeds({
       ...DEFAULT_PREFERENCES,
       newsSections: {
-        ...DEFAULT_PREFERENCES.newsSections,
+        local: { enabled: true, query: "Laval" },
+        provincial: { enabled: true, query: "Ontario" },
         national: { enabled: true, query: "France" },
+        american: { enabled: true, query: "Californie" },
         international: { enabled: true, query: "Europe" },
       },
     });
-    expect(custom.find((item) => item.group === "national")?.publisher).toBeUndefined();
-    expect(custom.find((item) => item.group === "international")?.publisher).toBeUndefined();
+    expect(custom.map((item) => item.group)).toEqual(["local", "provincial", "national", "american", "international", "topics", "topics"]);
+    for (const item of custom) expect(item.publishers).toBeUndefined();
   });
 
-  it("choisit les flux éditeurs dans la langue demandée", () => {
-    const french = newsFeeds(DEFAULT_PREFERENCES);
-    const english = newsFeeds({ ...DEFAULT_PREFERENCES, language: "en" });
-    expect(french.find((item) => item.group === "international")?.publisher?.source).toBe("Radio-Canada");
-    expect(english.find((item) => item.group === "international")?.publisher?.source).toBe("CBC");
-    expect(english.find((item) => item.group === "national")?.publisher?.source).toBe("CBC");
-  });
-
-  it("signale l'erreur si le flux éditeur échoue lui aussi", async () => {
-    vi.spyOn(console, "warn").mockImplementation(() => {});
-    const national = newsFeeds(DEFAULT_PREFERENCES).find((item) => item.group === "national")!;
-    mockResponses(new Response(null, { status: 503 }), new Response(null, { status: 503 }));
-    await expect(fetchFeed(national, "bing")).rejects.toThrow("lapresse RSS : HTTP 503");
+  it("garde l'ancienne chaîne de recherche quand la rubrique n'a pas d'éditeur", async () => {
+    const fetch = mockResponses(new Response(RSS));
+    const result = await fetchFeed({ ...feed, publishers: [] });
+    expect(result.provider).toBe("google");
+    expect(fetch).toHaveBeenCalledTimes(1);
   });
 
   it.each([
@@ -158,31 +181,16 @@ describe("flux d'actualités de secours", () => {
     await expect(fetchFeed({ ...feed, alternateUrl: undefined })).rejects.toThrow("google RSS : HTTP 503");
   });
 
-  it("essaie une seule recherche simplifiée en gardant la langue et le sujet", async () => {
-    vi.spyOn(console, "warn").mockImplementation(() => {});
-    const fetch = mockResponses(new Response(null, { status: 307 }), new Response(BING_RSS));
-    expect((await fetchFeed(feed, "bing")).items).toHaveLength(1);
-    const simplified = new URL(String(fetch.mock.calls[1][0]));
-    expect(simplified.searchParams.has("qft")).toBe(false);
-    expect(simplified.searchParams.get("mkt")).toBe("fr-CA");
-    expect(simplified.searchParams.get("q")).toBe("montreal");
-    expect(simplified.searchParams.get("sortbydate")).toBe("1");
-    expect(fetch).toHaveBeenCalledTimes(2);
-  });
-
-  it("prévoit des secours géographiques précis sans les imposer aux recherches personnalisées", () => {
-    const defaults = newsFeeds(DEFAULT_PREFERENCES);
-    expect(defaults.find((item) => item.group === "local")?.publisher?.url).toContain("/grandmontreal/");
-    expect(defaults.find((item) => item.group === "provincial")?.publisher?.url).toContain("/politique/quebec.xml");
-    expect(defaults.find((item) => item.group === "american")?.publisher?.url).toContain("/etats-unis/rss");
-    const custom = newsFeeds({
-      ...DEFAULT_PREFERENCES, newsSections: {
-        ...DEFAULT_PREFERENCES.newsSections,
-        local: { enabled: true, query: "Laval" }, provincial: { enabled: true, query: "Ontario" },
-        american: { enabled: true, query: "Californie" },
-      },
-    });
-    for (const key of ["local", "provincial", "american"]) expect(custom.find((item) => item.group === key)?.publisher).toBeUndefined();
+  it("écarte localement les résultats Bing de plus de sept jours, faute de filtre de date", async () => {
+    vi.setSystemTime(Date.parse("2026-11-03T12:00:00Z"));
+    const dated = (title: string, date: string) =>
+      `<item><title>${title}</title><pubDate>${date}</pubDate><description>${SUMMARY}</description></item>`;
+    const fetch = mockResponses(new Response(`<rss><channel>${
+      dated("Dossier de 2019", "Thu, 10 Oct 2019 17:00:00 GMT")}${dated("Un nouveau parc écologique", "Sun, 01 Nov 2026 12:00:00 GMT")
+    }</channel></rss>`));
+    const result = await fetchFeed(feed, "bing");
+    expect(result.items.map((item) => item.title)).toEqual(["Un nouveau parc écologique"]);
+    expect(fetch).toHaveBeenCalledTimes(1);
   });
 
   it("lit les sources Bing et limite les articles extraits", () => {
@@ -258,12 +266,237 @@ describe("résumés des actualités", () => {
     expect(parseRss(xml.replace("Sun, 01 Nov 2026 12:00:00 GMT", "unknown"), "", 1)[0].publishedAt).toBeUndefined();
   });
 
-  it("filtre les anciens articles d'une recherche simplifiée avant d'appliquer la limite", () => {
+  it("filtre les anciens articles avant d'appliquer la limite", () => {
     vi.spyOn(console, "warn").mockImplementation(() => {});
     const xml = RSS.replace("<channel>", `<channel><item><title>Ancien</title><pubDate>Mon, 01 Jan 2024 00:00:00 GMT</pubDate><description>${SUMMARY}</description></item>`)
       .replace("<title>Un nouveau parc", "<pubDate>Sun, 01 Nov 2026 12:00:00 GMT</pubDate><title>Un nouveau parc");
     const items = parseRss(xml, "Montréal", 1, Date.parse("2026-10-25T12:00:00Z"));
     expect(items).toHaveLength(1);
     expect(items[0].title).toBe("Un nouveau parc");
+  });
+
+  it("ignore les infolettres, les promotions et les offres d'emploi, et nettoie les titres", () => {
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+    const xml = feedXml(
+      `<item><title>Réveil Courrier du 3 novembre 2026</title><description>Chaque matin à 6 heures, une sélection des meilleurs articles de la presse étrangère pour bien commencer la journée.</description></item>`,
+      `<item><title>Ingénieur Systèmes Informatique</title><description>Droit de travailler : Sauf mention contraire dans l'annonce, les candidats doivent être légalement autorisés à travailler aux États-Unis.</description></item>`,
+      `<item><title>[VIDÉO] ▶️ Un incendie ravage un entrepôt de Laval</title><description>🇨🇦 ${SUMMARY}</description></item>`,
+    );
+    expect(parseRss(xml, "Canada", 1)).toEqual([
+      { title: "Un incendie ravage un entrepôt de Laval", summary: SUMMARY, source: "", topic: "Canada" },
+    ]);
+    expect(warn).toHaveBeenCalledWith("[news] articles sans nouvelle ignorés", { count: 2 });
+    expect(JSON.stringify(warn.mock.calls)).not.toContain("Réveil");
+  });
+});
+
+const NOW = Date.parse("2026-11-03T12:00:00Z");
+const HEADLINES = [
+  "Tempête de neige sur le Saguenay",
+  "Budget fédéral : les syndicats réagissent",
+  "Grève des infirmières à Gatineau",
+  "Nouveau pont à Trois-Rivières",
+  "Incendie dans un entrepôt de Laval",
+  "Élection partielle à Sherbrooke",
+  "Récolte de pommes record en Montérégie",
+  "Festival de jazz annulé à Rimouski",
+];
+const RADIO_CANADA: NewsPublisher = {
+  url: "https://rc.test/rubrique.xml", provider: "radio-canada", source: "Radio-Canada", featuredUrl: "https://rc.test/une.xml",
+};
+const LA_PRESSE: NewsPublisher = { url: "https://lp.test/rubrique.xml", provider: "lapresse", source: "La Presse" };
+
+const article = (title: string, hoursAgo = 2) =>
+  `<item><title>${title}</title><pubDate>${new Date(NOW - hoursAgo * 3_600_000).toUTCString()}</pubDate><description>${SUMMARY}</description></item>`;
+const feedXml = (...items: string[]) => `<rss><channel>${items.join("")}</channel></rss>`;
+const story = (title: string): NewsItem => ({ title, summary: SUMMARY, source: "s", topic: "t" });
+const nationalFeed = (...publishers: NewsPublisher[]): NewsFeed => ({
+  group: "national", label: "Canada", url: "https://news.google.com/rss/national",
+  alternateUrl: bingNewsUrl("Canada", "fr"), publishers,
+});
+
+/** Répond selon l'adresse demandée : un texte RSS, un code HTTP d'erreur ou une panne réseau. */
+function mockRoutes(routes: Record<string, string | number | Error>) {
+  const request = vi.fn<typeof fetch>(async (input) => {
+    const route = routes[String(input)];
+    if (route instanceof Error) throw route;
+    if (typeof route === "number") return new Response("Unavailable", { status: route });
+    return route === undefined ? new Response("Not found", { status: 404 }) : new Response(route);
+  });
+  vi.stubGlobal("fetch", request);
+  return request;
+}
+
+describe("actualités des éditeurs, classées selon leur une", () => {
+  beforeEach(() => {
+    vi.setSystemTime(NOW);
+    vi.spyOn(console, "warn").mockImplementation(() => {});
+  });
+
+  it("place les articles de la une avant le reste de la rubrique, sans changer l'ordre dans chaque groupe", async () => {
+    const fetch = mockRoutes({
+      [RADIO_CANADA.url]: feedXml(...HEADLINES.map((title) => article(title))),
+      [RADIO_CANADA.featuredUrl!]: feedXml(article(HEADLINES[5]), article(HEADLINES[4])),
+    });
+    const feed = nationalFeed(RADIO_CANADA);
+    const result = await fetchFeed(feed, "google", await fetchFeatured([feed]));
+    expect(result.items.map((item) => item.title)).toEqual([
+      HEADLINES[4], HEADLINES[5], HEADLINES[0], HEADLINES[1], HEADLINES[2], HEADLINES[3], HEADLINES[6], HEADLINES[7],
+    ]);
+    expect(result.items[0]).toEqual({
+      title: HEADLINES[4], summary: SUMMARY, source: "Radio-Canada", topic: "Canada",
+      publishedAt: NOW - 2 * 3_600_000, provider: "radio-canada",
+    });
+    expect(fetch.mock.calls.map(([url]) => url)).toEqual([RADIO_CANADA.featuredUrl, RADIO_CANADA.url]);
+  });
+
+  it("lit une seule fois la une partagée par plusieurs rubriques", async () => {
+    const fetch = mockRoutes({ [RADIO_CANADA.featuredUrl!]: feedXml(article(HEADLINES[0])) });
+    const other: NewsPublisher = { ...LA_PRESSE, featuredUrl: RADIO_CANADA.featuredUrl, provider: "radio-canada" };
+    const featured = await fetchFeatured([nationalFeed(RADIO_CANADA), nationalFeed(LA_PRESSE, other), { ...feed, publishers: undefined }]);
+    expect(featured).toEqual({ [RADIO_CANADA.featuredUrl!]: ["tempetedeneigesurlesaguenay"] });
+    expect(fetch).toHaveBeenCalledTimes(1);
+  });
+
+  it("n'indique aucun fournisseur de recherche quand seuls les éditeurs ont répondu", async () => {
+    mockRoutes({ [LA_PRESSE.url]: feedXml(...HEADLINES.map((title) => article(title))) });
+    const result = await fetchFeed(nationalFeed(LA_PRESSE));
+    expect(result).toMatchObject({ group: "national", label: "Canada" });
+    expect(result.provider).toBeUndefined();
+    expect(result.items.every((item) => item.provider === "lapresse")).toBe(true);
+  });
+
+  it("écarte les articles de plus de 36 heures", async () => {
+    mockRoutes({
+      [LA_PRESSE.url]: feedXml(
+        article("Vieille histoire de l'an dernier à Gaspé", 40),
+        article("Dossier de la veille à Alma", 30),
+        ...HEADLINES.slice(0, 5).map((title) => article(title)),
+      ),
+    });
+    const titles = (await fetchFeed(nationalFeed(LA_PRESSE))).items.map((item) => item.title);
+    expect(titles).toHaveLength(6);
+    expect(titles).toContain("Dossier de la veille à Alma");
+    expect(titles).not.toContain("Vieille histoire de l'an dernier à Gaspé");
+  });
+
+  it("garde l'ordre de la rubrique quand le flux de la une est indisponible", async () => {
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+    mockRoutes({
+      [RADIO_CANADA.url]: feedXml(...HEADLINES.map((title) => article(title))),
+      [RADIO_CANADA.featuredUrl!]: 503,
+    });
+    const result = await fetchFeed(nationalFeed(RADIO_CANADA), "google", await fetchFeatured([nationalFeed(RADIO_CANADA)]));
+    expect(result.items.map((item) => item.title)).toEqual(HEADLINES);
+    expect(warn).toHaveBeenCalledWith("[news] flux de la une indisponible", {
+      provider: "radio-canada", reason: "radio-canada RSS : HTTP 503",
+    });
+  });
+
+  it("garde les autres éditeurs quand l'un d'eux est en panne", async () => {
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+    mockRoutes({
+      [RADIO_CANADA.url]: 503,
+      [LA_PRESSE.url]: feedXml(...HEADLINES.slice(0, 6).map((title) => article(title))),
+    });
+    const result = await fetchFeed(nationalFeed(RADIO_CANADA, LA_PRESSE));
+    expect(result.items).toHaveLength(6);
+    expect(result.provider).toBeUndefined();
+    expect(warn).toHaveBeenCalledWith("[news] flux éditeur indisponible", {
+      group: "national", provider: "radio-canada", reason: "radio-canada RSS : HTTP 503",
+    });
+  });
+
+  it("passe en tête le sujet que plusieurs éditeurs reprennent", async () => {
+    mockRoutes({
+      [RADIO_CANADA.url]: feedXml(...HEADLINES.slice(0, 4).map((title) => article(title))),
+      [LA_PRESSE.url]: feedXml(
+        ...[HEADLINES[4], HEADLINES[5], HEADLINES[6], "Un nouveau pont sera construit à Trois-Rivières"].map((title) => article(title)),
+      ),
+    });
+    const result = await fetchFeed(nationalFeed(RADIO_CANADA, LA_PRESSE));
+    expect(result.items).toHaveLength(7);
+    expect(result.items[0]).toMatchObject({ title: HEADLINES[3], provider: "radio-canada" });
+  });
+
+  it("complète avec la recherche quand les éditeurs fournissent moins de six articles", async () => {
+    const national = nationalFeed(LA_PRESSE);
+    mockRoutes({
+      [LA_PRESSE.url]: feedXml(article(HEADLINES[0]), article(HEADLINES[1])),
+      [national.url]: feedXml(article(HEADLINES[1]), article(HEADLINES[2]), article(HEADLINES[3])),
+    });
+    const result = await fetchFeed(national);
+    expect(result.provider).toBe("google");
+    expect(result.items.map((item) => [item.title, item.provider])).toEqual([
+      [HEADLINES[0], "lapresse"], [HEADLINES[1], "lapresse"], [HEADLINES[2], "google"], [HEADLINES[3], "google"],
+    ]);
+  });
+
+  it("respecte le fournisseur de recherche de secours déjà retenu", async () => {
+    const national = nationalFeed(LA_PRESSE);
+    const fetch = mockRoutes({
+      [LA_PRESSE.url]: feedXml(article(HEADLINES[0])),
+      [national.alternateUrl!]: feedXml(article(HEADLINES[1])),
+    });
+    const result = await fetchFeed(national, "bing");
+    expect(result.provider).toBe("bing");
+    expect(result.items.map((item) => item.title)).toEqual([HEADLINES[0], HEADLINES[1]]);
+    expect(fetch.mock.calls.map(([url]) => url)).toEqual([LA_PRESSE.url, national.alternateUrl]);
+  });
+
+  it("garde les éditeurs, et évite Google ensuite, quand la recherche complémentaire échoue", async () => {
+    const national = nationalFeed(LA_PRESSE);
+    mockRoutes({
+      [LA_PRESSE.url]: feedXml(article(HEADLINES[0]), article(HEADLINES[1])),
+      [national.url]: 503,
+      [national.alternateUrl!]: 503,
+    });
+    const result = await fetchFeed(national);
+    expect(result.items).toHaveLength(2);
+    expect(result.provider).toBe("bing");
+  });
+
+  it("signale l'erreur quand ni les éditeurs ni la recherche ne répondent", async () => {
+    const national = nationalFeed(LA_PRESSE);
+    mockRoutes({ [LA_PRESSE.url]: 503, [national.url]: 503, [national.alternateUrl!]: 503 });
+    const error: unknown = await fetchFeed(national).catch((reason: unknown) => reason);
+    expect(error).toBeInstanceOf(AggregateError);
+    expect((error as AggregateError).message).toContain("Flux RSS indisponibles");
+    expect((error as AggregateError).errors.map((cause: Error) => cause.message)).toContain("lapresse RSS : HTTP 503");
+  });
+});
+
+describe("mergeNews", () => {
+  it("alterne les éditeurs en gardant l'ordre de chacun", () => {
+    const first = [story(HEADLINES[0]), story(HEADLINES[2])];
+    const second = [story(HEADLINES[1]), story(HEADLINES[4])];
+    expect(mergeNews([first, second], 10).map((item) => item.title)).toEqual([
+      HEADLINES[0], HEADLINES[1], HEADLINES[2], HEADLINES[4],
+    ]);
+  });
+
+  it("place en tête le sujet repris par plusieurs éditeurs, sans le répéter", () => {
+    const first = [story(HEADLINES[0]), story(HEADLINES[3])];
+    const second = [story(HEADLINES[1]), story("Un nouveau pont sera construit à Trois-Rivières")];
+    expect(mergeNews([first, second], 10).map((item) => item.title)).toEqual([HEADLINES[3], HEADLINES[0], HEADLINES[1]]);
+  });
+
+  it("ne compte pas deux fois un éditeur qui répète lui-même un sujet", () => {
+    const first = [story(HEADLINES[3]), story("Un nouveau pont sera construit à Trois-Rivières"), story(HEADLINES[0])];
+    const second = [story(HEADLINES[1])];
+    expect(mergeNews([first, second], 10).map((item) => item.title)).toEqual([HEADLINES[3], HEADLINES[1], HEADLINES[0]]);
+  });
+
+  it("limite le nombre d'articles retenus", () => {
+    expect(mergeNews([HEADLINES.map(story)], 3).map((item) => item.title)).toEqual(HEADLINES.slice(0, 3));
+    expect(mergeNews([], 3)).toEqual([]);
+  });
+});
+
+describe("featuredTitles", () => {
+  it("lit les titres d'un flux de une, sans accent, ponctuation ni étiquette de format", () => {
+    const xml = feedXml(article(HEADLINES[1]), article(`[VIDÉO] ${HEADLINES[0]}`));
+    expect(featuredTitles(xml)).toEqual(new Set(["budgetfederallessyndicatsreagissent", "tempetedeneigesurlesaguenay"]));
+    expect(featuredTitles(EMPTY_RSS)).toEqual(new Set());
   });
 });
