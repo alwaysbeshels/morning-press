@@ -32,6 +32,7 @@ type AccountResult =
 
 const KV_TTL_SECONDS = EDITION_RETENTION_DAYS * 86_400;
 const DAY_MS = 86_400_000;
+const MAX_NEWS_RETRIES = 4;
 
 export const editionKeys = {
   html: (id: string) => `edition/${id}/html`,
@@ -158,6 +159,7 @@ export class EditionWorkflow extends WorkflowEntrypoint<Env, EditionParams> {
     const news: FeedResult[] = [];
     let newsProvider: "google" | "bing" = "google";
     // fetchFeed borne ses secours ; les rejouer doublerait le budget de sous-requêtes.
+    const failedFeeds: Array<{ index: number; feed: (typeof feeds)[number] }> = [];
     for (const [index, feed] of feeds.entries()) {
       try {
         const result = await step.do(
@@ -170,13 +172,32 @@ export class EditionWorkflow extends WorkflowEntrypoint<Env, EditionParams> {
         if (result.provider === "bing") newsProvider = "bing";
       } catch (error) {
         newsProvider = "bing";
-        const detail = feed.label || t.newsSections[feed.group];
-        errors.push({ ...sourceError(`${t.sourceNames.news} (${detail})`, "news"), detail });
+        failedFeeds.push({ index, feed });
         console.error("[workflow] flux d'actualités indisponible", {
           index: index + 1,
           group: feed.group,
           reason: error instanceof Error ? error.message : "erreur inconnue",
         });
+      }
+    }
+    // Google et Bing limitent les rafales : une pause puis une seule reprise récupère presque toujours les rubriques manquées.
+    // Le nombre de reprises est borné pour rester sous les 50 sous-requêtes de l'édition.
+    if (failedFeeds.length > 0) {
+      await step.sleep("pause avant reprise des actualités", "30 seconds");
+    }
+    for (const [attempt, { index, feed }] of failedFeeds.entries()) {
+      try {
+        if (attempt >= MAX_NEWS_RETRIES) throw new Error("reprise non tentée : budget de sous-requêtes");
+        news.push(
+          await step.do(
+            `actualités ${index + 1} (reprise)`,
+            { retries: { limit: 0, delay: "5 seconds" }, timeout: "60 seconds", sensitive: "output" },
+            () => fetchFeed(feed, "google", featured),
+          ),
+        );
+      } catch {
+        const detail = feed.label || t.newsSections[feed.group];
+        errors.push({ ...sourceError(`${t.sourceNames.news} (${detail})`, "news"), detail });
       }
     }
 

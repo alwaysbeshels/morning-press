@@ -28,7 +28,7 @@ const DETAILS: Record<NewspaperStyle, string> = {
     .masthead, .minihead { border-top: 3px double var(--accent); border-bottom: 4px double var(--accent); padding-top: 4pt; }
     .daily .columns h2, .news-group h3 { font-variant: small-caps; letter-spacing: 0.025em; }
     .forecast { border-top-style: dashed; }
-    .game-slot { border-top-style: double; }
+    .game-slot, .front-feature { border-top-style: double; }
   `,
   minimal: `
     .masthead h1 { text-align: left; font-size: 32pt; letter-spacing: -0.05em; font-weight: 700; }
@@ -37,7 +37,7 @@ const DETAILS: Record<NewspaperStyle, string> = {
     .dateline { border: 0; letter-spacing: 0.025em; }
     .daily .columns h2, .news-group h3 { font-size: 10.5pt; letter-spacing: 0.04em; }
     .highlight { border: 0; border-left: 2pt solid var(--accent); }
-    .game-slot { border-top: 1px solid var(--line); }
+    .game-slot, .front-feature { border-top: 1px solid var(--line); }
   `,
 };
 
@@ -51,7 +51,7 @@ body {
   --heading-font: ${palette.headingFont};
   color: var(--ink);
 }
-.masthead, .dateline, .subhead, .minihead, footer, .game-slot { border-color: var(--accent); }
+.masthead, .dateline, .subhead, .minihead, footer, .game-slot, .front-feature { border-color: var(--accent); }
 .masthead h1, .daily .columns h2, .news-group h3, .minihead h2, .g-title {
   color: var(--accent); font-family: var(--heading-font); border-color: var(--accent);
 }
@@ -70,7 +70,7 @@ ${design.colorIntensity === "expressive" ? `
 .minihead h2 { color: #ffffff; }
 .daily .columns h2, .news-group h3 { background: var(--wash); padding: 0 4pt 2pt; border-bottom: 1.5px solid var(--secondary); }
 .forecast { background: var(--wash); --wx-bg: var(--wash); padding: 5pt 5pt 0; border: 0; }
-.game-slot { border-top: 3px solid var(--secondary); }
+.game-slot, .front-feature { border-top: 3px solid var(--secondary); }
 .g-title { background: var(--wash); padding: 0 5pt 2pt; border-bottom: 1.5px solid var(--accent); }
 .solution-slot { border-color: var(--secondary); }
 ` : ""}

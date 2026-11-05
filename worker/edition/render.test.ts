@@ -104,6 +104,24 @@ describe("renderNewspaper", () => {
     expect(html).not.toContain("Courriels");
   });
 
+  it("ajoute l'heure de génération à la date du journal", () => {
+    // 10 h 30 UTC : 6 h 30 à Toronto (heure avancée de l'Est)
+    const issue = 'Samedi 31 octobre 2026 · <span class="gen-time">6\u00a0h\u00a030</span>';
+    const html = renderNewspaper(base);
+    expect(html).toContain(`<div>${issue}</div>`);
+    expect(html.match(/class="gen-time"/g)).toHaveLength(1);
+    // Le titre de l'onglet garde la date seule.
+    expect(html).toContain("<title>Mon Journal du Matin — Samedi 31 octobre 2026</title>");
+  });
+
+  it("affiche l'heure de génération en anglais et dans le fuseau du journal", () => {
+    expect(renderNewspaper({ ...base, language: "en" }))
+      .toContain('<div>Saturday, October 31, 2026 · <span class="gen-time">6:30\u00a0a.m.</span></div>');
+    // Le même instant donne 3 h 30 à Vancouver.
+    expect(renderNewspaper({ ...base, timezone: "America/Vancouver" }))
+      .toContain('<div>Samedi 31 octobre 2026 · <span class="gen-time">3\u00a0h\u00a030</span></div>');
+  });
+
   it("place la lecture rapide à gauche quand les courriels sont désactivés", () => {
     const html = renderNewspaper({
       ...base,
@@ -132,13 +150,13 @@ describe("renderNewspaper", () => {
     expect(html).toContain("Laval");
     expect(html).toContain("Nouveau pont &lt;ouvert&gt;");
     expect(html).toContain("Mes sujets");
-    expect(html).toContain('<div class="game-slot"><div class="g-test">grille</div></div>');
+    expect(html).toContain('<div class="front-feature"><div class="game-slot"><div class="g-test">grille</div></div>');
     const [pageOne, pageTwo] = html.split('<main class="page page-2">');
     expect(pageOne).toContain('class="g-test"');
+    expect(pageOne).toContain("Le pont réduit le trajet &lt;prévu&gt; &amp; facilite les déplacements.");
     expect(pageOne).not.toContain('class="g-test-answer"');
     expect(pageTwo).not.toContain('class="g-test"');
     expect(pageTwo).toContain('<div class="solution-slot"><div class="g-test-answer">solution</div></div>');
-    expect(pageTwo).toContain("Le pont réduit le trajet &lt;prévu&gt; &amp; facilite les déplacements.");
     expect(html).toContain('class="news-columns"');
   });
 
@@ -152,6 +170,52 @@ describe("renderNewspaper", () => {
     expect(html).toContain('data-news-column="2"');
     expect(html).toContain('data-news-column="3"');
     expect(html).not.toContain("game-slot\"");
+  });
+
+  describe("actualités locales", () => {
+    const newsGroups: Newspaper["newsGroups"] = [
+      { key: "local", label: "Laval", items: ["Un pont", "Une école", "Un marché"].map((title) => ({ title, summary: `${title} : le projet avance selon les plans annoncés.`, source: "TVA", topic: "Laval" })) },
+      { key: "provincial", label: "", items: [{ title: "Budget du Québec", summary: "Le gouvernement présente ses priorités pour la prochaine année.", source: "CBC", topic: "" }] },
+    ];
+    const paper = (kind: "sudoku" | "crossword" | null, overrides: Partial<Newspaper> = {}): Newspaper => ({
+      ...base, pages: 2, newsGroups,
+      game: kind ? { kind, html: '<div class="g-test">grille</div>', solutionHtml: "<div>solution</div>" } : null,
+      ...overrides,
+    });
+    const columnOne = (html: string) => html.split('data-news-column="2"')[0].split('data-news-column="1"')[1];
+
+    it("imprime tous les articles locaux à côté du sudoku, sans les couper par CSS", () => {
+      const html = renderNewspaper(paper("sudoku"));
+      const [pageOne, pageTwo] = html.split('<main class="page page-2">');
+      const feature = pageOne.split('<div class="front-local-news">')[1];
+      for (const title of ["Un pont", "Une école", "Un marché"]) expect(feature).toContain(title);
+      expect(pageTwo).not.toContain("Un pont");
+      expect(pageTwo).toContain("Budget du Québec");
+      expect(html).not.toMatch(/\.front-local-news\s*\{[^}]*(?:max-height|overflow)/);
+    });
+
+    it.each([
+      ["sans jeu", null],
+      ["avec des mots croisés, qui exigent toute la largeur", "crossword" as const],
+    ])("place la rubrique locale en tête de la colonne 1 de la page 2 %s", (_label, kind) => {
+      const html = renderNewspaper(paper(kind));
+      expect(html).not.toContain('class="front-feature"');
+      expect(html).not.toContain('class="front-local-news"');
+      const column = columnOne(html);
+      expect(column).toContain("Un marché");
+      expect(column.indexOf('data-news-group="local"')).toBeLessThan(column.indexOf('data-news-group="provincial"'));
+      if (kind) expect(html).toContain('<div class="game-slot"><div class="g-test">grille</div></div>');
+    });
+
+    it("garde le jeu en pleine largeur sans article local ou sans actualités", () => {
+      const withoutLocal = renderNewspaper(paper("sudoku", { newsGroups: newsGroups.slice(1) }));
+      expect(withoutLocal).not.toContain('class="front-feature"');
+      expect(withoutLocal).toContain('<div class="game-slot"><div class="g-test">grille</div></div>');
+      const newsOff = renderNewspaper(paper("sudoku", { newsEnabled: false }));
+      expect(newsOff).not.toContain('class="front-feature"');
+      expect(newsOff).not.toContain("Un pont");
+      expect(newsOff).not.toContain("Aucune actualité");
+    });
   });
 
   it("signale les éléments personnels omis dans les deux langues", () => {

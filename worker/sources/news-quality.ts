@@ -20,7 +20,7 @@ export function cleanNewsText(text: string): string {
     .trim();
 }
 
-export type NewsQualityIssue = "digest" | "promo" | "job";
+export type NewsQualityIssue = "digest" | "promo" | "job" | "teaser";
 
 /** Infolettres, revues de presse, fils en direct et rubriques récurrentes qui n'annoncent aucune nouvelle. */
 const DIGEST_TITLE = new RegExp(
@@ -35,6 +35,9 @@ const PROMO_SUMMARY = [
   /\bpour bien (?:commencer|demarrer) (?:la|votre|ta) (?:journee|matinee|semaine)\b/,
   /\bstart your (?:day|morning|week)\b/,
   /\b(?:abonnez-vous|inscrivez-vous|recevez chaque|subscribe to our|sign up for our)\b/,
+  // Consentement à l'infolettre que certains éditeurs mettent à la place du descriptif.
+  /\ben m['’]abonnant\b/,
+  /\bj['’]accepte de recevoir\b/,
 ];
 // « Chaque matin, des milliers de gens… » peut ouvrir un vrai reportage : il faut aussi un mot de produit.
 const RECURRING_OPENER = /^(?:chaque|tous les|toutes les|every) (?:matin|jour|soir|semaine|weekday|morning|day|evening|week)\b/;
@@ -49,11 +52,41 @@ const JOB_AD = [
   /\b(?:nous recrutons|nous embauchons|apply (?:now|today)|postulez (?:maintenant|des maintenant|aujourd['’]hui))\b/,
 ];
 
+/**
+ * Titres qui promettent un contenu au lieu de le donner (« Voici les entraves à éviter », « Here's what to know ») :
+ * un descriptif de deux phrases ne peut pas tenir la promesse, il faudrait ouvrir l'article.
+ */
+const TEASER_LEAD = /^(?:voici|voila|decouvrez|regardez|ecoutez|lisez|consultez|here(?:['’]?s| is| are))\b/;
+// L'annonce peut suivre un séparateur : « Circulation : voici les entraves », « Météo | Voici… ».
+const TITLE_SEGMENT = /\s*[|:–—]\s*|\s+-\s+/;
+
+function isTeaserTitle(normalizedTitle: string): boolean {
+  return normalizedTitle.split(TITLE_SEGMENT).some((part) => TEASER_LEAD.test(part));
+}
+
+/**
+ * Phrases d'un descriptif qui renvoient à l'article ou au site de l'éditeur au lieu de résumer.
+ * Les formules d'invitation s'ouvrent la phrase : « veulent en savoir plus » reste une phrase de nouvelle.
+ */
+const REFERRAL_SENTENCE = [
+  /^(?:voici|voila|decouvrez|consultez|lisez|regardez|ecoutez|suivez|cliquez|retrouvez|visionnez)\b/,
+  /^(?:(?:pour )?en savoir plus|pour tout savoir|la suite (?:ici|sur|dans|de l['’]article))\b/,
+  /^(?:here(?:['’]?s| is| are)|read (?:the|our|more|on)|click|watch (?:the|our|now|live|video|here)|listen (?:to|now|here)|find out|learn more|see (?:the|our|more|full)|check out)\b/,
+  /\b(?:lire la suite|lisez la suite|voir la suite|cliquez (?:ici|sur)|dans (?:notre|cet) article|ci-dessous|click here|continue reading|read the full|for the full (?:story|article))\b/,
+];
+
+/** Vrai si la phrase renvoie à l'article complet plutôt que d'apprendre quelque chose. */
+export function isReferralSentence(sentence: string): boolean {
+  const normalized = normalizeText(sentence);
+  return REFERRAL_SENTENCE.some((pattern) => pattern.test(normalized));
+}
+
 /** Raison pour laquelle un article ne doit pas figurer dans le journal, ou null s'il est exploitable. */
 export function newsQualityIssue(title: string, summary: string): NewsQualityIssue | null {
   const normalizedTitle = normalizeText(title);
   const normalizedSummary = normalizeText(summary);
   if (DIGEST_TITLE.test(normalizedTitle)) return "digest";
+  if (isTeaserTitle(normalizedTitle)) return "teaser";
   if (PROMO_SUMMARY.some((pattern) => pattern.test(normalizedSummary))) return "promo";
   if (RECURRING_OPENER.test(normalizedSummary) && RECURRING_PRODUCT.test(normalizedSummary)) return "promo";
   if (JOB_AD.some((pattern) => pattern.test(normalizedTitle) || pattern.test(normalizedSummary))) return "job";

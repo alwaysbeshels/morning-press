@@ -2,7 +2,7 @@ import type { Language, NewsSectionKey, Preferences } from "../../shared/types";
 import { NEWS_SECTIONS } from "../../shared/types";
 import { normalizeText } from "../edition/text";
 import type { NewsGroup, NewsItem, NewsProvider } from "../edition/types";
-import { cleanNewsText, newsQualityIssue, sameStory, titleTokens } from "./news-quality";
+import { cleanNewsText, isReferralSentence, newsQualityIssue, sameStory, titleTokens } from "./news-quality";
 
 /** Brèves conservées par flux (assez pour remplir la page 2). */
 export const ITEMS_PER_FEED = 16;
@@ -407,6 +407,8 @@ export function newsSummary(description: string, title: string, source = ""): st
     const sentence = segment.trim();
     // Ne pas compléter artificiellement un extrait coupé par le fournisseur.
     if (!/[.!?]["»”']?$/.test(sentence) || /(?:\.{2,}|…)\s*["»”']?$/.test(sentence)) break;
+    // « Voici… », « Lisez la suite » : un renvoi à l'article n'est pas un résumé.
+    if (isReferralSentence(sentence)) continue;
     if ([...sentences, sentence].join(" ").length > NEWS_SUMMARY_MAX_LENGTH) break;
     sentences.push(sentence);
     if (sentences.length === 2) break;

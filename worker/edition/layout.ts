@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { newsProviderName } from "./i18n";
-import { NEWS_COLUMNS, PAGE_ONE_SECTIONS, pageOneSectionKeys, renderNewspaper } from "./render";
+import { PAGE_ONE_SECTIONS, newsColumns, pageOneSectionKeys, renderNewspaper } from "./render";
 import type { Newspaper } from "./types";
 
 // Script autonome : Browser Run ou iframe de démonstration, jamais une édition publiée.
@@ -11,6 +11,20 @@ export const NEWS_LAYOUT_SCRIPT = String.raw`(async () => {
       link.addEventListener('error', () => reject(new Error('Unable to load print stylesheet')), { once: true });
     })));
   await document.fonts.ready;
+  // À côté du jeu, on ne garde que les articles entiers qui tiennent dans la hauteur de la grille.
+  const feature = document.querySelector('.front-feature');
+  const local = feature?.querySelector('[data-news-group="local"]');
+  if (local) {
+    const list = local.querySelector('ul');
+    const items = [...list.querySelectorAll('[data-news-item]')];
+    items.forEach(item => item.remove());
+    const budget = feature.querySelector('.game-slot').getBoundingClientRect().height;
+    for (const item of items) {
+      list.append(item);
+      if (local.getBoundingClientRect().height > budget + 0.5) item.remove();
+    }
+    if (!list.children.length) local.remove();
+  }
   const page = document.querySelector('.page-1.daily');
   if (page) {
     await Promise.all([...page.querySelectorAll('img')].map(image => image.decode()));
@@ -128,20 +142,11 @@ export const NEWS_LAYOUT_SCRIPT = String.raw`(async () => {
       for (const item of group.items) if (!item.isConnected && add(group, item)) return true;
       return false;
     };
-    if (column.dataset.newsColumn === '3') {
-      const international = groups.find(g => g.section.dataset.newsGroup === 'international');
-      const topics = groups.find(g => g.section.dataset.newsGroup === 'topics');
-      if (international) addOne(international);
-      if (topics) for (const item of topics.items) add(topics, item);
-      // Une seconde internationale ne prend jamais la place d'un sujet personnel qui tient.
-      if (international && international.count < 2) addOne(international);
-    } else {
-      for (const group of groups) addOne(group);
-      const remaining = groups.flatMap(group => group.items.map((item, index) => ({ group, item, index })));
-      // Les articles arrivent classés (la une d'abord) : on remplit par rang, pas par date de parution.
-      remaining.sort((a, b) => a.index - b.index || a.group.order - b.group.order);
-      for (const { group, item } of remaining) if (!item.isConnected) add(group, item);
-    }
+    for (const group of groups) addOne(group);
+    const remaining = groups.flatMap(group => group.items.map((item, index) => ({ group, item, index })));
+    // Les articles arrivent classés (la une d'abord) : on remplit par rang, pas par date de parution.
+    remaining.sort((a, b) => a.index - b.index || a.group.order - b.group.order);
+    for (const { group, item } of remaining) if (!item.isConnected) add(group, item);
     for (const group of groups) if (!group.count) group.section.remove();
   }
   if (columns) columns.dataset.newsLayout = 'ready';
@@ -193,7 +198,7 @@ export function applyNewsLayout(paper: Newspaper, measuredHtml: string): Newspap
   const newsGroups = paper.newsGroups
     .map((group) => ({ ...group, items: group.items.filter((_, index) => selected.has(`${group.key}:${index}`)) }))
     .filter((group) => group.items.length > 0);
-  for (const keys of NEWS_COLUMNS) {
+  for (const keys of newsColumns(paper)) {
     const belongs = (key: string) => keys.some((value) => value === key);
     if (paper.newsGroups.some((group) => belongs(group.key)) && !newsGroups.some((group) => belongs(group.key))) {
       throw new Error("Aucun article ne tient dans une colonne d'actualités");

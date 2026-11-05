@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { cleanNewsText, newsQualityIssue, sameStory, storyTokens, titleTokens } from "./news-quality";
+import { cleanNewsText, isReferralSentence, newsQualityIssue, sameStory, storyTokens, titleTokens } from "./news-quality";
 
 describe("cleanNewsText", () => {
   it("retire les pictogrammes, les drapeaux et les sélecteurs de variation", () => {
@@ -57,6 +57,31 @@ describe("newsQualityIssue", () => {
       .toBe("job");
   });
 
+  it("écarte la formule de consentement à l'infolettre qui remplace parfois le descriptif", () => {
+    expect(newsQualityIssue("Quelles sont les entraves routières de la fin de semaine?", "En m’abonnant, j’accepte de recevoir des communications par courriel de Cogeco Média et de ses sociétés affiliées."))
+      .toBe("promo");
+  });
+
+  it("écarte les titres qui promettent un contenu qu'un résumé ne peut pas donner", () => {
+    const summary = "Les usagers de la route vont devoir prendre leur mal en patience en raison des entraves prévues sur certains axes routiers.";
+    expect(newsQualityIssue("Voici les entraves à éviter durant le week-end", summary)).toBe("teaser");
+    expect(newsQualityIssue("Voilà ce qui attend les automobilistes", summary)).toBe("teaser");
+    expect(newsQualityIssue("Découvrez les nouveaux parcs de Laval", summary)).toBe("teaser");
+    expect(newsQualityIssue("Circulation : voici les entraves de la fin de semaine", summary)).toBe("teaser");
+    expect(newsQualityIssue("Circulation | Voici les entraves de la fin de semaine", summary)).toBe("teaser");
+    expect(newsQualityIssue("Here's what to know about the road closures", summary)).toBe("teaser");
+    expect(newsQualityIssue("Road closures - here are the detours this weekend", summary)).toBe("teaser");
+  });
+
+  it("garde les titres où ces mots ne sont qu'un détail ou une partie d'un autre mot", () => {
+    const summary = "Les usagers de la route vont devoir prendre leur mal en patience en raison des entraves prévues sur certains axes routiers.";
+    expect(newsQualityIssue("Un camionneur découvre un tunnel sous l'autoroute 40", summary)).toBeNull();
+    expect(newsQualityIssue("Découverte d'un trésor romain près de Québec", summary)).toBeNull();
+    expect(newsQualityIssue("Les voici de retour après dix ans d'absence", summary)).toBeNull();
+    expect(newsQualityIssue("Heresy trial opens in Rome", summary)).toBeNull();
+    expect(newsQualityIssue("Fermeture de l'autoroute 40 ce week-end", summary)).toBeNull();
+  });
+
   it("garde les vraies nouvelles, même si elles ressemblent à ces catégories", () => {
     expect(newsQualityIssue("Pénurie de chauffeurs", "Chaque matin, des milliers de Montréalais prennent l'autobus pour se rendre au travail dans le centre-ville."))
       .toBeNull();
@@ -66,6 +91,35 @@ describe("newsQualityIssue", () => {
       .toBeNull();
     expect(newsQualityIssue("Le dixième anniversaire de l'attentat", "Chaque année, le 11 septembre, les familles des victimes se rassemblent pour une cérémonie commémorative sobre."))
       .toBeNull();
+  });
+});
+
+describe("isReferralSentence", () => {
+  it("reconnaît les phrases qui renvoient à l'article ou au site de l'éditeur", () => {
+    for (const sentence of [
+      "Voici les détails du projet.",
+      "Découvrez tous les détails dans notre article.",
+      "Consultez l'article complet pour connaître les entraves.",
+      "Pour en savoir plus, cliquez ici.",
+      "Lisez la suite sur notre site.",
+      "La suite sur lapresse.ca.",
+      "Les entraves sont présentées ci-dessous.",
+      "Here's everything you need to know.",
+      "Read more on our website.",
+      "Click here for the full story.",
+      "Visit our website for the full story.",
+    ]) expect(isReferralSentence(sentence), sentence).toBe(true);
+  });
+
+  it("garde les phrases de nouvelle qui contiennent ces mots", () => {
+    for (const sentence of [
+      "Les familles des victimes veulent en savoir plus sur les événements.",
+      "La suite des négociations dépendra de la réponse du syndicat.",
+      "Les résidents seront consultés avant le début des travaux.",
+      "Le maire a découvert l'ampleur du déficit en lisant le rapport.",
+      "Parents want to read more about the school's new policy before it takes effect.",
+      "Residents want to find out more about the plan, but officials said the full story has yet to emerge.",
+    ]) expect(isReferralSentence(sentence), sentence).toBe(false);
   });
 });
 

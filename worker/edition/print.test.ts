@@ -208,6 +208,7 @@ describe.skipIf(!process.env.CHROME_PATH)("PDF Lettre dans Chrome", () => {
         omitted: number; rotation: string | null; ink: string; gridInks: string[];
         firstPageColumns: number; forecastPeriods: number; imagesLoaded: boolean; pageOneText: string;
         columns: { groups: string[]; fill: number; bottom: number; answers: number; answersInside: boolean }[];
+        frontLocal: { articles: number; bottom: number; gameBottom: number; clamp: string } | null;
       } } }>("Runtime.evaluate", {
         awaitPromise: true,
         returnByValue: true,
@@ -250,6 +251,17 @@ describe.skipIf(!process.env.CHROME_PATH)("PDF Lettre dans Chrome", () => {
             imagesLoaded: [...document.images].every(image => image.complete && image.naturalWidth > 0),
             pageOneText: document.querySelector('.page-1').innerText,
             rotation: solution ? getComputedStyle(solution).transform : null,
+            frontLocal: (() => {
+              const block = document.querySelector('.front-feature .front-local-news');
+              if (!block) return null;
+              const style = getComputedStyle(block);
+              return {
+                articles: block.querySelectorAll('li').length,
+                bottom: Math.max(0, ...[...block.querySelectorAll('li')].map(li => li.getBoundingClientRect().bottom)),
+                gameBottom: document.querySelector('.front-feature .game-slot').getBoundingClientRect().bottom,
+                clamp: style.maxHeight + '/' + style.overflow,
+              };
+            })(),
             columns: [...document.querySelectorAll('.news-column')].map(column => {
               const stack = column.querySelector('.news-stack').getBoundingClientRect();
               const sections = [...column.querySelectorAll('.news-group')];
@@ -302,11 +314,23 @@ describe.skipIf(!process.env.CHROME_PATH)("PDF Lettre dans Chrome", () => {
         expect(columns.map((column) => column.answers)).toEqual([0, 0, kind ? 1 : 0]);
         expect(columns.every((column) => column.answersInside)).toBe(true);
         if (profile !== "empty") {
+          // Seul le sudoku laisse la moitié de la page 1 aux actualités locales ; sinon elles ouvrent la colonne 1.
+          const besideGame = kind === "sudoku";
           expect(columns.map((column) => column.groups)).toEqual([
-            ["local", "provincial"], ["national", "american"], ["international", "topics"],
+            besideGame ? ["provincial", "national"] : ["local", "provincial", "national"], ["american", "international"], ["topics"],
           ]);
+          const frontLocal = metrics.result.value.frontLocal;
+          if (besideGame) {
+            // Articles entiers seulement : aucun plafond CSS, et rien ne dépasse la hauteur de la grille.
+            expect(frontLocal).not.toBeNull();
+            expect(frontLocal!.clamp).toBe("none/visible");
+            expect(frontLocal!.bottom).toBeLessThanOrEqual(frontLocal!.gameBottom + 1);
+            expect(frontLocal!.articles).toBe(paper.newsGroups.find((group) => group.key === "local")!.items.length);
+            expect(frontLocal!.articles).toBeGreaterThanOrEqual(profile === "uneven" ? 1 : dense ? 2 : 3);
+          } else {
+            expect(frontLocal).toBeNull();
+          }
           for (const column of columns) expect(column.fill).toBeGreaterThan(dense ? 0.7 : 0.85);
-          expect(paper.newsGroups.find((group) => group.key === "international")!.items.length).toBeLessThanOrEqual(2);
           expect(metrics.result.value.news).toBeGreaterThan(dense ? 8 : 9);
           if (!dense) expect(paper.newsGroups.find((group) => group.key === "topics")!.items.length).toBeGreaterThan(2);
           if (profile === "uneven") {

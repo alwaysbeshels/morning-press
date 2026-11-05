@@ -275,6 +275,38 @@ describe("résumés des actualités", () => {
     expect(items[0].title).toBe("Un nouveau parc");
   });
 
+  it("saute les phrases qui renvoient à l'article, et écarte le descriptif qui n'est qu'un renvoi", () => {
+    expect(newsSummary(`Voici les détails du projet. ${SUMMARY} Lisez la suite sur notre site.`, "Un parc")).toBe(SUMMARY);
+    expect(newsSummary(`${SUMMARY} Pour en savoir plus, consultez notre article complet.`, "Un parc")).toBe(SUMMARY);
+    expect(newsSummary("Découvrez tous les détails de ce projet dans notre article complet publié aujourd'hui.", "Un parc")).toBe("");
+    expect(newsSummary("Here's everything you need to know about the new park project in our full story.", "A park")).toBe("");
+    // Une phrase de nouvelle qui contient « en savoir plus » reste un résumé.
+    const wanting = "Les familles des victimes réclament depuis des mois une enquête publique pour en savoir plus sur les événements.";
+    expect(newsSummary(wanting, "Enquête")).toBe(wanting);
+  });
+
+  it("ignore les titres qui promettent un contenu qu'un descriptif ne peut pas donner", () => {
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+    const xml = feedXml(
+      `<item><title>Voici les entraves à éviter durant le week-end</title><description>${SUMMARY}</description></item>`,
+      `<item><title>Here's what to know about the road closures</title><description>${SUMMARY}</description></item>`,
+      `<item><title>Fermeture de l'autoroute 40 ce week-end</title><description>${SUMMARY}</description></item>`,
+    );
+    expect(parseRss(xml, "Montréal", 5).map((item) => item.title)).toEqual(["Fermeture de l'autoroute 40 ce week-end"]);
+    expect(warn).toHaveBeenCalledWith("[news] articles sans nouvelle ignorés", { count: 2 });
+    expect(JSON.stringify(warn.mock.calls)).not.toContain("entraves");
+  });
+
+  it("ignore la formule de consentement à l'infolettre qui remplace le descriptif", () => {
+    vi.spyOn(console, "warn").mockImplementation(() => {});
+    const consent = "En m’abonnant, j’accepte de recevoir des communications par courriel de Cogeco Média et de ses sociétés affiliées.";
+    const xml = feedXml(
+      `<item><title>Quelles sont les entraves routières de la fin de semaine?</title><description>${consent}</description></item>`,
+      article("Fermeture de l'autoroute 40 ce week-end"),
+    );
+    expect(parseRss(xml, "Montréal", 5).map((item) => item.title)).toEqual(["Fermeture de l'autoroute 40 ce week-end"]);
+  });
+
   it("ignore les infolettres, les promotions et les offres d'emploi, et nettoie les titres", () => {
     const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
     const xml = feedXml(

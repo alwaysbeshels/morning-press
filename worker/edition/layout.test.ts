@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 import { DEFAULT_PREFERENCES } from "../../shared/types";
 import { applyNewsLayout, applyPageOneLayout, layoutNewspaper, NEWS_LAYOUT_SCRIPT } from "./layout";
-import { pageOneSectionKeys } from "./render";
+import { pageOneSectionKeys, renderNewspaper } from "./render";
 import { buildNewspaper } from "./select";
 
 function fixture() {
@@ -9,7 +9,7 @@ function fixture() {
     generatedAt: Date.parse("2026-11-01T12:00:00Z"), timezone: "America/Toronto",
     preferences: { ...DEFAULT_PREFERENCES, pages: 2 }, accounts: [], weather: null,
     unavailableSources: [], news: [{
-      group: "local", label: "Montréal", items: [
+      group: "provincial", label: "Québec", items: [
         { title: "Un parc", summary: "La ville aménagera un parc accessible à tous les résidents.", source: "Source A", topic: "Montréal", provider: "bing" },
         { title: "Un transport", summary: "La ligne desservira un nouveau quartier dès cet automne.", source: "Source B", topic: "Montréal", provider: "lapresse" },
       ],
@@ -17,7 +17,7 @@ function fixture() {
   });
 }
 
-const measured = '<div data-news-layout="ready"><li data-news-item="local:1"></li></div>';
+const measured = '<div data-news-layout="ready"><li data-news-item="provincial:1"></li></div>';
 const measuredPageOne = `<main data-page-layout="ready" data-page-columns="${encodeURIComponent(JSON.stringify([pageOneSectionKeys(fixture()), []]))}"></main>`;
 
 describe("mise en page mesurée", () => {
@@ -31,8 +31,8 @@ describe("mise en page mesurée", () => {
   it.each([
     "<html>Sans marqueur de fin</html>",
     '<div data-news-layout="ready"></div>',
-    '<div data-news-layout="ready"><li data-news-item="local:42"></li></div>',
-    '<div data-news-layout="ready"><li data-news-item="local:1"></li><li data-news-item="local:1"></li></div>',
+    '<div data-news-layout="ready"><li data-news-item="provincial:42"></li></div>',
+    '<div data-news-layout="ready"><li data-news-item="provincial:1"></li><li data-news-item="provincial:1"></li></div>',
   ])("refuse une mesure invalide plutôt que de publier un journal tronqué", (html) => {
     expect(() => applyNewsLayout(fixture(), html)).toThrow();
   });
@@ -74,5 +74,47 @@ describe("mise en page mesurée", () => {
     expect(() => applyPageOneLayout(paper, measured)).toThrow();
     expect(() => applyPageOneLayout(paper, measuredPageOne + '<li data-page-item="priorities:55"></li>')).toThrow();
     expect(() => applyPageOneLayout(paper, `<main data-page-layout="ready" data-page-columns="${encodeURIComponent('[["events"],[]]')}"></main>`)).toThrow();
+  });
+
+  describe("actualités locales de la première page", () => {
+    const local = {
+      group: "local" as const, label: "Laval", items: [
+        { title: "Un pont", summary: "Le pont rouvrira cette semaine après des travaux majeurs.", source: "Source C", topic: "Laval" },
+        { title: "Une école", summary: "L'école accueillera deux cents élèves de plus à la rentrée.", source: "Source D", topic: "Laval" },
+        { title: "Un marché", summary: "Le marché public prolongera ses heures d'ouverture jusqu'en décembre.", source: "Source E", topic: "Laval" },
+      ],
+    };
+    const beside = (game: boolean, kind: "sudoku" | "crossword" = "sudoku") => {
+      const base = fixture();
+      return buildNewspaper({
+        generatedAt: base.generatedAt, timezone: base.timezone,
+        preferences: { ...DEFAULT_PREFERENCES, pages: 2, gameEnabled: game }, accounts: [], weather: null, unavailableSources: [],
+        news: [{ group: "provincial", label: "Québec", items: base.newsGroups[0].items }, local],
+        game: game ? { kind, html: "<div>grille</div>", solutionHtml: "<div>solution</div>" } : null,
+      });
+    };
+    const measuredBeside = (ids: string[]) => `<div data-news-layout="ready">${ids.map((id) => `<li data-news-item="${id}"></li>`).join("")}</div>`;
+
+    it("conserve les articles entiers mesurés à côté du jeu, sans exiger de colonne locale à la page 2", () => {
+      const printed = applyNewsLayout(beside(true), measuredBeside(["local:0", "local:2", "provincial:1"]));
+      expect(printed.newsGroups.find((group) => group.key === "local")!.items.map((item) => item.title)).toEqual(["Un pont", "Un marché"]);
+      expect(renderNewspaper(printed)).toContain('<div class="front-local-news">');
+    });
+
+    it("rend le jeu pleine largeur quand aucun article local n'a tenu à côté", () => {
+      const printed = applyNewsLayout(beside(true), measuredBeside(["provincial:0"]));
+      expect(printed.newsGroups.map((group) => group.key)).toEqual(["provincial"]);
+      const html = renderNewspaper(printed);
+      expect(html).not.toContain('class="front-feature"');
+      expect(html).toContain('<div class="game-slot">');
+    });
+
+    it.each([
+      ["sans jeu", beside(false)],
+      ["avec un jeu qui exige toute la largeur", beside(true, "crossword")],
+    ])("traite la rubrique locale comme une rubrique de la colonne 1 %s", (_label, paper) => {
+      expect(applyNewsLayout(paper, measuredBeside(["local:1"])).newsGroups.map((group) => group.key)).toEqual(["local"]);
+      expect(() => applyNewsLayout(paper, measuredBeside(["topics:0"]))).toThrow("colonne");
+    });
   });
 });

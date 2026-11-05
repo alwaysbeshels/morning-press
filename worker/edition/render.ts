@@ -1,3 +1,4 @@
+import type { GameKind } from "../../shared/types";
 import { GAME_STYLES } from "../games";
 import { escapeHtml } from "./html";
 import { formatLongDate, formatTemperature, formatTime, formatTimeRange, truncate } from "./format";
@@ -106,21 +107,35 @@ function renderNewsGroup(group: NewsGroup, t: JournalText): string {
   const items = group.items
     .map((item, index) => {
       const meta = group.key === "topics" ? `${item.source} · ${item.topic}` : item.source;
-      return `<li data-news-item="${group.key}:${index}"><div class="title">${escapeHtml(truncate(item.title, 140))}</div><p class="news-summary">${escapeHtml(item.summary)}</p><div class="meta">${escapeHtml(meta)}</div></li>`;
+      return `<li data-news-item="${group.key}:${index}"><div class="title">${escapeHtml(item.title)}</div><p class="news-summary">${escapeHtml(item.summary)}</p><div class="meta">${escapeHtml(meta)}</div></li>`;
     })
     .join("");
   return `<section class="news-group" data-news-group="${group.key}"><h3>${heading}</h3><ul class="news">${items}</ul></section>`;
 }
 
 export const NEWS_COLUMNS = [
-  ["local", "provincial"],
-  ["national", "american"],
-  ["international", "topics"],
+  ["provincial", "national"],
+  ["american", "international"],
+  ["topics"],
 ] as const;
+
+// Les mots croisés et les mots codés exigent toute la largeur (grille et définitions côte à côte).
+const HALF_PAGE_GAMES: readonly GameKind[] = ["sudoku"];
+
+/** Rubrique locale imprimée à côté du jeu de la page 1, ou null quand elle n'y a pas sa place. */
+export function frontLocalGroup(paper: Newspaper): NewsGroup | null {
+  if (paper.pages !== 2 || !paper.newsEnabled || !paper.game || !HALF_PAGE_GAMES.includes(paper.game.kind)) return null;
+  return paper.newsGroups.find((group) => group.key === "local" && group.items.length > 0) ?? null;
+}
+
+/** Sans place à côté du jeu, la rubrique locale ouvre la première colonne de la page 2. */
+export function newsColumns(paper: Newspaper): readonly (readonly NewsGroup["key"][])[] {
+  return frontLocalGroup(paper) ? NEWS_COLUMNS : [["local", ...NEWS_COLUMNS[0]], NEWS_COLUMNS[1], NEWS_COLUMNS[2]];
+}
 
 /** Les rubriques restent dans leur colonne ; seule la troisième réserve la place des réponses. */
 function renderPageTwo(paper: Newspaper, t: JournalText, longDate: string): string {
-  const columns = NEWS_COLUMNS.map((keys, index) => {
+  const columns = newsColumns(paper).map((keys, index) => {
     const groups = paper.newsEnabled ? keys.flatMap((key) => paper.newsGroups.filter((group) => group.key === key)) : [];
     return `<div class="news-column" data-news-column="${index + 1}">
       <div class="news-stack">${groups.map((group) => renderNewsGroup(group, t)).join("")}${!groups.length && paper.newsEnabled ? empty(t.empty.news) : ""}</div>
@@ -143,8 +158,10 @@ export function renderNewspaper(paper: Newspaper): string {
   const lang = paper.language;
   const generated = new Date(paper.generatedAt);
   const longDate = formatLongDate(generated, tz, lang);
+  const time = formatTime(generated, tz, lang);
   const weather = paper.weather;
   const twoPages = paper.pages === 2;
+  const frontLocal = frontLocalGroup(paper);
 
   const weatherHtml = weather
     ? `<div class="weather">
@@ -202,7 +219,7 @@ export function renderNewspaper(paper: Newspaper): string {
     ? `<ul class="news">${paper.news
         .map(
           (item) =>
-            `<li><div class="title">${escapeHtml(truncate(item.title, 120))}</div><p class="news-summary">${escapeHtml(item.summary)}</p><div class="meta">${escapeHtml(`${item.source} · ${item.topic}`)}</div></li>`,
+            `<li><div class="title">${escapeHtml(item.title)}</div><p class="news-summary">${escapeHtml(item.summary)}</p><div class="meta">${escapeHtml(`${item.source} · ${item.topic}`)}</div></li>`,
         )
         .join("")}</ul>`
     : empty(t.empty.news);
@@ -257,7 +274,7 @@ export function renderNewspaper(paper: Newspaper): string {
 <main class="page page-1${paper.daily ? " daily" : ""}${compact ? " compact" : ""}">
   <header class="masthead">
     <div class="dateline">
-      <div>${escapeHtml(longDate)}</div>
+      <div>${escapeHtml(longDate)} · <span class="gen-time">${escapeHtml(time)}</span></div>
       <div>${escapeHtml(`${paper.city}, ${paper.region}`)}</div>
     </div>
     <h1>${escapeHtml(t.title)}</h1>
@@ -270,9 +287,13 @@ export function renderNewspaper(paper: Newspaper): string {
   <div class="columns">
     ${columns.map((column) => `<div class="col">${column}</div>`).join("\n")}
   </div>
-  ${paper.game ? `<div class="game-slot">${paper.game.html}</div>` : ""}
+  ${paper.game
+    ? frontLocal
+      ? `<div class="front-feature"><div class="game-slot">${paper.game.html}</div><div class="front-local-news">${renderNewsGroup(frontLocal, t)}</div></div>`
+      : `<div class="game-slot">${paper.game.html}</div>`
+    : ""}
   <footer>
-    ${escapeHtml(t.footer(formatTime(generated, tz, lang), paper.sources, paper.unavailableSources))}
+    ${escapeHtml(t.footer(time, paper.sources, paper.unavailableSources))}
   </footer>
 </main>
 ${twoPages ? renderPageTwo(paper, t, longDate) : ""}
@@ -306,6 +327,8 @@ body {
 .page-2 { break-before: page; }
 .masthead { border-bottom: 3px double #1a1a1a; padding-bottom: 6pt; margin-bottom: 8pt; }
 .dateline { display: flex; justify-content: space-between; font-size: 8.5pt; text-transform: uppercase; letter-spacing: 0.06em; border-bottom: 1px solid #1a1a1a; padding-bottom: 3pt; }
+/* « 6 h 30 » garde ses minuscules : en capitales, l'abréviation de l'heure deviendrait « 6 H 30 ». */
+.gen-time { text-transform: none; }
 h1 { font-family: "Playfair Display", Georgia, serif; font-weight: 900; font-size: 34pt; text-align: center; margin: 4pt 0 6pt; letter-spacing: -0.01em; }
 .subhead { display: flex; justify-content: space-between; align-items: center; gap: 16pt; border-top: 1px solid #1a1a1a; padding-top: 5pt; }
 blockquote { margin: 0; font-style: italic; flex: 1; }
@@ -351,11 +374,17 @@ footer { margin-top: 6pt; padding-top: 4pt; border-top: 1px solid #1a1a1a; text-
 .news-group h3 { font-family: "Playfair Display", Georgia, serif; font-size: 11.5pt; margin: 0 0 2pt; padding-bottom: 2pt; border-bottom: 1.5px solid #1a1a1a; break-inside: avoid; break-after: avoid; }
 .news-group .kicker { display: block; font-family: "Source Serif 4", Georgia, serif; font-size: 7pt; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; color: #5c564b; }
 .news-group li { break-inside: avoid; }
-.news-group .title { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 3; overflow: hidden; overflow-wrap: anywhere; }
+.news-group .title { overflow-wrap: anywhere; }
 .news-group .meta, .news-label { display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.front-feature { flex: none; display: grid; grid-template-columns: 1fr 1fr; gap: 14pt; margin-top: 8pt; padding-top: 6pt; border-top: 3px double #1a1a1a; }
+.front-feature .game-slot { margin-top: 0; padding-top: 0; border-top: none; }
+.front-local-news { min-width: 0; }
+.front-local-news .news-group { margin-bottom: 0; }
+.front-local-news .news-group h3 { font-size: 10pt; }
+.front-local-news .news-group li { padding: 2pt 0; }
 .game-slot { flex: none; margin-top: 8pt; padding-top: 6pt; border-top: 3px double #1a1a1a; display: flex; justify-content: center; }
 .solution-slot { flex: none; align-self: flex-end; max-width: 100%; margin-top: 8pt; padding: 4pt; border: 1px solid #c8c2b5; }
-.news-summary { margin: 3pt 0; font-size: 8.8pt; line-height: 1.25; overflow-wrap: anywhere; }
+.news-summary { margin: 2pt 0; font-size: 7.5pt; line-height: 1.15; overflow-wrap: anywhere; }
 .omitted { margin: 3pt 0 0; font-size: 7pt; line-height: 1.15; color: #5c564b; font-style: italic; }
 /* Journées chargées : trois colonnes et extraits raccourcis, sans masquer d'élément. */
 .compact .columns { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 9pt; font-size: 8pt; line-height: 1.15; }
