@@ -93,8 +93,13 @@ export function deniedResponse(request: Request, result: Exclude<AuthResult, { o
   if (new URL(request.url).pathname.startsWith("/api/")) {
     return Response.json({ error: message }, { status: result.status, headers });
   }
-  const [title, heading] = language === "en" ? ["Access denied — My Morning Paper", "My Morning Paper"] : ["Accès refusé — Mon Journal du Matin", "Mon Journal du Matin"];
-  const html = `<!doctype html><html lang="${language}"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${title}</title><style>body{font-family:system-ui,sans-serif;max-width:36rem;margin:15vh auto;padding:0 1.5rem;color:#1c1917;line-height:1.5}h1{font-family:Georgia,serif}</style></head><body><h1>${heading}</h1><p>${message}</p></body></html>`;
+  const [title, heading, reload] =
+    language === "en"
+      ? ["Access denied — My Morning Paper", "My Morning Paper", "Reload the page"]
+      : ["Accès refusé — Mon Journal du Matin", "Mon Journal du Matin", "Recharger la page"];
+  // L'application installée (mode autonome) n'affiche aucun bouton pour recharger la page.
+  const retry = result.reason === "invalid-token" ? `<p><a href="">${reload}</a></p>` : "";
+  const html = `<!doctype html><html lang="${language}"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${title}</title><style>body{font-family:system-ui,sans-serif;max-width:36rem;margin:15vh auto;padding:0 1.5rem;color:#1c1917;line-height:1.5}h1{font-family:Georgia,serif}a{color:inherit}</style></head><body><h1>${heading}</h1><p>${message}</p>${retry}</body></html>`;
   return new Response(html, {
     status: result.status,
     headers: { ...headers, "Content-Type": "text/html; charset=utf-8" },

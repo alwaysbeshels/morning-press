@@ -29,6 +29,7 @@ Plateforme personnelle qui génère chaque matin un journal PDF (1 ou 2 pages, f
 - Accès en lecture seule aux courriels et calendriers : ne jamais ajouter d'envoi, de suppression ou de modification sans demande explicite.
 - Respecter les limites du forfait gratuit Workers (10 ms de CPU par étape de Workflow, 50 sous-requêtes, 1 000 écritures KV par jour).
 - Composants UI : shadcn/ui (`src/components/ui/`, style radix-nova) ; ajouter avec `npx shadcn@latest add <composant>`.
+- Application installable (PWA) : le manifeste est servi par le Worker (`worker/api/routes/manifest.ts`, derrière Access, chargé avec `crossorigin="use-credentials"`). `public/sw.js` ne met rien en cache et ne touche ni `/api/` ni `/cdn-cgi/`. Le mode application n'a pas de bouton Recharger : toute action « rechargez la page » doit être un bouton (voir `showError` dans `src/lib/hooks.ts`).
 
 ### Commandes
 

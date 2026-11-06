@@ -25,6 +25,7 @@ interface DayLabel {
 
 const fr = {
   appName: "Mon Journal du Matin",
+  appShortName: "Mon Journal",
   locale: "fr-CA",
   colon: " : ",
   languageNames: { fr: "Français", en: "English" } satisfies Record<Language, string>,
@@ -41,8 +42,9 @@ const fr = {
     generateNow: "Générer maintenant",
     generationStarted: "Génération lancée. Votre journal sera prêt dans une minute environ.",
     unexpected: "Une erreur inattendue est survenue.",
-    network: "Connexion impossible. Vérifiez votre réseau ou rechargez la page.",
-    sessionExpired: "Votre session a expiré. Rechargez la page pour vous reconnecter.",
+    network: "Connexion impossible. Vérifiez votre réseau, puis réessayez.",
+    sessionExpired: "Votre session a expiré. Reconnectez-vous pour continuer.",
+    signInAgain: "Se reconnecter",
     httpError: (status: number) => `Erreur ${status}`,
     save: "Enregistrer",
     saving: "Enregistrement…",
@@ -229,7 +231,7 @@ const fr = {
     previewNote: "Données fictives, sans accès à tes comptes. Aucun réglage n'est enregistré et aucune édition n'est créée. L'espace disponible peut modifier le nombre d'éléments imprimés.",
     previewLoading: "Préparation de l'aperçu…",
     previewUpdating: "Mise à jour de l'aperçu…",
-    previewError: "L'aperçu n'a pas pu être affiché. Réessaie ou recharge la page si ta session a expiré.",
+    previewError: "L'aperçu n'a pas pu être affiché. Réessaie, ou reconnecte-toi si ta session a expiré.",
     retry: "Réessayer",
     saveHint: "Enregistre les préférences pour appliquer le style aux prochaines éditions. Les journaux déjà générés ne changent pas.",
     miniature: "LE JOURNAL",
@@ -365,6 +367,7 @@ export type Messages = typeof fr;
 
 const en: Messages = {
   appName: "My Morning Paper",
+  appShortName: "My Paper",
   locale: "en-CA",
   colon: ": ",
   languageNames: fr.languageNames,
@@ -374,8 +377,9 @@ const en: Messages = {
     generateNow: "Generate now",
     generationStarted: "Generation started. Your paper will be ready in about a minute.",
     unexpected: "An unexpected error occurred.",
-    network: "Unable to connect. Check your network or reload the page.",
-    sessionExpired: "Your session has expired. Reload the page to sign in again.",
+    network: "Unable to connect. Check your network, then try again.",
+    sessionExpired: "Your session has expired. Sign in again to continue.",
+    signInAgain: "Sign in again",
     httpError: (status) => `Error ${status}`,
     save: "Save",
     saving: "Saving…",
@@ -560,7 +564,7 @@ const en: Messages = {
     previewNote: "Fictional data, with no access to your accounts. No settings are saved and no edition is created. Available space may affect how many items are printed.",
     previewLoading: "Preparing the preview…",
     previewUpdating: "Updating the preview…",
-    previewError: "The preview could not be displayed. Try again, or reload the page if your session has expired.",
+    previewError: "The preview could not be displayed. Try again, or sign in again if your session has expired.",
     retry: "Try again",
     saveHint: "Save preferences to apply this style to future editions. Previously generated papers do not change.",
     miniature: "THE PAPER",
@@ -738,6 +742,8 @@ export function applyLanguage(language: Language) {
   currentLanguage = language;
   document.documentElement.lang = MESSAGES[language].locale;
   document.title = MESSAGES[language].appName;
+  // Nom proposé par iOS lors de l'ajout à l'écran d'accueil.
+  document.querySelector('meta[name="apple-mobile-web-app-title"]')?.setAttribute("content", MESSAGES[language].appShortName);
 }
 
 export interface I18nValue {

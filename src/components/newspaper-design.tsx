@@ -114,7 +114,7 @@ function DesignPreview({ id, url, caption, onRetry }: { id: string; url: string;
       </div>
       <div className="min-h-0 overflow-y-auto rounded-lg">
         <div ref={container} className="relative mx-auto w-full max-w-[816px] overflow-hidden rounded-lg border bg-[#f4f1ea]"
-          style={{ height: shown && !error ? PREVIEW_HEIGHT * scale : 190 }}
+          style={{ height: error ? undefined : shown ? PREVIEW_HEIGHT * scale : 190 }}
           aria-busy={loading}>
           {loading && !shown && <div className="flex h-full items-center justify-center gap-2 text-sm text-muted-foreground">
             <Loader2Icon className="size-4 animate-spin" aria-hidden="true" />{d.previewLoading}
@@ -122,7 +122,11 @@ function DesignPreview({ id, url, caption, onRetry }: { id: string; url: string;
           {error && <Alert variant="destructive" className="m-4 w-auto">
             <AlertDescription>
               <p>{d.previewError}</p>
-              <Button type="button" variant="outline" className="mt-3" onClick={onRetry}>{d.retry}</Button>
+              <div className="mt-3 flex flex-wrap gap-2">
+                <Button type="button" variant="outline" onClick={onRetry}>{d.retry}</Button>
+                {/* Session expirée : l'application installée n'a pas de bouton Recharger. */}
+                <Button type="button" variant="outline" onClick={() => window.location.reload()}>{t.common.signInAgain}</Button>
+              </div>
             </AlertDescription>
           </Alert>}
           {visible.map((src) => (

@@ -1,3 +1,4 @@
+import { useEffect, useRef, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { getRouteApi, Link, useNavigate } from "@tanstack/react-router";
 import { ArrowLeftIcon, DownloadIcon, ExternalLinkIcon, Loader2Icon, Trash2Icon } from "lucide-react";
@@ -12,8 +13,43 @@ import { canDeleteEdition } from "@/lib/editions";
 import { formatDateTime, formatEditionDate, formatTime } from "@/lib/format";
 import { errorMessage } from "@/lib/hooks";
 import { describeSourceError, useI18n } from "@/lib/i18n";
+import { cn } from "@/lib/utils";
 
 const route = getRouteApi("/editions/$id");
+
+// Largeur d'une page Lettre (8,5 po à 96 ppp), sous laquelle la mise en page du journal ne tient plus.
+const PAGE_WIDTH = 816;
+
+/** Sur un écran étroit (téléphone), le journal garde la largeur d'une page et s'affiche réduit, comme le PDF. */
+function EditionFrame({ src, title, pages }: { src: string; title: string; pages: number }) {
+  const container = useRef<HTMLDivElement>(null);
+  const [scale, setScale] = useState(1);
+
+  useEffect(() => {
+    const element = container.current;
+    if (!element) return;
+    const resize = () => setScale(Math.min(1, element.clientWidth / PAGE_WIDTH));
+    resize();
+    const observer = new ResizeObserver(resize);
+    observer.observe(element);
+    return () => observer.disconnect();
+  }, []);
+
+  return (
+    <div
+      ref={container}
+      className={cn("relative box-content overflow-hidden rounded-xl border bg-white shadow-sm", pages === 2 ? "aspect-[8.5/22.75]" : "aspect-[8.5/11.5]")}
+    >
+      <iframe
+        title={title}
+        src={src}
+        sandbox=""
+        className="absolute top-0 left-0"
+        style={{ width: `${100 / scale}%`, height: `${100 / scale}%`, transform: `scale(${scale})`, transformOrigin: "0 0" }}
+      />
+    </div>
+  );
+}
 
 export function EditionPage() {
   const { id } = route.useParams();
@@ -116,16 +152,7 @@ export function EditionPage() {
       )}
       {data.expired && <p className="text-muted-foreground">{e.expired}</p>}
 
-      {available && data.hasHtml && (
-        <div className="overflow-hidden rounded-xl border bg-white shadow-sm">
-          <iframe
-            title={e.frameTitle(date)}
-            src={editionUrls.html(data.id)}
-            sandbox=""
-            className={pages === 2 ? "aspect-[8.5/22.75] w-full" : "aspect-[8.5/11.5] w-full"}
-          />
-        </div>
-      )}
+      {available && data.hasHtml && <EditionFrame src={editionUrls.html(data.id)} title={e.frameTitle(date)} pages={pages} />}
     </>
   );
 }

@@ -110,4 +110,15 @@ describe("deniedResponse", () => {
     expect(page.headers.get("Content-Type")).toContain("text/html");
     expect(await page.text()).toContain("Connexion requise");
   });
+
+  it("propose de recharger la page quand la session est invalide (aucun bouton en mode application)", async () => {
+    const denied = { ok: false, status: 401, reason: "invalid-token" } as const;
+    const french = await deniedResponse(new Request("https://x.dev/editions"), denied).text();
+    expect(french).toContain('<a href="">Recharger la page</a>');
+    expect(french).not.toContain("<script");
+    const english = deniedResponse(new Request("https://x.dev/", { headers: { "Accept-Language": "en-CA" } }), denied);
+    expect(await english.text()).toContain('<a href="">Reload the page</a>');
+    const missing = deniedResponse(new Request("https://x.dev/"), { ok: false, status: 401, reason: "missing-token" });
+    expect(await missing.text()).not.toContain("<a ");
+  });
 });

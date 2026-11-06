@@ -27,7 +27,7 @@ import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Switch } from "@/components/ui/switch";
 import { api, connectUrl, queryKeys } from "@/lib/api";
-import { errorMessage } from "@/lib/hooks";
+import { errorMessage, showError } from "@/lib/hooks";
 import { useI18n } from "@/lib/i18n";
 
 const route = getRouteApi("/comptes");
@@ -107,17 +107,16 @@ function AccountCard({ account }: { account: AccountDto }) {
     queryClient.setQueryData(queryKeys.accounts, data);
     void queryClient.invalidateQueries({ queryKey: queryKeys.dashboard });
   };
-  const onError = (error: Error) => toast.error(errorMessage(error));
 
   const update = useMutation({
     mutationFn: (body: Parameters<typeof api.updateAccount>[1]) => api.updateAccount(account.id, body),
     onSuccess,
-    onError,
+    onError: showError,
   });
   const calendars = useMutation({
     mutationFn: (selectedIds: string[]) => api.selectCalendars(account.id, selectedIds),
     onSuccess,
-    onError,
+    onError: showError,
   });
   const sync = useMutation({
     mutationFn: () => api.syncAccount(account.id),
@@ -125,7 +124,7 @@ function AccountCard({ account }: { account: AccountDto }) {
       onSuccess(data);
       toast.success(a.calendarsRefreshed);
     },
-    onError,
+    onError: showError,
   });
   const remove = useMutation({
     mutationFn: () => api.deleteAccount(account.id),
@@ -133,7 +132,7 @@ function AccountCard({ account }: { account: AccountDto }) {
       onSuccess(data);
       toast.success(a.disconnected);
     },
-    onError,
+    onError: showError,
   });
 
   const toggleCalendar = (calendarId: string, checked: boolean) => {

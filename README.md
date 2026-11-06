@@ -137,6 +137,23 @@ Pour les rubriques Canada et International par défaut, les flux directs de La P
 
 En français, des secours directs existent aussi pour Montréal (Radio-Canada, Grand Montréal), Québec (Le Devoir, **politique québécoise**) et États-Unis (La Presse). Le secours provincial est donc spécialisé en politique, pas en toute l'actualité québécoise. Ces flux ne remplacent pas des lieux personnalisés tels que Laval, Ontario ou Californie. Les refus HTTP 307 vers `brdr=1` restent rejetés : la cible répond en HTML vide, pas en RSS.
 
+### 6. Installer l'application (facultatif)
+
+Le site s'installe comme une application : une icône sur l'écran d'accueil, et une ouverture plein écran sans barre d'adresse.
+
+- **iPhone ou iPad (Safari)** : bouton **Partager** (parfois dans le menu **⋯**), puis **Sur l'écran d'accueil** et **Ajouter**. Si iOS propose d'ouvrir le site comme app web, laissez l'option activée.
+- **Android (Chrome)** : menu **⋮** > **Installer l'application** (ou **Ajouter à l'écran d'accueil**).
+- **Ordinateur** : dans Chrome ou Edge, icône d'installation à droite de la barre d'adresse ; dans Safari sur Mac, **Fichier** > **Ajouter au Dock**.
+
+Le nom proposé est « Mon Journal » (« My Paper » en anglais), modifiable au moment de l'ajout. L'application s'ouvre sur le tableau de bord.
+
+- **Connexion** : l'application passe par Cloudflare Access, comme le site. Sur iPhone, elle garde ses propres cookies, séparés de ceux de Safari : connectez-vous une fois dans l'application. Pour éviter de le refaire chaque jour, allongez la durée de session (24 heures par défaut, jusqu'à 1 mois) : Zero Trust > **Access** > **Applications** > l'application du Worker, ainsi que la durée de session globale dans les réglages d'Access.
+- **Session expirée** : le mode application n'a pas de bouton Recharger. Un message propose donc **Se reconnecter**.
+- **Hors ligne** : une page invite à réessayer. Le service worker (`public/sw.js`) ne met rien en cache : les données et les éditions viennent toujours du serveur.
+- **Sur téléphone** : la page d'une édition affiche le journal réduit à la largeur de l'écran, comme le PDF. Pincez pour zoomer, ou ouvrez le PDF.
+
+Le manifeste (`/manifest.webmanifest`, servi par le Worker dans la langue du navigateur) et les icônes de `public/icons/` restent derrière Access. `index.html` charge le manifeste avec `crossorigin="use-credentials"` et indique `/icons/apple-touch-icon.png` pour l'icône iOS. Les icônes de l'application reprennent l'éclair mauve du favicon. Si une ancienne icône est restée, supprimez l'application de l'écran d'accueil et ajoutez-la de nouveau.
+
 ## Développement local
 
 ```sh
@@ -181,9 +198,10 @@ npm run db:migrate    # l'applique sur Neon (lit DATABASE_URL dans .dev.vars)
 
 ```text
 src/            Interface React (TanStack Router/Query, shadcn/ui, Tailwind)
+public/         Favicon, icônes et service worker (page hors ligne) de l'application installable
 shared/         Types et schémas Zod communs au client et au Worker
 worker/
-  api/          API Hono (comptes, connexions Nylas, préférences, éditions)
+  api/          API Hono (comptes, connexions Nylas, préférences, éditions) et manifeste de l'application
   auth/         Validation du jeton Cloudflare Access
   db/           Schéma Drizzle et requêtes
   edition/      Sélection du contenu, mise en page HTML (1 ou 2 pages), traductions, proverbes

@@ -8,6 +8,7 @@ import { isLocalHost, jsonError, type AppEnv } from "./context";
 import { accountRoutes } from "./routes/accounts";
 import { connectionRoutes } from "./routes/connections";
 import { editionRoutes } from "./routes/editions";
+import { manifestRoutes } from "./routes/manifest";
 import { settingsRoutes } from "./routes/settings";
 import { newspaperPreviewRoutes } from "./routes/newspaper-preview";
 
@@ -58,6 +59,8 @@ app.use("*", async (c, next) => {
 
 // L'aperçu est authentifié, mais ne doit ni ouvrir la base ni créer d'utilisateur.
 app.route("/api/newspaper-preview", newspaperPreviewRoutes);
+// Le manifeste reste derrière Access : index.html le demande avec crossorigin="use-credentials".
+app.route("/manifest.webmanifest", manifestRoutes);
 
 app.use("/api/*", async (c, next) => {
   const method = c.req.method;

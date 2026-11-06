@@ -19,7 +19,7 @@ import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import { api, queryKeys } from "@/lib/api";
 import { formatDateTime } from "@/lib/format";
-import { errorMessage } from "@/lib/hooks";
+import { errorMessage, showError } from "@/lib/hooks";
 import { messages, useI18n } from "@/lib/i18n";
 import {
   applyEdits,
@@ -176,7 +176,7 @@ function PreferencesForm({ saved }: { saved: SettingsDto }) {
       // La langue du journal ne change pas celle du site (bouton FR / EN du menu).
       toast.success(messages().preferences.saved);
     },
-    onError: (error) => toast.error(errorMessage(error)),
+    onError: showError,
   });
 
   /** Enregistre une section (ou tout) par-dessus les valeurs déjà enregistrées. */
