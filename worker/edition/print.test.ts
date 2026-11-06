@@ -85,6 +85,18 @@ function fixture(language: Language, pages: 1 | 2, kind: GameKind | null, dense:
         description: language === "fr" ? "Partiellement nuageux" : "Partly cloudy", precipitationProbability: 80,
       })),
     },
+    // Valeurs larges : chaque cellule de la bande boursière doit tenir sur sa ligne.
+    markets: {
+      asOf: generatedAt - 14 * 3_600_000, open: false,
+      quotes: [
+        { key: "tsx", price: 38_840.64, changePercent: 12.34, currency: "CAD" },
+        { key: "sp500", price: 8_431.32, changePercent: -10.05, currency: "USD" },
+        { key: "dow", price: 58_589.07, changePercent: 0, currency: "USD" },
+        { key: "nasdaq", price: 28_764.1, changePercent: -1.85, currency: "USD" },
+        { key: "oil", price: 108.68, changePercent: 11.2, currency: "USD" },
+        { key: "cad", price: 0.7093, changePercent: -10.6, currency: "USD" },
+      ],
+    },
     game: game ? { kind: game.kind, ...renderGame(game, language) } : null,
     unavailableSources: [],
   });
@@ -209,6 +221,7 @@ describe.skipIf(!process.env.CHROME_PATH)("PDF Lettre dans Chrome", () => {
         firstPageColumns: number; forecastPeriods: number; imagesLoaded: boolean; pageOneText: string;
         columns: { groups: string[]; fill: number; bottom: number; answers: number; answersInside: boolean }[];
         frontLocal: { articles: number; bottom: number; gameBottom: number; clamp: string } | null;
+        markets: { cells: number; overflow: string[]; rows: number; belowColumns: boolean; aboveGame: boolean } | null;
       } } }>("Runtime.evaluate", {
         awaitPromise: true,
         returnByValue: true,
@@ -262,6 +275,20 @@ describe.skipIf(!process.env.CHROME_PATH)("PDF Lettre dans Chrome", () => {
                 clamp: style.maxHeight + '/' + style.overflow,
               };
             })(),
+            markets: (() => {
+              const strip = document.querySelector('.page-1 .markets');
+              if (!strip) return null;
+              const cells = [...strip.querySelectorAll('li')];
+              const top = strip.getBoundingClientRect().top;
+              const game = document.querySelector('.page-1 .front-feature, .page-1 > .game-slot');
+              return {
+                cells: cells.length,
+                overflow: [...strip.querySelectorAll('h2, li, li > span')].filter(el => el.scrollWidth > el.clientWidth + 1).map(el => el.textContent),
+                rows: new Set(cells.map(cell => Math.round(cell.getBoundingClientRect().top))).size,
+                belowColumns: top >= document.querySelector('.page-1 .columns').getBoundingClientRect().bottom - 1,
+                aboveGame: !game || strip.getBoundingClientRect().bottom <= game.getBoundingClientRect().top + 1,
+              };
+            })(),
             columns: [...document.querySelectorAll('.news-column')].map(column => {
               const stack = column.querySelector('.news-stack').getBoundingClientRect();
               const sections = [...column.querySelectorAll('.news-group')];
@@ -300,6 +327,14 @@ describe.skipIf(!process.env.CHROME_PATH)("PDF Lettre dans Chrome", () => {
       expect(metrics.result.value.omitted).toBe(Object.values(paper.omitted ?? {}).filter((count) => count > 0).length);
       expect(metrics.result.value.forecastPeriods).toBe(4);
       expect(metrics.result.value.imagesLoaded).toBe(true);
+      if (paper.markets) {
+        expect(metrics.result.value.markets).toEqual({ cells: 6, overflow: [], rows: 1, belowColumns: true, aboveGame: true });
+      } else {
+        // La bande ne cède sa place que lorsque le jeu et tous les extras remplissent déjà la page 1.
+        expect({ pages, game: Boolean(kind), extras }).toEqual({ pages: 2, game: true, extras: "all" });
+        expect(metrics.result.value.markets).toBeNull();
+        expect(paper.sources).not.toContain("Yahoo Finance");
+      }
       if (profile === "calm") expect(metrics.result.value.firstPageColumns).toBe(2);
       if (candidates.daily!.upcoming.length) expect(paper.daily!.upcoming.length).toBeGreaterThan(0);
       const text = metrics.result.value.pageOneText.replace(/\s+/g, " ");

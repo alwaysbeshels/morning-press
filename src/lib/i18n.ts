@@ -62,6 +62,7 @@ const fr = {
   games: { sudoku: "Sudoku", crossword: "Mots croisés", codeword: "Mots codés" } satisfies Record<GameKind, string>,
   sourceNames: {
     weather: "Météo",
+    markets: "Bourse",
     news: "Actualités",
     pdf: "PDF",
     game: "Jeu du jour",
@@ -73,6 +74,7 @@ const fr = {
     reauth: "Reconnexion requise",
     unavailable: "Source temporairement indisponible",
     weather: "Météo indisponible",
+    markets: "Bourse indisponible",
     news: "Actualités indisponibles",
     pdf: "Le PDF n’a pas pu être généré (version web disponible).",
     game: "Le jeu du jour n’a pas pu être généré.",
@@ -393,6 +395,7 @@ const en: Messages = {
   games: { sudoku: "Sudoku", crossword: "Crossword", codeword: "Codeword" },
   sourceNames: {
     weather: "Weather",
+    markets: "Markets",
     news: "News",
     pdf: "PDF",
     game: "Daily game",
@@ -404,6 +407,7 @@ const en: Messages = {
     reauth: "Reconnection required",
     unavailable: "Source temporarily unavailable",
     weather: "Weather unavailable",
+    markets: "Markets unavailable",
     news: "News unavailable",
     pdf: "The PDF could not be generated (web version available).",
     game: "The daily game could not be generated.",

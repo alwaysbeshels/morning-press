@@ -127,7 +127,7 @@ export interface AccountDto {
 export type EditionStatus = "running" | "ready" | "partial" | "failed";
 export type EditionTrigger = "schedule" | "manual";
 
-export const SOURCE_ERROR_CODES = ["reauth", "unavailable", "weather", "news", "pdf", "game", "recipe", "failed", "interrupted"] as const;
+export const SOURCE_ERROR_CODES = ["reauth", "unavailable", "weather", "markets", "news", "pdf", "game", "recipe", "failed", "interrupted"] as const;
 export type SourceErrorCode = (typeof SOURCE_ERROR_CODES)[number];
 
 export interface SourceError {

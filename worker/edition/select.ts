@@ -13,6 +13,7 @@ import type {
   EmailItem,
   EventItem,
   GameBlock,
+  Markets,
   Newspaper,
   PriorityItem,
   PriorityLevel,
@@ -313,11 +314,14 @@ export interface BuildInput {
   preferences: Preferences;
   accounts: AccountData[];
   weather: Weather | null;
+  markets?: Markets | null;
   /** Brèves brutes par flux ; la sélection dépend du nombre de pages. */
   news: FeedResult[];
   game?: GameBlock | null;
   unavailableSources: string[];
 }
+
+export const MARKETS_SOURCE = "Yahoo Finance";
 
 export const PAGE_ONE_GAME_LIMITS = { events: 9, emails: 4, priorities: 4, reminders: 3 } as const;
 
@@ -385,6 +389,7 @@ export function buildNewspaper(input: BuildInput): Newspaper {
 
   const sources = input.accounts.map((account) => account.label);
   if (input.weather) sources.push("Open-Meteo");
+  if (input.markets) sources.push(MARKETS_SOURCE);
   const newsProviders = new Set([...news, ...newsGroups.flatMap((group) => group.items)].map((item) => item.provider ?? "google"));
   for (const provider of newsProviders) sources.push(newsProviderName(language, provider));
 
@@ -399,6 +404,7 @@ export function buildNewspaper(input: BuildInput): Newspaper {
     city: preferences.city,
     region: preferences.region,
     weather: input.weather,
+    markets: input.markets ?? null,
     quote: quoteOfTheDay(today, language),
     events,
     priorities,

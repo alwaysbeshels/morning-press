@@ -90,6 +90,17 @@ export function buildDesignPreview(design: NewspaperDesign, language: Language):
         code: 2, isDay: index < 2,
       })),
     },
+    markets: {
+      asOf: generatedAt - 15 * 3_600_000, open: false,
+      quotes: [
+        { key: "tsx", price: 31_250.4, changePercent: 0.42, currency: "CAD" },
+        { key: "sp500", price: 6_820.15, changePercent: -0.18, currency: "USD" },
+        { key: "dow", price: 47_310.62, changePercent: 0.07, currency: "USD" },
+        { key: "nasdaq", price: 23_105.88, changePercent: -0.55, currency: "USD" },
+        { key: "oil", price: 74.3, changePercent: 1.2, currency: "USD" },
+        { key: "cad", price: 0.7215, changePercent: -0.11, currency: "USD" },
+      ],
+    },
     news: [...NEWS_SECTIONS, "topics" as const].map((group, index) => ({
       group, label: "",
       items: copy.headlines[index].map((title, item) => ({

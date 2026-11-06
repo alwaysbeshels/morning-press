@@ -249,6 +249,46 @@ describe("renderNewspaper", () => {
     expect(renderNewspaper(base)).not.toContain("data-weather-icon");
     expect(renderNewspaper({ ...base, weather: { ...base.weather!, code: 1234 } })).not.toContain("data-weather-icon");
   });
+
+  const markets: NonNullable<Newspaper["markets"]> = {
+    asOf: Date.parse("2026-10-30T20:15:00Z"), open: false,
+    quotes: [
+      { key: "tsx", price: 35840.64, changePercent: 0.661, currency: "CAD" },
+      { key: "sp500", price: 7431.32, changePercent: -1.2, currency: "USD" },
+      { key: "oil", price: 90.68, changePercent: 0.001, currency: "USD" },
+      { key: "cad", price: 0.7093, changePercent: -0.6036, currency: "USD" },
+    ],
+  };
+  const strip = (html: string) => html.slice(html.indexOf('<section class="markets">'), html.indexOf("</section>", html.indexOf('<section class="markets">'))).replace(/\s/g, " ");
+
+  it("imprime la bourse au-dessus du jeu, dans les deux langues", () => {
+    const game = { kind: "sudoku" as const, html: '<div class="g-test">grille</div>', solutionHtml: "<div>solution</div>" };
+    const fr = renderNewspaper({ ...base, pages: 2, markets, game });
+    expect(fr.indexOf('<section class="markets">')).toBeGreaterThan(fr.indexOf('<div class="columns">'));
+    expect(fr.indexOf('<section class="markets">')).toBeLessThan(fr.indexOf('<div class="game-slot">'));
+    const text = strip(fr);
+    expect(text).toContain("Bourse");
+    expect(text).toContain("Clôture du ven. 30 oct.");
+    expect(text).toContain('<span class="mk-value">35 840,64</span><span class="mk-change up">');
+    expect(text).toContain("0,66 %");
+    expect(text).toContain('<span class="mk-change down">');
+    expect(text).toContain('<span class="mk-change flat">0,00 %</span>');
+    expect(text).toContain("90,68 $ US");
+    expect(text).toContain("0,7093 $ US");
+    expect(text).toContain("Dollar CA");
+
+    const en = strip(renderNewspaper({ ...base, language: "en", markets: { ...markets, open: true } }));
+    expect(en).toContain("Markets");
+    expect(en).toContain("Intraday · 4:15 p.m.");
+    expect(en).toContain("35,840.64");
+    expect(en).toContain("US$90.68");
+    expect(en).toContain("CDN dollar");
+  });
+
+  it("omet la bourse quand les cotations sont indisponibles", () => {
+    expect(renderNewspaper(base)).not.toContain('class="markets"');
+    expect(renderNewspaper({ ...base, markets: null })).not.toContain('class="markets"');
+  });
 });
 
 describe("escapeHtml", () => {

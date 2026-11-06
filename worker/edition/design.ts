@@ -51,14 +51,14 @@ body {
   --heading-font: ${palette.headingFont};
   color: var(--ink);
 }
-.masthead, .dateline, .subhead, .minihead, footer, .game-slot, .front-feature { border-color: var(--accent); }
-.masthead h1, .daily .columns h2, .news-group h3, .minihead h2, .g-title {
+.masthead, .dateline, .subhead, .minihead, footer, .game-slot, .front-feature, .page-1 .markets { border-color: var(--accent); }
+.masthead h1, .daily .columns h2, .news-group h3, .minihead h2, .g-title, .markets h2 {
   color: var(--accent); font-family: var(--heading-font); border-color: var(--accent);
 }
 .weather .temp, .forecast strong { color: var(--accent); }
-.meta, .empty, footer, .omitted, .daily .daily-safety, .news-group .kicker { color: var(--muted); }
+.meta, .empty, footer, .omitted, .daily .daily-safety, .news-group .kicker, .mk-name, .markets-when { color: var(--muted); }
 .quote-label, .tag, .news-group .kicker { color: var(--secondary); }
-.forecast, .solution-slot, li, .col + .col, .news-column + .news-column::before { border-color: var(--line); }
+.forecast, .solution-slot, li, .col + .col, .news-column + .news-column::before, .markets li { border-color: var(--line); }
 .highlight { background: var(--wash); border-color: var(--accent); }
 .priorities li { border-color: var(--line); }
 .box { border-color: var(--accent); }

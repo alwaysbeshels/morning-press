@@ -61,6 +61,25 @@ export interface Weather {
   }[];
 }
 
+export type MarketKey = "tsx" | "sp500" | "dow" | "nasdaq" | "oil" | "cad";
+
+export interface MarketQuote {
+  key: MarketKey;
+  price: number;
+  /** Variation depuis la clôture précédente, en pour cent. */
+  changePercent: number;
+  currency: string;
+}
+
+/** Derniers cours connus au moment de la génération. */
+export interface Markets {
+  /** Heure (ms) du dernier cours des indices boursiers. */
+  asOf: number;
+  /** Vrai quand ce cours tombe pendant la séance : sinon, ce sont les cours de clôture. */
+  open: boolean;
+  quotes: MarketQuote[];
+}
+
 export type NewsProvider = "google" | "bing" | "lapresse" | "radio-canada" | "cbc" | "ledevoir";
 
 export interface NewsItem {
@@ -131,6 +150,7 @@ export interface Newspaper {
   city: string;
   region: string;
   weather: Weather | null;
+  markets?: Markets | null;
   quote: string;
   events: EventItem[];
   priorities: PriorityItem[];

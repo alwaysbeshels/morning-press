@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { newsProviderName } from "./i18n";
+import { MARKETS_SOURCE } from "./select";
 import { PAGE_ONE_SECTIONS, newsColumns, pageOneSectionKeys, renderNewspaper } from "./render";
 import type { Newspaper } from "./types";
 
@@ -43,72 +44,78 @@ export const NEWS_LAYOUT_SCRIPT = String.raw`(async () => {
     const order = ['priorities', 'events', 'emails', 'upcoming', 'reminders', 'recipe', 'exercise', 'fact', 'news'];
     const weights = { priorities: 3, events: 3, emails: 2, upcoming: 1, reminders: 1, news: 2 };
     let best = null;
-    for (const count of [2, 3]) {
-      page.classList.toggle('compact', count === 3);
-      for (const group of groups) {
-        group.count = group.section.dataset.pageSection === 'upcoming' && group.items.length ? 1 : 0;
-        update(group);
-      }
-      area.replaceChildren();
-      const slots = Array.from({ length: count }, () => {
-        const slot = document.createElement('div'); slot.className = 'col'; area.append(slot); return slot;
-      });
-      const pack = () => {
-        sections.forEach(section => slots[0].append(section));
-        const heights = new Map(sections.map(section => [section, section.getBoundingClientRect().height]));
-        sections.forEach(section => section.remove());
-        const sorted = [...sections].sort((a, b) => heights.get(b) - heights.get(a));
-        const capacity = slots[0].getBoundingClientRect().height - 2;
-        const gap = parseFloat(getComputedStyle(slots[0]).rowGap);
-        const bins = slots.map(() => ({ height: 0, sections: [] }));
-        const place = index => {
-          if (index === sorted.length) return true;
-          const section = sorted[index];
-          const seen = new Set();
-          for (const bin of [...bins].sort((a, b) => a.height - b.height)) {
-            if (seen.has(bin.height)) continue;
-            seen.add(bin.height);
-            const height = bin.height + heights.get(section) + (bin.sections.length ? gap : 0);
-            if (height > capacity) continue;
-            const before = bin.height;
-            bin.height = height; bin.sections.push(section);
-            if (place(index + 1)) return true;
-            bin.height = before; bin.sections.pop();
-          }
-          return false;
-        };
-        if (!place(0)) return false;
-        bins.sort((a, b) =>
-          Math.min(...a.sections.map(section => order.indexOf(section.dataset.pageSection))) -
-          Math.min(...b.sections.map(section => order.indexOf(section.dataset.pageSection))));
-        bins.forEach((bin, index) => {
-          bin.sections.sort((a, b) => order.indexOf(a.dataset.pageSection) - order.indexOf(b.dataset.pageSection))
-            .forEach(section => slots[index].append(section));
+    // La bourse cède sa place quand les blocs fixes (jeu, recette, exercice...) ne tiendraient plus.
+    const markets = page.querySelector('.markets');
+    for (const withMarkets of markets ? [true, false] : [false]) {
+      if (best) break;
+      if (markets && !withMarkets) { markets.remove(); page.dataset.markets = 'dropped'; }
+      for (const count of [2, 3]) {
+        page.classList.toggle('compact', count === 3);
+        for (const group of groups) {
+          group.count = group.section.dataset.pageSection === 'upcoming' && group.items.length ? 1 : 0;
+          update(group);
+        }
+        area.replaceChildren();
+        const slots = Array.from({ length: count }, () => {
+          const slot = document.createElement('div'); slot.className = 'col'; area.append(slot); return slot;
         });
-        return slots.every(slot => [...slot.children].every(section =>
-          section.getBoundingClientRect().bottom <= slot.getBoundingClientRect().bottom - 2));
-      };
-      if (!pack()) continue;
-      const priority = ['priorities', 'events', 'upcoming', 'emails', 'reminders', 'news'];
-      const ranked = [...groups].sort((a, b) => priority.indexOf(a.section.dataset.pageSection) - priority.indexOf(b.section.dataset.pageSection));
-      const full = new Set();
-      let added = true;
-      while (added) {
-        added = false;
-        for (const group of ranked) {
-          if (full.has(group) || group.count === group.items.length) continue;
-          group.count++; update(group);
-          if (pack()) { added = true; } else {
-            group.count--; update(group); full.add(group);
-            if (!pack()) throw new Error('Unable to restore first page layout');
+        const pack = () => {
+          sections.forEach(section => slots[0].append(section));
+          const heights = new Map(sections.map(section => [section, section.getBoundingClientRect().height]));
+          sections.forEach(section => section.remove());
+          const sorted = [...sections].sort((a, b) => heights.get(b) - heights.get(a));
+          const capacity = slots[0].getBoundingClientRect().height - 2;
+          const gap = parseFloat(getComputedStyle(slots[0]).rowGap);
+          const bins = slots.map(() => ({ height: 0, sections: [] }));
+          const place = index => {
+            if (index === sorted.length) return true;
+            const section = sorted[index];
+            const seen = new Set();
+            for (const bin of [...bins].sort((a, b) => a.height - b.height)) {
+              if (seen.has(bin.height)) continue;
+              seen.add(bin.height);
+              const height = bin.height + heights.get(section) + (bin.sections.length ? gap : 0);
+              if (height > capacity) continue;
+              const before = bin.height;
+              bin.height = height; bin.sections.push(section);
+              if (place(index + 1)) return true;
+              bin.height = before; bin.sections.pop();
+            }
+            return false;
+          };
+          if (!place(0)) return false;
+          bins.sort((a, b) =>
+            Math.min(...a.sections.map(section => order.indexOf(section.dataset.pageSection))) -
+            Math.min(...b.sections.map(section => order.indexOf(section.dataset.pageSection))));
+          bins.forEach((bin, index) => {
+            bin.sections.sort((a, b) => order.indexOf(a.dataset.pageSection) - order.indexOf(b.dataset.pageSection))
+              .forEach(section => slots[index].append(section));
+          });
+          return slots.every(slot => [...slot.children].every(section =>
+            section.getBoundingClientRect().bottom <= slot.getBoundingClientRect().bottom - 2));
+        };
+        if (!pack()) continue;
+        const priority = ['priorities', 'events', 'upcoming', 'emails', 'reminders', 'news'];
+        const ranked = [...groups].sort((a, b) => priority.indexOf(a.section.dataset.pageSection) - priority.indexOf(b.section.dataset.pageSection));
+        const full = new Set();
+        let added = true;
+        while (added) {
+          added = false;
+          for (const group of ranked) {
+            if (full.has(group) || group.count === group.items.length) continue;
+            group.count++; update(group);
+            if (pack()) { added = true; } else {
+              group.count--; update(group); full.add(group);
+              if (!pack()) throw new Error('Unable to restore first page layout');
+            }
           }
         }
+        const score = groups.reduce((total, group) => total + group.count * weights[group.section.dataset.pageSection], 0);
+        if (!best || score > best.score + 2) best = {
+          score, count, html: area.innerHTML,
+          keys: slots.map(slot => [...slot.children].map(section => section.dataset.pageSection)),
+        };
       }
-      const score = groups.reduce((total, group) => total + group.count * weights[group.section.dataset.pageSection], 0);
-      if (!best || score > best.score + 2) best = {
-        score, count, html: area.innerHTML,
-        keys: slots.map(slot => [...slot.children].map(section => section.dataset.pageSection)),
-      };
     }
     if (!best) throw new Error('The complete daily blocks do not fit on the first page');
     area.innerHTML = best.html;
@@ -174,12 +181,14 @@ export function applyPageOneLayout(paper: Newspaper, measuredHtml: string): News
   if (selected.size !== ids.length || ids.some((id) => !candidates.has(id))) throw new Error("Sélection personnelle invalide");
   const filtered = <T>(key: typeof PERSONAL_KEYS[number], values: T[]) => values.filter((_, index) => selected.has(`${key}:${index}`));
   const omitted = { events: 0, emails: 0, priorities: 0, reminders: 0, ...paper.omitted };
+  const marketsDropped = measuredHtml.includes('data-markets="dropped"');
   for (const key of PERSONAL_KEYS) {
     const kept = items[key].filter((_, index) => selected.has(`${key}:${index}`)).length;
     omitted[key] = (paper.omitted?.[key] ?? 0) + items[key].length - kept;
   }
   return {
     ...paper, firstPageColumns, omitted,
+    ...(marketsDropped ? { markets: null, sources: paper.sources.filter((source) => source !== MARKETS_SOURCE) } : {}),
     events: filtered("events", paper.events), emails: filtered("emails", paper.emails),
     priorities: filtered("priorities", paper.priorities), reminders: filtered("reminders", paper.reminders),
     news: filtered("news", paper.news), daily: { ...paper.daily, upcoming: filtered("upcoming", paper.daily.upcoming) },

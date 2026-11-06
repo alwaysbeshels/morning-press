@@ -1,5 +1,5 @@
 import type { Language, NewsSectionKey, SourceErrorCode, WeatherPeriodKey } from "../../shared/types";
-import type { EmailCategory, NewsProvider, PriorityLevel } from "./types";
+import type { EmailCategory, MarketKey, NewsProvider, PriorityLevel } from "./types";
 
 /** Textes imprimés dans le journal (le site a son propre dictionnaire côté client). */
 export interface JournalText {
@@ -17,6 +17,8 @@ export interface JournalText {
   participants: (count: number) => string;
   weatherUnavailable: string;
   weatherLine: (min: string, max: string, precipitation: number | null) => string;
+  /** Bande boursière de la page 1 : `close` reçoit la date de la séance, `live` l'heure du cours. */
+  markets: { title: string; close: (date: string) => string; live: (time: string) => string; names: Record<MarketKey, string> };
   daily: {
     quote: string; fact: string; upcoming: string; noUpcoming: string; ongoing: string; deadline: string;
     recipe: string; noRecipe: string; ingredients: string; preparation: string; recipeSafety: string;
@@ -28,7 +30,7 @@ export interface JournalText {
   categories: Record<EmailCategory, string>;
   newsSections: Record<NewsSectionKey | "topics", string>;
   /** Sources nommées dans le pied de page et les erreurs. */
-  sourceNames: { weather: string; news: string; pdf: string; game: string; recipe: string; generation: string };
+  sourceNames: { weather: string; markets: string; news: string; pdf: string; game: string; recipe: string; generation: string };
   footer: (time: string, sources: string[], unavailable: string[]) => string;
   actions: {
     deadline: (when: string, title: string) => string;
@@ -72,6 +74,12 @@ const FR: JournalText = {
   weatherUnavailable: "Météo indisponible",
   weatherLine: (min, max, precipitation) =>
     `Min ${min} · Max ${max}${precipitation ? ` · Précip. ${precipitation}\u00a0%` : ""}`,
+  markets: {
+    title: "Bourse",
+    close: (date) => `Clôture du ${date}`,
+    live: (time) => `En séance · ${time}`,
+    names: { tsx: "S&P/TSX", sp500: "S&P 500", dow: "Dow Jones", nasdaq: "Nasdaq", oil: "Pétrole WTI", cad: "Dollar CA" },
+  },
   levels: { high: "Élevé", medium: "Moyen", low: "Faible" },
   categories: {
     Signature: "Signature",
@@ -106,7 +114,7 @@ const FR: JournalText = {
     periods: { morning: "Avant-midi · 6–12 h", afternoon: "Après-midi · 12–18 h", evening: "Soir · 18–24 h", night: "Nuit · 0–6 h demain" },
     precipitation: (chance) => chance === null ? "Précip. inconnues" : `Précip. ${chance} %`,
   },
-  sourceNames: { weather: "Météo", news: "Actualités", pdf: "PDF", game: "Jeu du jour", recipe: "Cuisine du jour", generation: "Génération" },
+  sourceNames: { weather: "Météo", markets: "Bourse", news: "Actualités", pdf: "PDF", game: "Jeu du jour", recipe: "Cuisine du jour", generation: "Génération" },
   footer: (time, sources, unavailable) =>
     `Généré automatiquement par Mon Journal du Matin · ${time} · Sources : ${sources.length ? sources.join(", ") : "aucune"}${
       unavailable.length ? ` · Indisponibles : ${unavailable.join(", ")}` : ""
@@ -126,6 +134,7 @@ const FR: JournalText = {
     reauth: "Reconnexion requise",
     unavailable: "Source temporairement indisponible",
     weather: "Météo indisponible",
+    markets: "Bourse indisponible",
     news: "Actualités indisponibles",
     pdf: "Le PDF n’a pas pu être généré (version web disponible).",
     game: "Le jeu du jour n’a pas pu être généré.",
@@ -163,6 +172,12 @@ const EN: JournalText = {
   weatherUnavailable: "Weather unavailable",
   weatherLine: (min, max, precipitation) =>
     `Low ${min} · High ${max}${precipitation ? ` · Precip. ${precipitation}%` : ""}`,
+  markets: {
+    title: "Markets",
+    close: (date) => `Close: ${date}`,
+    live: (time) => `Intraday · ${time}`,
+    names: { tsx: "S&P/TSX", sp500: "S&P 500", dow: "Dow Jones", nasdaq: "Nasdaq", oil: "WTI crude", cad: "CDN dollar" },
+  },
   levels: { high: "High", medium: "Medium", low: "Low" },
   categories: {
     Signature: "Signature",
@@ -197,7 +212,7 @@ const EN: JournalText = {
     periods: { morning: "Morning · 6 am–noon", afternoon: "Afternoon · noon–6 pm", evening: "Evening · 6 pm–midnight", night: "Night · midnight–6 am tomorrow" },
     precipitation: (chance) => chance === null ? "Precip. unknown" : `Precip. ${chance}%`,
   },
-  sourceNames: { weather: "Weather", news: "News", pdf: "PDF", game: "Daily game", recipe: "Today's kitchen", generation: "Generation" },
+  sourceNames: { weather: "Weather", markets: "Markets", news: "News", pdf: "PDF", game: "Daily game", recipe: "Today's kitchen", generation: "Generation" },
   footer: (time, sources, unavailable) =>
     `Generated automatically by My Morning Paper · ${time} · Sources: ${sources.length ? sources.join(", ") : "none"}${
       unavailable.length ? ` · Unavailable: ${unavailable.join(", ")}` : ""
@@ -217,6 +232,7 @@ const EN: JournalText = {
     reauth: "Reconnection required",
     unavailable: "Source temporarily unavailable",
     weather: "Weather unavailable",
+    markets: "Markets unavailable",
     news: "News unavailable",
     pdf: "The PDF could not be generated (web version available).",
     game: "The daily game could not be generated.",

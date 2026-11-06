@@ -13,11 +13,12 @@ import { connectedAccounts, editions, settings } from "../db/schema";
 import { journalText } from "../edition/i18n";
 import { buildNewspaper } from "../edition/select";
 import { layoutNewspaper } from "../edition/layout";
-import type { AccountData, GameBlock, Weather } from "../edition/types";
+import type { AccountData, GameBlock, Markets, Weather } from "../edition/types";
 import { generateGame, renderGame } from "../games";
 import { createNylas, NylasError } from "../nylas/client";
 import { localDateString, startOfLocalDay } from "../schedule/time";
 import { fetchAccountData, type AccountSource } from "../sources/accounts";
+import { fetchMarkets } from "../sources/markets";
 import { fetchFeatured, fetchFeed, newsFeeds, type FeaturedTitles, type FeedResult } from "../sources/news";
 import { fetchWeather } from "../sources/weather";
 
@@ -32,7 +33,8 @@ type AccountResult =
 
 const KV_TTL_SECONDS = EDITION_RETENTION_DAYS * 86_400;
 const DAY_MS = 86_400_000;
-const MAX_NEWS_RETRIES = 4;
+// Reprises bornées : la bourse utilise la sous-requête libérée.
+const MAX_NEWS_RETRIES = 3;
 
 export const editionKeys = {
   html: (id: string) => `edition/${id}/html`,
@@ -148,6 +150,13 @@ export class EditionWorkflow extends WorkflowEntrypoint<Env, EditionParams> {
         errors.push(sourceError(t.sourceNames.weather, "weather"));
         return null;
       });
+    // Sans reprise : chaque essai coûte une sous-requête du budget partagé de l'édition.
+    const markets = await step
+      .do("bourse", { retries: { limit: 0, delay: "5 seconds" }, timeout: "30 seconds" }, (): Promise<Markets> => fetchMarkets())
+      .catch(() => {
+        errors.push(sourceError(t.sourceNames.markets, "markets"));
+        return null;
+      });
 
     const feeds = newsEnabled ? newsFeeds(context.preferences) : [];
     // Une seule lecture de chaque une pour toutes les rubriques ; sans elle, chaque rubrique garde son ordre.
@@ -224,6 +233,7 @@ export class EditionWorkflow extends WorkflowEntrypoint<Env, EditionParams> {
         preferences: context.preferences,
         accounts: accountResults.flatMap((result) => (result.ok ? [result.data] : [])),
         weather,
+        markets,
         news,
         game,
         unavailableSources: errors.map((error) => error.source),

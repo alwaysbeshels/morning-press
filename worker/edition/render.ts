@@ -1,7 +1,7 @@
 import type { GameKind } from "../../shared/types";
 import { GAME_STYLES } from "../games";
 import { escapeHtml } from "./html";
-import { formatLongDate, formatTemperature, formatTime, formatTimeRange, truncate } from "./format";
+import { formatLongDate, formatShortDate, formatTemperature, formatTime, formatTimeRange, truncate } from "./format";
 import { journalText, type JournalText } from "./i18n";
 import type { EventItem, Newspaper, NewsGroup } from "./types";
 import { localDateString } from "../schedule/time";
@@ -35,6 +35,30 @@ function renderEvent(event: EventItem, paper: Newspaper, t: JournalText): string
     <div class="meta">${escapeHtml([event.sources.join(" + "), ...details].join(" · "))}</div>
   </div>
 </li>`;
+}
+
+const MARKET_ARROW = '<svg class="mk-arrow" viewBox="0 0 8 8" aria-hidden="true"><path d="M4 1 7.5 7h-7z"/></svg>';
+
+/** Bande boursière imprimée au-dessus du jeu (ou du pied de page) de la page 1. */
+function renderMarkets(paper: Newspaper, t: JournalText): string {
+  const markets = paper.markets;
+  if (!markets?.quotes.length) return "";
+  const asOf = new Date(markets.asOf);
+  const when = markets.open
+    ? t.markets.live(formatTime(asOf, paper.timezone, paper.language))
+    : t.markets.close(formatShortDate(asOf, paper.timezone, paper.language));
+  const percent = new Intl.NumberFormat(t.htmlLang, { style: "percent", minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  const cells = markets.quotes.map((quote) => {
+    const decimals = quote.key === "cad" ? 4 : 2;
+    const value = new Intl.NumberFormat(t.htmlLang, {
+      ...(quote.key === "oil" || quote.key === "cad" ? { style: "currency", currency: quote.currency } : {}),
+      minimumFractionDigits: decimals, maximumFractionDigits: decimals,
+    }).format(quote.price);
+    const change = Math.round(quote.changePercent * 100) / 100;
+    const trend = change > 0 ? "up" : change < 0 ? "down" : "flat";
+    return `<li data-market="${quote.key}"><span class="mk-name">${escapeHtml(t.markets.names[quote.key])}</span><span class="mk-value">${escapeHtml(value)}</span><span class="mk-change ${trend}">${trend === "flat" ? "" : MARKET_ARROW}${escapeHtml(percent.format(Math.abs(change) / 100))}</span></li>`;
+  }).join("");
+  return `<section class="markets"><h2>${escapeHtml(t.markets.title)}<span class="markets-when">${escapeHtml(when)}</span></h2><ul>${cells}</ul></section>`;
 }
 
 export const PAGE_ONE_SECTIONS = ["priorities", "events", "emails", "upcoming", "reminders", "recipe", "exercise", "fact", "news"] as const;
@@ -287,6 +311,7 @@ export function renderNewspaper(paper: Newspaper): string {
   <div class="columns">
     ${columns.map((column) => `<div class="col">${column}</div>`).join("\n")}
   </div>
+  ${renderMarkets(paper, t)}
   ${paper.game
     ? frontLocal
       ? `<div class="front-feature"><div class="game-slot">${paper.game.html}</div><div class="front-local-news">${renderNewsGroup(frontLocal, t)}</div></div>`
@@ -382,6 +407,20 @@ footer { margin-top: 6pt; padding-top: 4pt; border-top: 1px solid #1a1a1a; text-
 .front-local-news .news-group { margin-bottom: 0; }
 .front-local-news .news-group h3 { font-size: 10pt; }
 .front-local-news .news-group li { padding: 2pt 0; }
+/* Bande boursière : une seule rangée, le titre puis une cellule par cotation. */
+.page-1 .markets { flex: none; display: grid; grid-template-columns: auto; grid-auto-columns: minmax(0, 1fr); grid-auto-flow: column; align-items: center; gap: 0 6pt; margin: 3pt 0 0; padding-top: 2pt; border-top: 1px solid #1a1a1a; }
+.page-1 .markets + .game-slot, .page-1 .markets + .front-feature { margin-top: 4pt; }
+.markets h2 { margin: 0; padding: 0 2pt 0 0; border: 0; font-size: 10pt; line-height: 1.05; max-width: 0.95in; }
+.markets-when { display: block; margin-top: 1pt; font-family: "Source Serif 4", Georgia, serif; font-size: 5.5pt; font-weight: 400; line-height: 1.05; text-transform: uppercase; letter-spacing: 0.04em; color: #5c564b; }
+.markets ul { display: contents; }
+.markets li { min-width: 0; padding: 0 0 0 6pt; border: 0; border-left: 1px solid #c8c2b5; line-height: 1.05; white-space: nowrap; }
+.mk-name { display: block; font-size: 6pt; text-transform: uppercase; letter-spacing: 0.05em; color: #5c564b; }
+.mk-value { display: block; font-size: 8pt; font-weight: 600; font-variant-numeric: tabular-nums; }
+.mk-change { display: flex; align-items: center; gap: 2pt; font-size: 6.5pt; font-weight: 600; font-variant-numeric: tabular-nums; }
+.mk-change.up { color: #1f6b3a; }
+.mk-change.down { color: #9b1c1c; }
+.mk-arrow { width: 5pt; height: 5pt; fill: currentColor; }
+.mk-change.down .mk-arrow { transform: rotate(180deg); }
 .game-slot { flex: none; margin-top: 8pt; padding-top: 6pt; border-top: 3px double #1a1a1a; display: flex; justify-content: center; }
 .solution-slot { flex: none; align-self: flex-end; max-width: 100%; margin-top: 8pt; padding: 4pt; border: 1px solid #c8c2b5; }
 .news-summary { margin: 2pt 0; font-size: 7.5pt; line-height: 1.15; overflow-wrap: anywhere; }
