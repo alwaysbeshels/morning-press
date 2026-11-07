@@ -18,6 +18,11 @@ export const API_MESSAGES = {
     en: "The database is not configured yet (DATABASE_URL secret).",
   },
   notFound: { fr: "Ressource introuvable.", en: "Resource not found." },
+  relayForbidden: {
+    fr: "Le relais d'impression a seulement accès au journal du jour.",
+    en: "The print relay can only read today's paper.",
+  },
+  noEditionToday: { fr: "Aucun journal prêt pour aujourd'hui.", en: "No paper is ready for today yet." },
   invalidSettings: { fr: "Paramètres invalides", en: "Invalid settings" },
   invalidData: { fr: "Données invalides", en: "Invalid data" },
   editionRunning: { fr: "Une édition est déjà en cours de génération.", en: "An edition is already being generated." },

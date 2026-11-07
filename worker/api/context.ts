@@ -6,6 +6,8 @@ export type AppEnv = {
   Bindings: Env;
   Variables: {
     email: string;
+    /** Requête du relais d'impression (jeton de service Access) : lecture des routes /api/print seulement. */
+    relay: boolean;
     userId: string;
     db: Db;
   };

@@ -1,6 +1,6 @@
 import { exportJWK, generateKeyPair, SignJWT, type CryptoKey } from "jose";
 import { afterEach, beforeAll, describe, expect, it, vi } from "vitest";
-import { accessIssuer, authenticate, deniedResponse, parseAllowedEmails } from "./access";
+import { accessIssuer, authenticate, deniedResponse, parseAllowedEmails, parseRelayTokens } from "./access";
 
 const TEAM = "monequipe";
 const ISSUER = "https://monequipe.cloudflareaccess.com";
@@ -59,6 +59,42 @@ describe("accessIssuer", () => {
 describe("parseAllowedEmails", () => {
   it("accepte virgules, points-virgules et espaces", () => {
     expect([...parseAllowedEmails("a@x.com, B@x.com;c@x.com d@x.com")]).toEqual(["a@x.com", "b@x.com", "c@x.com", "d@x.com"]);
+  });
+});
+
+describe("parseRelayTokens", () => {
+  it("associe chaque identifiant de client à une adresse", () => {
+    expect([...parseRelayTokens("abc.access=Moi@Example.com, def.access=a@x.com; invalide =pasdadresse")]).toEqual([
+      ["abc.access", "moi@example.com"],
+      ["def.access", "a@x.com"],
+    ]);
+    expect(parseRelayTokens(undefined).size).toBe(0);
+  });
+});
+
+describe("authenticate — jeton de service du relais", () => {
+  const relayEnv = { ...env, PRINT_RELAY_TOKENS: "relais.access=moi@example.com,etranger.access=autre@example.com" };
+
+  it("accepte un jeton de service déclaré pour une adresse autorisée", async () => {
+    const result = await authenticate(request(await token({ common_name: "relais.access" })), relayEnv);
+    expect(result).toEqual({ ok: true, email: "moi@example.com", relay: true });
+  });
+
+  it("refuse un jeton de service inconnu ou sans secret configuré", async () => {
+    const jwt = await token({ common_name: "inconnu.access" });
+    expect(await authenticate(request(jwt), relayEnv)).toMatchObject({ ok: false, status: 403 });
+    const declared = await token({ common_name: "relais.access" });
+    expect(await authenticate(request(declared), env)).toMatchObject({ ok: false, status: 403 });
+  });
+
+  it("refuse un jeton de service associé à une adresse non autorisée", async () => {
+    const result = await authenticate(request(await token({ common_name: "etranger.access" })), relayEnv);
+    expect(result).toMatchObject({ ok: false, status: 403 });
+  });
+
+  it("une adresse présente l'emporte sur common_name", async () => {
+    const result = await authenticate(request(await token({ email: "x@y.com", common_name: "relais.access" })), relayEnv);
+    expect(result).toMatchObject({ ok: false, status: 403 });
   });
 });
 

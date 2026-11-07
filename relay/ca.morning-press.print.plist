@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!-- Agent macOS : tente l'impression toutes les 10 minutes de 7 h 35 à 9 h 25. -->
+<plist version="1.0">
+<dict>
+  <key>Label</key><string>ca.morning-press.print</string>
+  <key>ProgramArguments</key>
+  <array>
+    <string>/bin/sh</string>
+    <string>__SCRIPT__</string>
+  </array>
+  <key>StartCalendarInterval</key>
+  <array>
+__INTERVALS__
+  </array>
+  <key>StandardOutPath</key><string>__LOG__</string>
+  <key>StandardErrorPath</key><string>__LOG__</string>
+</dict>
+</plist>

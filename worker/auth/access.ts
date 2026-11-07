@@ -4,10 +4,13 @@ import { languageFromHeader } from "../api/messages";
 import { isConfigured } from "../config";
 
 export type AuthResult =
-  | { ok: true; email: string }
+  | { ok: true; email: string; relay?: true }
   | { ok: false; status: 401 | 403 | 503; reason: "not-configured" | "missing-token" | "invalid-token" | "forbidden" };
 
-type AuthEnv = Pick<Env, "ACCESS_TEAM_DOMAIN" | "ACCESS_AUD" | "ALLOWED_EMAILS" | "DEV_AUTH_EMAIL">;
+type AuthEnv = Pick<Env, "ACCESS_TEAM_DOMAIN" | "ACCESS_AUD" | "ALLOWED_EMAILS" | "DEV_AUTH_EMAIL"> & {
+  /** Secret facultatif : jetons de service Access autorisés pour le relais d'impression. */
+  PRINT_RELAY_TOKENS?: string;
+};
 
 const jwksByIssuer = new Map<string, ReturnType<typeof createRemoteJWKSet>>();
 const LOCAL_HOSTNAMES = new Set(["localhost", "127.0.0.1", "[::1]"]);
@@ -28,6 +31,22 @@ export function parseAllowedEmails(value: string | undefined): Set<string> {
       .map((email) => email.trim().toLowerCase())
       .filter((email) => email.includes("@")),
   );
+}
+
+/**
+ * Jetons de service du relais d'impression, au format « clientId=adresse » séparés par des virgules.
+ * Chaque jeton agit au nom d'une adresse autorisée, uniquement sur les routes d'impression en lecture.
+ */
+export function parseRelayTokens(value: string | undefined): Map<string, string> {
+  const tokens = new Map<string, string>();
+  for (const entry of (value ?? "").split(/[,;\s]+/)) {
+    const separator = entry.indexOf("=");
+    if (separator <= 0) continue;
+    const clientId = entry.slice(0, separator).trim();
+    const email = entry.slice(separator + 1).trim().toLowerCase();
+    if (clientId && email.includes("@")) tokens.set(clientId, email);
+  }
+  return tokens;
 }
 
 /**
@@ -62,8 +81,15 @@ export async function authenticate(request: Request, env: AuthEnv): Promise<Auth
       algorithms: ["RS256"],
     });
     const email = typeof payload.email === "string" ? payload.email.trim().toLowerCase() : "";
-    if (!email || !allowed.has(email)) return { ok: false, status: 403, reason: "forbidden" };
-    return { ok: true, email };
+    if (email) {
+      if (!allowed.has(email)) return { ok: false, status: 403, reason: "forbidden" };
+      return { ok: true, email };
+    }
+    // Jeton de service Access (relais d'impression) : pas d'adresse, seulement l'identifiant du client.
+    const clientId = typeof payload.common_name === "string" ? payload.common_name.trim() : "";
+    const relayEmail = clientId ? parseRelayTokens(env.PRINT_RELAY_TOKENS).get(clientId) : undefined;
+    if (!relayEmail || !allowed.has(relayEmail)) return { ok: false, status: 403, reason: "forbidden" };
+    return { ok: true, email: relayEmail, relay: true };
   } catch {
     return { ok: false, status: 401, reason: "invalid-token" };
   }

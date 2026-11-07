@@ -1,0 +1,2 @@
+# Raspberry Pi : crontab -e, puis coller cette ligne (heure locale du Pi).
+*/10 7-9 * * * $HOME/morning-press/relay/print-today.sh >> $HOME/morning-press-print.log 2>&1

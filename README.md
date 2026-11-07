@@ -154,6 +154,11 @@ Le nom proposé est « Mon Journal » (« My Paper » en anglais), modifiable au
 
 Le manifeste (`/manifest.webmanifest`, servi par le Worker dans la langue du navigateur) et les icônes de `public/icons/` restent derrière Access. `index.html` charge le manifeste avec `crossorigin="use-credentials"` et indique `/icons/apple-touch-icon.png` pour l'icône iOS. Les icônes de l'application reprennent l'éclair mauve du favicon. Si une ancienne icône est restée, supprimez l'application de l'écran d'accueil et ajoutez-la de nouveau.
 
+### Impression automatique (facultatif)
+
+Un relais du réseau local (Raspberry Pi, Mac ou iPhone) peut imprimer le journal chaque matin avec un jeton de service Cloudflare Access.
+Le secret facultatif `PRINT_RELAY_TOKENS` (`clientId=adresse`) limite ce jeton à `GET /api/print/today.pdf`. Voir [relay/README.md](relay/README.md).
+
 ## Développement local
 
 ```sh
@@ -231,5 +236,5 @@ drizzle/        Migrations SQL
 
 ## À venir
 
-- Impression automatique (l'imprimante HP Smart Tank 6000 ne prend pas en charge HP ePrint ; il faudra un relais local).
+- Imprimante branchée directement au Worker : impossible avec la HP Smart Tank 6000 (pas de HP ePrint), d'où le relais local de [relay/](relay/README.md).
 - Envoi du PDF par courriel.

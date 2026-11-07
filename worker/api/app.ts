@@ -11,6 +11,7 @@ import { editionRoutes } from "./routes/editions";
 import { manifestRoutes } from "./routes/manifest";
 import { settingsRoutes } from "./routes/settings";
 import { newspaperPreviewRoutes } from "./routes/newspaper-preview";
+import { printRoutes } from "./routes/print";
 
 const APP_CSP = [
   "default-src 'self'",
@@ -54,6 +55,14 @@ app.use("*", async (c, next) => {
   const result = await authenticate(c.req.raw, c.env);
   if (!result.ok) return deniedResponse(c.req.raw, result);
   c.set("email", result.email);
+  c.set("relay", result.relay === true);
+  // Le relais d'impression ne lit que le journal du jour : aucune autre page ni action.
+  if (result.relay) {
+    const method = c.req.method;
+    if ((method !== "GET" && method !== "HEAD") || !new URL(c.req.url).pathname.startsWith("/api/print/")) {
+      return jsonError(c, 403, "relayForbidden");
+    }
+  }
   await next();
 });
 
@@ -86,6 +95,7 @@ app.route("/api", settingsRoutes);
 app.route("/api/accounts", accountRoutes);
 app.route("/api/connections", connectionRoutes);
 app.route("/api/editions", editionRoutes);
+app.route("/api/print", printRoutes);
 app.all("/api/*", (c) => jsonError(c, 404, "notFound"));
 
 app.all("*", async (c) => {
