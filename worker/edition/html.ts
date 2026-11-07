@@ -6,9 +6,9 @@ export function escapeHtml(value: string): string {
     .replace(/"/g, "&quot;")
     .replace(/'/g, "&#39;");
 }
-export function newspaperHtmlCsp(scriptNonce?: string): string {
+export function newspaperHtmlCsp(scriptNonce?: string, allowPrinting = false): string {
   return [
-    scriptNonce ? "sandbox allow-scripts" : "sandbox",
+    `sandbox${scriptNonce ? " allow-scripts" : ""}${allowPrinting ? " allow-modals" : ""}`,
     "default-src 'none'",
     "style-src 'unsafe-inline' https://fonts.googleapis.com",
     "font-src https://fonts.gstatic.com",

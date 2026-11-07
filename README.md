@@ -83,6 +83,10 @@ Tant qu'un secret vaut `A_CONFIGURER` (valeur du premier déploiement), la fonct
    - exercices optionnels : une idée à la maison sans équipement sportif, avec une alternative de marche dehors.
 4. **Tableau de bord** > *Générer maintenant* pour tester. L'édition apparaît dans **Éditions** (consulter ou télécharger le PDF).
 
+Sur mobile, **Imprimer** ouvre la version HTML imprimable du journal et tente d'ouvrir la boîte d'impression. Un bouton **Imprimer** reste disponible si iOS exige un nouveau toucher ; **Retour au journal** permet de revenir dans l'app. Ces commandes sont masquées à l'impression. Sur ordinateur, le bouton continue d'imprimer le PDF.
+
+Sur iPhone/iPad, **Télécharger** prépare le PDF sans ouvrir son lecteur. Touchez ensuite **Enregistrer le PDF**, puis **Enregistrer dans Fichiers** dans le menu iOS. Ce second toucher, après le chargement, est nécessaire pour conserver l'autorisation de partage d'iOS. L'annulation laisse le journal ouvert. Sur ordinateur, le téléchargement direct reste inchangé.
+
 **Éditions** regroupe les journaux par date. Chaque date propose le PDF de l'édition la plus récente ; les autres éditions du même jour s'affichent en dépliant « N autres éditions ce jour-là ». La corbeille supprime une édition, après confirmation (aussi depuis sa page). Une fois la section dépliée, toutes les éditions d'une date peuvent être supprimées ensemble. La suppression est définitive : la ligne Neon, le HTML et le PDF dans KV disparaissent. Une édition en cours de génération ne peut pas être supprimée, sauf si elle est restée bloquée plus de 15 minutes et que son Workflow est arrêté.
 
 Les filtres portent sur les courriels reçus depuis 24 heures, dans la limite choisie. « Tous » inclut aussi les courriels ordinaires déjà lus ; « Importants » utilise les mots-clés, les catégories détectées et les étoiles. Le tri des promotions est heuristique : ajoutez un expéditeur ou son domaine à la liste des exclusions si une infolettre passe le filtre.

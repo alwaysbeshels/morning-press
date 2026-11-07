@@ -21,16 +21,17 @@ export class ApiError extends Error {
   }
 }
 
-async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
+async function requestResponse(path: string, init: RequestInit = {}): Promise<Response> {
   const headers = new Headers(init.headers);
-  headers.set("Accept", "application/json");
+  if (!headers.has("Accept")) headers.set("Accept", "application/json");
   headers.set("Accept-Language", getLanguage());
   if (init.body) headers.set("Content-Type", "application/json");
 
   let response: Response;
   try {
     response = await fetch(path, { ...init, headers, credentials: "same-origin", redirect: "manual" });
-  } catch {
+  } catch (error) {
+    if (init.signal?.aborted) throw error;
     throw new ApiError(0, messages().common.network);
   }
   // Cloudflare Access redirige vers sa page de connexion quand la session expire.
@@ -47,7 +48,11 @@ async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
     }
     throw new ApiError(response.status, message);
   }
-  return (await response.json()) as T;
+  return response;
+}
+
+async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
+  return (await (await requestResponse(path, init)).json()) as T;
 }
 
 const json = (method: string, body?: unknown): RequestInit => ({
@@ -68,6 +73,15 @@ export const api = {
   deleteAccount: (id: string) => request<AccountDto[]>(`/api/accounts/${id}`, json("DELETE")),
   editions: () => request<EditionDto[]>("/api/editions"),
   edition: (id: string) => request<EditionDto>(`/api/editions/${id}`),
+  editionPdf: async (id: string, signal?: AbortSignal): Promise<File> => {
+    const response = await requestResponse(editionUrls.download(id), { headers: { Accept: "application/pdf" }, signal });
+    if (response.headers.get("Content-Type")?.split(";")[0]?.trim().toLowerCase() !== "application/pdf") {
+      throw new ApiError(502, messages().edition.downloadFailed);
+    }
+    const filename = response.headers.get("Content-Disposition")?.match(/filename="(journal-du-matin-\d{4}-\d{2}-\d{2}\.pdf)"/)?.[1]
+      ?? "journal-du-matin.pdf";
+    return new File([await response.blob()], filename, { type: "application/pdf" });
+  },
   createEdition: () => request<EditionDto>("/api/editions", json("POST")),
   deleteEditions: (ids: string[]) => request<EditionDeletionDto>("/api/editions", json("DELETE", { ids })),
 };
@@ -79,10 +93,12 @@ export const queryKeys = {
   accounts: ["accounts"] as const,
   editions: ["editions"] as const,
   edition: (id: string) => ["editions", id] as const,
+  editionPdf: (id: string) => ["editions", id, "pdf"] as const,
 };
 
 export const editionUrls = {
   html: (id: string) => `/api/editions/${id}/html`,
+  print: (id: string, language: Language) => `/api/editions/${id}/html?imprimer=1&lang=${language}`,
   pdf: (id: string) => `/api/editions/${id}/pdf`,
   download: (id: string) => `/api/editions/${id}/pdf?telecharger=1`,
 };

@@ -1,8 +1,9 @@
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
 import type { EditionDto } from "@shared/types";
-import { ChevronRightIcon, DownloadIcon, Loader2Icon, SparklesIcon, Trash2Icon } from "lucide-react";
+import { ChevronRightIcon, Loader2Icon, SparklesIcon, Trash2Icon } from "lucide-react";
 import { DeleteEditionsDialog } from "@/components/delete-editions-dialog";
+import { DownloadButton } from "@/components/download-button";
 import { EditionStatusBadge } from "@/components/edition-status";
 import { PageHeader } from "@/components/layout";
 import { PrintButton } from "@/components/print-button";
@@ -11,7 +12,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Skeleton } from "@/components/ui/skeleton";
-import { api, editionUrls, queryKeys } from "@/lib/api";
+import { api, queryKeys } from "@/lib/api";
 import { canDeleteEdition, groupEditionsByDate, type EditionGroup } from "@/lib/editions";
 import { formatEditionDate, formatTime } from "@/lib/format";
 import { errorMessage, useGenerateEdition } from "@/lib/hooks";
@@ -156,11 +157,7 @@ function EditionActions({ edition, date }: { edition: EditionDto; date: string }
       <EditionStatusBadge edition={edition} />
       {available && edition.hasPdf && (
         <>
-          <Button asChild size="sm" variant="ghost">
-            <a href={editionUrls.download(edition.id)} aria-label={ed.downloadPdf}>
-              <DownloadIcon /> PDF
-            </a>
-          </Button>
+          <DownloadButton editionId={edition.id} size="sm" variant="ghost">PDF</DownloadButton>
           <PrintButton editionId={edition.id} size="icon-sm" variant="ghost" iconOnly />
         </>
       )}

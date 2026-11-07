@@ -5,6 +5,7 @@ import type { EmailCategory, MarketKey, NewsProvider, PriorityLevel } from "./ty
 export interface JournalText {
   htmlLang: string;
   title: string;
+  printControls: { print: string; back: string; help: string; failed: string };
   quote: (text: string) => string;
   sections: { today: string; emails: string; priorities: string; reminders: string; quickRead: string };
   empty: { events: string; emails: string; priorities: string; reminders: string; news: string };
@@ -49,6 +50,12 @@ export interface JournalText {
 const FR: JournalText = {
   htmlLang: "fr-CA",
   title: "Mon Journal du Matin",
+  printControls: {
+    print: "Imprimer",
+    back: "Retour au journal",
+    help: "Si la fenêtre d’impression ne s’ouvre pas automatiquement, touchez Imprimer.",
+    failed: "Impossible de lancer l’impression. Réessayez ou ouvrez le site dans Safari.",
+  },
   quote: (text) => `« ${text} »`,
   sections: {
     today: "Aujourd’hui",
@@ -146,6 +153,12 @@ const FR: JournalText = {
 
 const EN: JournalText = {
   htmlLang: "en-CA",
+  printControls: {
+    print: "Print",
+    back: "Back to the paper",
+    help: "If the print dialog does not open automatically, tap Print.",
+    failed: "Unable to start printing. Try again or open the site in Safari.",
+  },
   title: "My Morning Paper",
   quote: (text) => `“${text}”`,
   sections: {

@@ -5,11 +5,22 @@ const FIREFOX_RENDER_DELAY_MS = 1000;
 // Un seul cadre à la fois : le précédent est retiré une fois le suivant chargé.
 let frame: HTMLIFrameElement | null = null;
 
-/** Ouvre la boîte d'impression du navigateur pour un PDF de la même origine. Rejette si l'impression n'a pas pu démarrer. */
-export async function printPdf(url: string): Promise<void> {
-  // Sur téléphone ou tablette, un PDF dans un cadre ne s'imprime pas : on l'ouvre pour passer par « Partager › Imprimer ».
-  if (window.matchMedia("(pointer: coarse)").matches) {
-    window.open(url, "_blank", "noopener");
+export function usesMobileDocuments(): boolean {
+  return /iPhone|iPad|iPod|Android/i.test(navigator.userAgent)
+    || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1)
+    || window.matchMedia("(pointer: coarse)").matches;
+}
+
+/** Un clic direct est requis : le fichier doit être chargé avant d'appeler cette fonction. */
+export async function sharePdf(file: File): Promise<void> {
+  if (!navigator.canShare?.({ files: [file] }) || !navigator.share) throw new Error("File sharing unavailable");
+  await navigator.share({ files: [file] });
+}
+
+/** Le mobile imprime le document HTML principal, pas un lecteur PDF ni un cadre. */
+export async function printEdition(pdfUrl: string, printUrl: string): Promise<void> {
+  if (usesMobileDocuments()) {
+    window.location.assign(printUrl);
     return;
   }
 
@@ -27,7 +38,7 @@ export async function printPdf(url: string): Promise<void> {
       window.clearTimeout(timer);
       resolve();
     }, { once: true });
-    target.src = url;
+    target.src = pdfUrl;
     document.body.append(target);
   });
   frame?.remove();

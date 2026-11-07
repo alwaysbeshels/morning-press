@@ -1,6 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
-import { CalendarClockIcon, DownloadIcon, Loader2Icon, NewspaperIcon, SparklesIcon, UsersIcon } from "lucide-react";
+import { CalendarClockIcon, Loader2Icon, NewspaperIcon, SparklesIcon, UsersIcon } from "lucide-react";
+import { DownloadButton } from "@/components/download-button";
 import { EditionStatusBadge } from "@/components/edition-status";
 import { PageHeader } from "@/components/layout";
 import { PrintButton } from "@/components/print-button";
@@ -8,7 +9,7 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-import { api, editionUrls, queryKeys } from "@/lib/api";
+import { api, queryKeys } from "@/lib/api";
 import { formatClock, formatDateTime, formatEditionDate, formatToday } from "@/lib/format";
 import { errorMessage, useGenerateEdition } from "@/lib/hooks";
 import { describeSourceError, useI18n } from "@/lib/i18n";
@@ -129,11 +130,7 @@ export function DashboardPage() {
               )}
               {latest.hasPdf && (
                 <>
-                  <Button asChild variant="outline">
-                    <a href={editionUrls.download(latest.id)}>
-                      <DownloadIcon /> PDF
-                    </a>
-                  </Button>
+                  <DownloadButton editionId={latest.id} variant="outline">PDF</DownloadButton>
                   <PrintButton editionId={latest.id} variant="outline" />
                 </>
               )}

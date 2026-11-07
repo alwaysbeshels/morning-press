@@ -4,7 +4,7 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { editionUrls } from "@/lib/api";
 import { useI18n } from "@/lib/i18n";
-import { printPdf } from "@/lib/print";
+import { printEdition } from "@/lib/documents";
 
 type PrintButtonProps = Omit<ComponentProps<typeof Button>, "asChild" | "children" | "onClick"> & {
   editionId: string;
@@ -12,19 +12,18 @@ type PrintButtonProps = Omit<ComponentProps<typeof Button>, "asChild" | "childre
   iconOnly?: boolean;
 };
 
-/** Imprime le PDF d'une édition ; si l'impression ne démarre pas, propose de l'ouvrir pour l'imprimer à la main. */
 export function PrintButton({ editionId, iconOnly = false, disabled, ...props }: PrintButtonProps) {
-  const { t } = useI18n();
+  const { t, language } = useI18n();
   const [printing, setPrinting] = useState(false);
   const label = iconOnly ? t.editions.printPdf : t.edition.print;
 
   const print = async () => {
     setPrinting(true);
     try {
-      await printPdf(editionUrls.pdf(editionId));
+      await printEdition(editionUrls.pdf(editionId), editionUrls.print(editionId, language));
     } catch {
       toast.error(t.edition.printFailed, {
-        action: { label: t.edition.openPdf, onClick: () => window.open(editionUrls.pdf(editionId), "_blank", "noopener") },
+        action: { label: t.edition.printView, onClick: () => window.location.assign(editionUrls.print(editionId, language)) },
       });
     } finally {
       setPrinting(false);

@@ -86,6 +86,73 @@ describe("PDF d'une édition", () => {
   });
 });
 
+describe("HTML imprimable d'une édition", () => {
+  const storedHtml = '<!doctype html><html><head></head><body class="two-pages"><main class="page">Journal</main></body></html>';
+  const findFirst = vi.fn();
+  const get = vi.fn();
+  const request = (query = "") => app.request(`${ORIGIN}/api/editions/${ID_A}/html${query}`, {}, {
+    DATABASE_URL: "postgres://example", EDITIONS: { get },
+  } as never);
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    vi.mocked(authenticate).mockResolvedValue({ ok: true, email: "demo@example.com" });
+    findFirst.mockResolvedValue(edition(ID_A));
+    get.mockResolvedValue(storedHtml);
+    vi.mocked(getDb).mockReturnValue({ query: { editions: { findFirst } } } as never);
+  });
+
+  it("garde l'aperçu habituel statique et strictement isolé", async () => {
+    const response = await request();
+    expect(await response.text()).toBe(storedHtml);
+    const csp = response.headers.get("Content-Security-Policy");
+    expect(csp).toContain("sandbox;");
+    expect(csp).not.toContain("allow-modals");
+    expect(csp).not.toContain("allow-scripts");
+  });
+
+  it.each(["fr", "en"])("autorise seulement le script d'impression avec un nonce neuf (%s)", async (language) => {
+    const response = await request(`?imprimer=1&lang=${language}`);
+    expect(response.status).toBe(200);
+    expect(response.headers.get("Cache-Control")).toBe("private, no-store");
+    expect(response.headers.get("X-Frame-Options")).toBe("SAMEORIGIN");
+    const html = await response.text();
+    const nonce = html.match(/<script nonce="([^"]+)">/)?.[1];
+    expect(nonce).toBeTruthy();
+    const csp = response.headers.get("Content-Security-Policy");
+    expect(csp).toContain("sandbox allow-scripts allow-modals;");
+    expect(csp).toContain(`script-src 'nonce-${nonce}'`);
+    expect(csp).not.toContain("allow-same-origin");
+    expect(html).toContain(language === "fr" ? "Retour au journal" : "Back to the paper");
+    expect(html).toContain(`<a href="/editions/${ID_A}">`);
+    expect(get).toHaveBeenCalledExactlyOnceWith(`edition/${ID_A}/html`, "text");
+    const second = await request("?imprimer=1");
+    expect(second.headers.get("Content-Security-Policy")).not.toBe(csp);
+  });
+
+  it.each([
+    undefined,
+    edition(ID_A, { hasHtml: false }),
+    edition(ID_A, { createdAt: new Date(Date.now() - 31 * 86_400_000) }),
+  ])("ne rend pas imprimable une édition inaccessible", async (entry) => {
+    findFirst.mockResolvedValue(entry);
+    expect((await request("?imprimer=1")).status).toBe(404);
+    expect(get).not.toHaveBeenCalled();
+  });
+
+  it("ne propose pas d'imprimer un HTML manquant", async () => {
+    get.mockResolvedValue(null);
+    expect((await request("?imprimer=1")).status).toBe(404);
+  });
+
+  it("refuse l'impression avant l'authentification", async () => {
+    vi.mocked(authenticate).mockResolvedValueOnce({ ok: false, status: 401, reason: "missing-token" });
+    expect((await request("?imprimer=1")).status).toBe(401);
+    expect(getDb).not.toHaveBeenCalled();
+    expect(get).not.toHaveBeenCalled();
+  });
+});
+
 describe("suppression d'éditions", () => {
   beforeEach(() => {
     vi.clearAllMocks();

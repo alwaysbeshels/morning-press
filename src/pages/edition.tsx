@@ -1,8 +1,9 @@
 import { useEffect, useRef, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { getRouteApi, Link, useNavigate } from "@tanstack/react-router";
-import { ArrowLeftIcon, DownloadIcon, ExternalLinkIcon, Loader2Icon, Trash2Icon } from "lucide-react";
+import { ArrowLeftIcon, ExternalLinkIcon, Loader2Icon, Trash2Icon } from "lucide-react";
 import { DeleteEditionsDialog } from "@/components/delete-editions-dialog";
+import { DownloadButton } from "@/components/download-button";
 import { EditionStatusBadge } from "@/components/edition-status";
 import { PageHeader } from "@/components/layout";
 import { PrintButton } from "@/components/print-button";
@@ -106,11 +107,7 @@ export function EditionPage() {
                     </a>
                   </Button>
                   <PrintButton editionId={data.id} variant="outline" />
-                  <Button asChild>
-                    <a href={editionUrls.download(data.id)}>
-                      <DownloadIcon /> {e.download}
-                    </a>
-                  </Button>
+                  <DownloadButton editionId={data.id} />
                 </>
               )}
               {canDeleteEdition(data) && (
