@@ -17,9 +17,9 @@ function distinctText(text: string, serial: number): string {
   return text.replace(/\p{L}{4,}/gu, (word) => salt + word.slice(2));
 }
 
-function fixture(language: Language, pages: 1 | 2, kind: GameKind | null, dense: boolean, profile: "regular" | "uneven" | "older" | "empty" | "calm" = "regular", extras: "none" | "all" | "recipe" | "exercise" = "none"): Newspaper {
+function fixture(language: Language, pages: 1 | 2, kind: GameKind | null, dense: boolean, profile: "regular" | "uneven" | "older" | "empty" | "calm" = "regular", extras: "none" | "all" | "recipe" | "exercise" = "none", seed = "print-regression"): Newspaper {
   const generatedAt = Date.parse("2026-10-31T10:30:00Z");
-  const game = kind ? generateGame({ seed: "print-regression", language, kinds: [kind] }) : null;
+  const game = kind ? generateGame({ seed, language, kinds: [kind] }) : null;
   const longText = language === "fr"
     ? "Présentation des nouveaux projets de développement et de collaboration pour les prochaines années"
     : "Presentation of the new development and collaboration projects planned for the coming years";
@@ -159,17 +159,26 @@ describe.skipIf(!process.env.CHROME_PATH)("PDF Lettre dans Chrome", () => {
     })),
   ]);
 
+  // Plusieurs grilles de mots croisés et de mots codés : l'espace libre sous les définitions varie d'une grille à l'autre.
+  const gridSeeds = ["s1", "s2", "s3", "s4", "s5", "s6"];
+  const gridCases = (["fr", "en"] as const).flatMap((language) => (["crossword", "codeword"] as const).flatMap((kind) =>
+    gridSeeds.map((seed) => ({
+      language, pages: 2 as const, kind, dense: false, profile: "regular" as const, extras: "none" as const,
+      newspaperStyle: "base" as const, colorIntensity: "subtle" as const, seed,
+    }))));
+
   const cases = [
-    ...legacyCases.map((test) => ({ ...test, newspaperStyle: "base" as const, colorIntensity: "subtle" as const })),
+    ...legacyCases.map((test) => ({ ...test, newspaperStyle: "base" as const, colorIntensity: "subtle" as const, seed: "print-regression" })),
+    ...gridCases,
     ...NEWSPAPER_STYLES.flatMap((newspaperStyle, index) => COLOR_INTENSITIES
       .filter((intensity) => newspaperStyle !== "base" || intensity !== "subtle")
       .flatMap((colorIntensity) => (["fr", "en"] as const).flatMap((language) => ([1, 2] as const).map((pages) => ({
         newspaperStyle, colorIntensity, language, pages, kind: pages === 2 ? GAME_KINDS[index % GAME_KINDS.length] : null,
-        dense: true, profile: "regular" as const, extras: "all" as const,
+        dense: true, profile: "regular" as const, extras: "all" as const, seed: "print-regression",
       }))))),
   ];
 
-  it.each(cases)("$language / $pages pages / $kind / dense=$dense / $profile / $extras / $newspaperStyle / $colorIntensity", async ({ language, pages, kind, dense, profile, extras, newspaperStyle, colorIntensity }) => {
+  it.each(cases)("$language / $pages pages / $kind / dense=$dense / $profile / $extras / $newspaperStyle / $colorIntensity / $seed", async ({ language, pages, kind, dense, profile, extras, newspaperStyle, colorIntensity, seed }) => {
     const target = await fetch(`${endpoint}/json/new?about:blank`, { method: "PUT" }).then((r) => r.json()) as {
       id: string; webSocketDebuggerUrl: string;
     };
@@ -195,7 +204,7 @@ describe.skipIf(!process.env.CHROME_PATH)("PDF Lettre dans Chrome", () => {
       socket.send(JSON.stringify({ id, method, params }));
     });
     try {
-      const candidates = fixture(language, pages, kind, dense, profile, extras);
+      const candidates = fixture(language, pages, kind, dense, profile, extras, seed);
       candidates.design = { newspaperStyle, colorIntensity };
       const { frameTree } = await send<{ frameTree: { frame: { id: string } } }>("Page.getFrameTree");
       await send("Emulation.setEmulatedMedia", { media: "print" });
@@ -220,7 +229,7 @@ describe.skipIf(!process.env.CHROME_PATH)("PDF Lettre dans Chrome", () => {
         omitted: number; rotation: string | null; ink: string; gridInks: string[];
         firstPageColumns: number; forecastPeriods: number; imagesLoaded: boolean; pageOneText: string;
         columns: { groups: string[]; fill: number; bottom: number; answers: number; answersInside: boolean }[];
-        frontLocal: { articles: number; bottom: number; gameBottom: number; clamp: string } | null;
+        frontLocal: { slot: boolean; articles: number; bottom: number; limit: number; clamp: string } | null;
         markets: { cells: number; overflow: string[]; rows: number; belowColumns: boolean; aboveGame: boolean } | null;
       } } }>("Runtime.evaluate", {
         awaitPromise: true,
@@ -265,13 +274,15 @@ describe.skipIf(!process.env.CHROME_PATH)("PDF Lettre dans Chrome", () => {
             pageOneText: document.querySelector('.page-1').innerText,
             rotation: solution ? getComputedStyle(solution).transform : null,
             frontLocal: (() => {
-              const block = document.querySelector('.front-feature .front-local-news');
-              if (!block) return null;
+              const block = document.querySelector('.front-feature .front-local-news, .page-1 .g-extra');
+              if (!block || !block.querySelector('li')) return null;
+              const slot = block.classList.contains('g-extra');
               const style = getComputedStyle(block);
               return {
+                slot,
                 articles: block.querySelectorAll('li').length,
                 bottom: Math.max(0, ...[...block.querySelectorAll('li')].map(li => li.getBoundingClientRect().bottom)),
-                gameBottom: document.querySelector('.front-feature .game-slot').getBoundingClientRect().bottom,
+                limit: (slot ? block : document.querySelector('.front-feature .game-slot')).getBoundingClientRect().bottom,
                 clamp: style.maxHeight + '/' + style.overflow,
               };
             })(),
@@ -308,7 +319,7 @@ describe.skipIf(!process.env.CHROME_PATH)("PDF Lettre dans Chrome", () => {
       const pdf = await send<{ data: string }>("Page.printToPDF", { preferCSSPageSize: true, printBackground: true });
       const bytes = Buffer.from(pdf.data, "base64");
       if (process.env.PRINT_PREVIEW_DIR) {
-        const name = `${language}-${pages}-${kind ?? "no-game"}-${dense ? "dense" : "normal"}-${profile}-${extras}-${newspaperStyle}-${colorIntensity}`;
+        const name = `${language}-${pages}-${kind ?? "no-game"}-${dense ? "dense" : "normal"}-${profile}-${extras}-${newspaperStyle}-${colorIntensity}-${seed}`;
         await writeFile(join(process.env.PRINT_PREVIEW_DIR, `${name}.html`), html);
         await writeFile(join(process.env.PRINT_PREVIEW_DIR, `${name}.pdf`), bytes);
       }
@@ -349,19 +360,25 @@ describe.skipIf(!process.env.CHROME_PATH)("PDF Lettre dans Chrome", () => {
         expect(columns.map((column) => column.answers)).toEqual([0, 0, kind ? 1 : 0]);
         expect(columns.every((column) => column.answersInside)).toBe(true);
         if (profile !== "empty") {
-          // Seul le sudoku laisse la moitié de la page 1 aux actualités locales ; sinon elles ouvrent la colonne 1.
-          const besideGame = kind === "sudoku";
+          // Les articles locaux vont à côté du jeu : moitié droite du sudoku, espace libre sous les définitions des mots
+          // croisés ou de la clé des mots codés. Sans place, la mesure les déplace en tête de la colonne 1 de la page 2.
+          const moved = paper.localPlacement === "page-two";
+          const besideGame = kind !== null && !moved;
           expect(columns.map((column) => column.groups)).toEqual([
             besideGame ? ["provincial", "national"] : ["local", "provincial", "national"], ["american", "international"], ["topics"],
           ]);
           const frontLocal = metrics.result.value.frontLocal;
+          // Des articles de taille normale doivent toujours tenir à côté du jeu ; seul le texte extrême du cas « dense »
+          // peut forcer le repli sur la page 2.
+          if (kind && !dense) expect(moved).toBe(false);
           if (besideGame) {
-            // Articles entiers seulement : aucun plafond CSS, et rien ne dépasse la hauteur de la grille.
+            // Articles entiers seulement : aucun plafond CSS, et rien ne dépasse la hauteur disponible à côté du jeu.
             expect(frontLocal).not.toBeNull();
-            expect(frontLocal!.clamp).toBe("none/visible");
-            expect(frontLocal!.bottom).toBeLessThanOrEqual(frontLocal!.gameBottom + 1);
+            expect(frontLocal!.slot).toBe(kind !== "sudoku");
+            if (!frontLocal!.slot) expect(frontLocal!.clamp).toBe("none/visible");
+            expect(frontLocal!.bottom).toBeLessThanOrEqual(frontLocal!.limit + 1);
             expect(frontLocal!.articles).toBe(paper.newsGroups.find((group) => group.key === "local")!.items.length);
-            expect(frontLocal!.articles).toBeGreaterThanOrEqual(profile === "uneven" ? 1 : dense ? 2 : 3);
+            expect(frontLocal!.articles).toBeGreaterThanOrEqual(kind !== "sudoku" ? 2 : profile === "uneven" ? 1 : dense ? 2 : 3);
           } else {
             expect(frontLocal).toBeNull();
           }

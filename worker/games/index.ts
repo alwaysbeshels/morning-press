@@ -9,13 +9,15 @@ import { WORDS_FR } from "./words-fr";
 
 export type { CodewordGame, CrosswordEntry, CrosswordGame, Game, SudokuGame } from "./types";
 export { GAME_LABELS } from "./labels";
-export { renderGame } from "./render";
+export { GAME_EXTRA_SLOT, renderGame, withGameExtra } from "./render";
 export { GAME_STYLES } from "./styles";
 
 export interface GenerateGameOptions {
   seed: string;
   language: Language;
   kinds: readonly GameKind[];
+  /** Jeu de l’édition précédente : écarté tant qu’un autre jeu est activé. */
+  avoid?: GameKind | null;
 }
 
 /**
@@ -23,8 +25,9 @@ export interface GenerateGameOptions {
  * ensemble de jeux ; null si aucun jeu n’est activé.
  */
 export function generateGame(options: GenerateGameOptions): Game | null {
-  const kinds = GAME_KINDS.filter((kind) => options.kinds.includes(kind));
-  if (kinds.length === 0) return null;
+  const enabled = GAME_KINDS.filter((kind) => options.kinds.includes(kind));
+  if (enabled.length === 0) return null;
+  const kinds = enabled.length > 1 ? enabled.filter((kind) => kind !== options.avoid) : enabled;
   const kind = createRng(`${options.seed}|kind|${kinds.join(",")}`).pick(kinds);
   // Graine propre au type de jeu : la grille ne dépend pas des autres jeux activés.
   const rng = createRng(`${options.seed}|${kind}|${options.language}`);

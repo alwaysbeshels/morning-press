@@ -1,5 +1,5 @@
 import type { GameKind } from "../../shared/types";
-import { GAME_STYLES } from "../games";
+import { GAME_EXTRA_SLOT, GAME_STYLES, withGameExtra } from "../games";
 import { escapeHtml } from "./html";
 import { formatLongDate, formatShortDate, formatTemperature, formatTime, formatTimeRange, truncate } from "./format";
 import { journalText, type JournalText } from "./i18n";
@@ -143,12 +143,15 @@ export const NEWS_COLUMNS = [
   ["topics"],
 ] as const;
 
-// Les mots croisés et les mots codés exigent toute la largeur (grille et définitions côte à côte).
+// Seul le sudoku, étroit, cède la moitié droite de la page 1. Les mots croisés et les mots codés
+// exigent toute la largeur : leurs articles locaux se logent dans l'espace libre sous les définitions.
 const HALF_PAGE_GAMES: readonly GameKind[] = ["sudoku"];
 
 /** Rubrique locale imprimée à côté du jeu de la page 1, ou null quand elle n'y a pas sa place. */
 export function frontLocalGroup(paper: Newspaper): NewsGroup | null {
-  if (paper.pages !== 2 || !paper.newsEnabled || !paper.game || !HALF_PAGE_GAMES.includes(paper.game.kind)) return null;
+  const game = paper.game;
+  if (paper.pages !== 2 || !paper.newsEnabled || !game || paper.localPlacement === "page-two") return null;
+  if (!HALF_PAGE_GAMES.includes(game.kind) && !game.html.includes(GAME_EXTRA_SLOT)) return null;
   return paper.newsGroups.find((group) => group.key === "local" && group.items.length > 0) ?? null;
 }
 
@@ -313,9 +316,9 @@ export function renderNewspaper(paper: Newspaper): string {
   </div>
   ${renderMarkets(paper, t)}
   ${paper.game
-    ? frontLocal
+    ? frontLocal && HALF_PAGE_GAMES.includes(paper.game.kind)
       ? `<div class="front-feature"><div class="game-slot">${paper.game.html}</div><div class="front-local-news">${renderNewsGroup(frontLocal, t)}</div></div>`
-      : `<div class="game-slot">${paper.game.html}</div>`
+      : `<div class="game-slot">${frontLocal ? withGameExtra(paper.game.html, renderNewsGroup(frontLocal, t)) : paper.game.html}</div>`
     : ""}
   <footer>
     ${escapeHtml(t.footer(time, paper.sources, paper.unavailableSources))}
@@ -407,6 +410,15 @@ footer { margin-top: 6pt; padding-top: 4pt; border-top: 1px solid #1a1a1a; text-
 .front-local-news .news-group { margin-bottom: 0; }
 .front-local-news .news-group h3 { font-size: 10pt; }
 .front-local-news .news-group li { padding: 2pt 0; }
+/* Articles locaux sous les définitions : texte réduit, deux colonnes, dans la seule hauteur laissée par la grille. */
+.g-extra .news-group { margin: 0; }
+.g-extra .news-group h3 { display: flex; align-items: baseline; gap: 4pt; margin-bottom: 2pt; font-size: 9.5pt; }
+.g-extra .news-label { min-width: 0; }
+.g-extra .news { column-count: 2; column-gap: 10pt; }
+.g-extra .news-group li { padding: 0 0 3pt; border: none; }
+.g-extra .title { font-size: 8.5pt; line-height: 1.15; }
+.g-extra .news-summary { margin: 1pt 0; font-size: 7pt; line-height: 1.15; }
+.g-extra .meta { font-size: 6.5pt; line-height: 1.15; }
 /* Bande boursière : une seule rangée, le titre puis une cellule par cotation. */
 .page-1 .markets { flex: none; display: grid; grid-template-columns: auto; grid-auto-columns: minmax(0, 1fr); grid-auto-flow: column; align-items: center; gap: 0 6pt; margin: 3pt 0 0; padding-top: 2pt; border-top: 1px solid #1a1a1a; }
 .page-1 .markets + .game-slot, .page-1 .markets + .front-feature { margin-top: 4pt; }

@@ -8,6 +8,9 @@ export const GAME_STYLES = `
 .g-body { display: flex; align-items: stretch; gap: 0.25in; }
 .g-board { flex: none; }
 .g-side { flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; gap: 6pt; }
+/* Reste de la hauteur de la grille : sa taille ne dépend jamais de son contenu, donc le bloc ne grandit pas. */
+.g-extra { flex: 1 1 0; min-height: 0; overflow: hidden; }
+.g-extra:empty { display: none; }
 .g-kind-sudoku .g-body { justify-content: center; gap: 0.6in; }
 .g-kind-sudoku .g-side { flex: none; }
 .g-caption { font-family: "Playfair Display", Georgia, serif; font-size: 8pt; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; margin: 0 0 2pt; }

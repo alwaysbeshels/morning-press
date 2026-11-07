@@ -1,6 +1,6 @@
 # Mon Journal du Matin
 
-Plateforme web personnelle qui prépare chaque matin un **journal en PDF**, en français ou en anglais, à partir de vos comptes Google, Outlook et Apple (courriels et calendriers), de la météo et des actualités. En mode 2 pages, le jeu du jour (sudoku, mots croisés ou mots codés) est sur la première page. La deuxième présente les actualités résumées par section (locale, provinciale, nationale, américaine, internationale), puis la solution du jeu en bas, à l'envers. Le journal se consulte et se télécharge depuis le site ; l'impression et l'envoi par courriel viendront plus tard.
+Plateforme web personnelle qui prépare chaque matin un **journal en PDF**, en français ou en anglais, à partir de vos comptes Google, Outlook et Apple (courriels et calendriers), de la météo et des actualités. En mode 2 pages, le jeu du jour (sudoku, mots croisés ou mots codés) est sur la première page. La deuxième présente les actualités résumées par section (locale, provinciale, nationale, américaine, internationale), puis la solution du jeu en bas, à l'envers. Le journal se consulte, se télécharge et s'imprime depuis le site ; l'envoi par courriel viendra plus tard.
 
 Le cahier des charges complet est dans [morning-newspaper-spec.md](./morning-newspaper-spec.md).
 
@@ -78,7 +78,7 @@ Tant qu'un secret vaut `A_CONFIGURER` (valeur du premier déploiement), la fonct
    - heure, jours, fuseau horaire, ville ;
    - lecture rapide : une section par portée (locale, provinciale, nationale, américaine, internationale) avec le lieu ou le sujet à suivre, plus vos propres sujets ;
    - courriels : interrupteur global, mots-clés prioritaires, expéditeurs ignorés ;
-   - jeu du jour (mode 2 pages seulement) : jeux possibles, choisis au hasard chaque jour ; grille en page 1 et solution à l'envers dans un encadré au bas de la troisième colonne de la page 2 ;
+   - jeu du jour (mode 2 pages seulement) : jeux possibles, choisis au hasard à chaque génération (nouvelle grille, et un autre jeu que l'édition précédente quand plusieurs sont cochés) ; grille en page 1 et solution à l'envers dans un encadré au bas de la troisième colonne de la page 2 ;
    - cuisine optionnelle : repas et protéines à choix multiples, ingrédients à exclure, végétarien ou vegan, photo illustrative lorsque disponible ;
    - exercices optionnels : une idée à la maison sans équipement sportif, avec une alternative de marche dehors.
 4. **Tableau de bord** > *Générer maintenant* pour tester. L'édition apparaît dans **Éditions** (consulter ou télécharger le PDF).

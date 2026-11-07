@@ -59,6 +59,33 @@ function setup(owned: Edition[], workflowStatus = "complete") {
 const remove = (env: Env, body: unknown, headers: Record<string, string> = { Origin: ORIGIN }) =>
   app.request(`${ORIGIN}/api/editions`, { method: "DELETE", headers, body: JSON.stringify(body) }, env);
 
+describe("PDF d'une édition", () => {
+  const pdfRequest = (path = "") => {
+    vi.mocked(getDb).mockReturnValue({ query: { editions: { findFirst: vi.fn(async () => edition(ID_A)) } } } as never);
+    const kv = { get: vi.fn(async () => new TextEncoder().encode("%PDF-1.7").buffer) };
+    const env = { DATABASE_URL: "postgres://example", EDITIONS: kv } as unknown as Env;
+    return app.request(`${ORIGIN}/api/editions/${ID_A}/pdf${path}`, {}, env);
+  };
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    vi.mocked(authenticate).mockResolvedValue({ ok: true, email: "demo@example.com" });
+  });
+
+  it("s'encadre depuis la même origine seulement, pour l'impression depuis le site", async () => {
+    const response = await pdfRequest();
+    expect(response.status).toBe(200);
+    expect(response.headers.get("Content-Type")).toBe("application/pdf");
+    expect(response.headers.get("Content-Disposition")).toContain("inline");
+    expect(response.headers.get("X-Frame-Options")).toBe("SAMEORIGIN");
+    expect(response.headers.get("Content-Security-Policy")).toBe("frame-ancestors 'self'");
+  });
+
+  it("reste une pièce jointe pour le téléchargement", async () => {
+    expect((await pdfRequest("?telecharger=1")).headers.get("Content-Disposition")).toContain("attachment");
+  });
+});
+
 describe("suppression d'éditions", () => {
   beforeEach(() => {
     vi.clearAllMocks();

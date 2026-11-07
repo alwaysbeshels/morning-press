@@ -125,6 +125,14 @@ function renderParts(game: Game, language: Language): Parts {
   }
 }
 
+/** Espace libre sous les définitions (ou la clé) : la page 1 y loge les actualités locales. */
+export const GAME_EXTRA_SLOT = '<div class="g-extra"></div>';
+
+/** Une fonction de remplacement évite que « $& » ou « $' » du texte ne soient interprétés. */
+export function withGameExtra(html: string, extra: string): string {
+  return html.replace(GAME_EXTRA_SLOT, () => `<div class="g-extra">${extra}</div>`);
+}
+
 /** Deux fragments indépendants pour placer les réponses sur une autre page. */
 export function renderGame(game: Game, language: Language): { html: string; solutionHtml: string } {
   const strings = GAME_STRINGS[language];
@@ -135,7 +143,7 @@ export function renderGame(game: Game, language: Language): { html: string; solu
     `<h2 class="g-title">${text(title)}</h2>` +
     `<p class="g-instr">${text(strings.instructions[game.kind])}</p>` +
     `<div class="g-body"><div class="g-board">${board}</div>` +
-    (side ? `<div class="g-side">${side}</div>` : "") +
+    (side ? `<div class="g-side">${side}${GAME_EXTRA_SLOT}</div>` : "") +
     `</div></section>`
   );
   const solutionHtml = `<div class="g-game g-answer g-kind-${text(game.kind)}"><div class="g-solution">` +

@@ -1,5 +1,5 @@
-import { and, eq, lt, lte, min } from "drizzle-orm";
-import type { EditionTrigger } from "../../shared/types";
+import { and, desc, eq, lt, lte, min, sql } from "drizzle-orm";
+import type { EditionTrigger, GameKind } from "../../shared/types";
 import { getDb, type Db } from "../db/client";
 import { editions, settings, type Edition } from "../db/schema";
 import { localDateString, nextRunAt } from "./time";
@@ -75,12 +75,13 @@ export async function startEdition(
   timezone: string,
   now = new Date(),
 ): Promise<Edition> {
+  const previousGame = await lastGame(db, userId);
   const [edition] = await db
     .insert(editions)
     .values({ userId, trigger, editionDate: localDateString(now, timezone) })
     .returning();
   try {
-    await env.EDITION_WORKFLOW.create({ id: edition.id, params: { editionId: edition.id, userId } });
+    await env.EDITION_WORKFLOW.create({ id: edition.id, params: { editionId: edition.id, userId, previousGame } });
     return edition;
   } catch (error) {
     const [failed] = await db
@@ -95,4 +96,15 @@ export async function startEdition(
     console.error("[edition] Workflow non démarré :", error instanceof Error ? error.message : "inconnu");
     return failed;
   }
+}
+
+/** Jeu de la dernière édition qui en avait un, pour en changer à la génération suivante. */
+async function lastGame(db: Db, userId: string): Promise<GameKind | null> {
+  const [previous] = await db
+    .select({ stats: editions.stats })
+    .from(editions)
+    .where(and(eq(editions.userId, userId), sql`${editions.stats}->>'game' is not null`))
+    .orderBy(desc(editions.createdAt))
+    .limit(1);
+  return previous?.stats?.game ?? null;
 }

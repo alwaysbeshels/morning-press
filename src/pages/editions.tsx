@@ -5,6 +5,7 @@ import { ChevronRightIcon, DownloadIcon, Loader2Icon, SparklesIcon, Trash2Icon }
 import { DeleteEditionsDialog } from "@/components/delete-editions-dialog";
 import { EditionStatusBadge } from "@/components/edition-status";
 import { PageHeader } from "@/components/layout";
+import { PrintButton } from "@/components/print-button";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -154,11 +155,14 @@ function EditionActions({ edition, date }: { edition: EditionDto; date: string }
     <div className="flex shrink-0 items-center gap-2">
       <EditionStatusBadge edition={edition} />
       {available && edition.hasPdf && (
-        <Button asChild size="sm" variant="ghost">
-          <a href={editionUrls.download(edition.id)} aria-label={ed.downloadPdf}>
-            <DownloadIcon /> PDF
-          </a>
-        </Button>
+        <>
+          <Button asChild size="sm" variant="ghost">
+            <a href={editionUrls.download(edition.id)} aria-label={ed.downloadPdf}>
+              <DownloadIcon /> PDF
+            </a>
+          </Button>
+          <PrintButton editionId={edition.id} size="icon-sm" variant="ghost" iconOnly />
+        </>
       )}
       {canDeleteEdition(edition) && (
         <DeleteEditionsDialog

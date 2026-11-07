@@ -103,6 +103,9 @@ export const editionRoutes = new Hono<AppEnv>()
       "Content-Type": "application/pdf",
       "Content-Disposition": `${disposition}; filename="journal-du-matin-${edition.editionDate}.pdf"`,
       "Cache-Control": "private, no-store",
+      // Le bouton Imprimer charge le PDF dans un cadre caché de la même origine ; aucun autre site ne peut l'encadrer.
+      "Content-Security-Policy": "frame-ancestors 'self'",
+      "X-Frame-Options": "SAMEORIGIN",
     });
   })
 

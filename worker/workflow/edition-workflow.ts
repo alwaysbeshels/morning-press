@@ -5,6 +5,7 @@ import {
   withDefaultPreferences,
   type EditionStatus,
   type EditionStats,
+  type GameKind,
   type SourceError,
   type SourceErrorCode,
 } from "../../shared/types";
@@ -25,6 +26,8 @@ import { fetchWeather } from "../sources/weather";
 export interface EditionParams {
   editionId: string;
   userId: string;
+  /** Jeu de l'édition précédente, lu au démarrage pour ne pas grever le budget de sous-requêtes du Workflow. */
+  previousGame?: GameKind | null;
 }
 
 type AccountResult =
@@ -43,9 +46,9 @@ export const editionKeys = {
 
 export class EditionWorkflow extends WorkflowEntrypoint<Env, EditionParams> {
   async run(event: Readonly<WorkflowEvent<EditionParams>>, step: WorkflowStep) {
-    const { editionId, userId } = event.payload;
+    const { editionId, userId, previousGame = null } = event.payload;
     try {
-      await this.generate(editionId, userId, step);
+      await this.generate(editionId, userId, previousGame, step);
     } catch (error) {
       await step.do("marquer l'échec", async () => {
         await getDb(this.env)
@@ -62,7 +65,7 @@ export class EditionWorkflow extends WorkflowEntrypoint<Env, EditionParams> {
     }
   }
 
-  private async generate(editionId: string, userId: string, step: WorkflowStep) {
+  private async generate(editionId: string, userId: string, previousGame: GameKind | null, step: WorkflowStep) {
     const context = await step.do("charger le contexte", async () => {
       const db = getDb(this.env);
       const userSettings = await db.query.settings.findFirst({ where: eq(settings.userId, userId) });
@@ -215,7 +218,8 @@ export class EditionWorkflow extends WorkflowEntrypoint<Env, EditionParams> {
       pages === 2 && gameEnabled
         ? await step
             .do("jeu du jour", { retries: { limit: 1, delay: "1 second" }, timeout: "30 seconds" }, async (): Promise<GameBlock | null> => {
-              const generated = generateGame({ seed: `${context.localDate}|${userId}`, language, kinds: gameKinds });
+              // Graine propre à l'édition : chaque génération, même le même jour, a sa propre grille.
+              const generated = generateGame({ seed: editionId, language, kinds: gameKinds, avoid: previousGame });
               return generated ? { kind: generated.kind, ...renderGame(generated, language) } : null;
             })
             .catch(() => {

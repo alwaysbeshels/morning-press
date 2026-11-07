@@ -3,6 +3,7 @@ import { Link } from "@tanstack/react-router";
 import { CalendarClockIcon, DownloadIcon, Loader2Icon, NewspaperIcon, SparklesIcon, UsersIcon } from "lucide-react";
 import { EditionStatusBadge } from "@/components/edition-status";
 import { PageHeader } from "@/components/layout";
+import { PrintButton } from "@/components/print-button";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
@@ -118,7 +119,7 @@ export function DashboardPage() {
             )}
           </CardContent>
           {latest && !latest.expired && latest.status !== "running" && (
-            <CardFooter className="gap-2">
+            <CardFooter className="flex-wrap gap-2">
               {latest.hasHtml && (
                 <Button asChild variant="outline">
                   <Link to="/editions/$id" params={{ id: latest.id }}>
@@ -127,11 +128,14 @@ export function DashboardPage() {
                 </Button>
               )}
               {latest.hasPdf && (
-                <Button asChild variant="outline">
-                  <a href={editionUrls.download(latest.id)}>
-                    <DownloadIcon /> PDF
-                  </a>
-                </Button>
+                <>
+                  <Button asChild variant="outline">
+                    <a href={editionUrls.download(latest.id)}>
+                      <DownloadIcon /> PDF
+                    </a>
+                  </Button>
+                  <PrintButton editionId={latest.id} variant="outline" />
+                </>
               )}
             </CardFooter>
           )}

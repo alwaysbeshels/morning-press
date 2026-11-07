@@ -170,6 +170,8 @@ export interface Newspaper {
   /** Brèves par section (page 2). */
   newsGroups: NewsGroup[];
   game: GameBlock | null;
+  /** Posé par la mesure quand aucun article local ne tient à côté du jeu : la rubrique ouvre alors la page 2. */
+  localPlacement?: "page-two";
   sources: string[];
   unavailableSources: string[];
 }

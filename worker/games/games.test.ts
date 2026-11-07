@@ -51,6 +51,18 @@ describe("generateGame", () => {
     for (const kind of GAME_KINDS) expect(generate("seul", kind).kind).toBe(kind);
   });
 
+  it("change de jeu par rapport à l'édition précédente quand un autre est activé", () => {
+    const kinds: GameKind[] = ["sudoku", "crossword", "codeword"];
+    const seen = new Set<GameKind>();
+    for (let i = 0; i < 60; i++) {
+      const game = generateGame({ seed: `edition-${i}`, language: "fr", kinds, avoid: "crossword" });
+      expect(game?.kind).not.toBe("crossword");
+      if (game) seen.add(game.kind);
+    }
+    expect(seen).toEqual(new Set(["sudoku", "codeword"]));
+    expect(generateGame({ seed: "edition-1", language: "fr", kinds: ["crossword"], avoid: "crossword" })?.kind).toBe("crossword");
+  });
+
   it("produit un objet sérialisable en JSON", () => {
     for (const kind of GAME_KINDS) {
       for (const language of LANGS) {

@@ -5,6 +5,7 @@ import { ArrowLeftIcon, DownloadIcon, ExternalLinkIcon, Loader2Icon, Trash2Icon 
 import { DeleteEditionsDialog } from "@/components/delete-editions-dialog";
 import { EditionStatusBadge } from "@/components/edition-status";
 import { PageHeader } from "@/components/layout";
+import { PrintButton } from "@/components/print-button";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -104,6 +105,7 @@ export function EditionPage() {
                       <ExternalLinkIcon /> {e.openPdf}
                     </a>
                   </Button>
+                  <PrintButton editionId={data.id} variant="outline" />
                   <Button asChild>
                     <a href={editionUrls.download(data.id)}>
                       <DownloadIcon /> {e.download}

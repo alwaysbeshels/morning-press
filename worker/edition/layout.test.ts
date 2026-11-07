@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 import { DEFAULT_PREFERENCES } from "../../shared/types";
+import { GAME_EXTRA_SLOT } from "../games";
 import { applyNewsLayout, applyPageOneLayout, layoutNewspaper, NEWS_LAYOUT_SCRIPT } from "./layout";
 import { pageOneSectionKeys, renderNewspaper } from "./render";
 import { buildNewspaper } from "./select";
@@ -94,16 +95,17 @@ describe("mise en page mesurée", () => {
         { title: "Un marché", summary: "Le marché public prolongera ses heures d'ouverture jusqu'en décembre.", source: "Source E", topic: "Laval" },
       ],
     };
-    const beside = (game: boolean, kind: "sudoku" | "crossword" = "sudoku") => {
+    const beside = (game: boolean, kind: "sudoku" | "crossword" = "sudoku", slot = true) => {
       const base = fixture();
       return buildNewspaper({
         generatedAt: base.generatedAt, timezone: base.timezone,
         preferences: { ...DEFAULT_PREFERENCES, pages: 2, gameEnabled: game }, accounts: [], weather: null, unavailableSources: [],
         news: [{ group: "provincial", label: "Québec", items: base.newsGroups[0].items }, local],
-        game: game ? { kind, html: "<div>grille</div>", solutionHtml: "<div>solution</div>" } : null,
+        game: game ? { kind, html: kind === "crossword" && slot ? `<div>grille</div>${GAME_EXTRA_SLOT}` : "<div>grille</div>", solutionHtml: "<div>solution</div>" } : null,
       });
     };
-    const measuredBeside = (ids: string[]) => `<div data-news-layout="ready">${ids.map((id) => `<li data-news-item="${id}"></li>`).join("")}</div>`;
+    const measuredBeside = (ids: string[], marker = "") => `<div data-news-layout="ready"${marker}>${ids.map((id) => `<li data-news-item="${id}"></li>`).join("")}</div>`;
+    const movedToPageTwo = ' data-local-placement="page-two"';
 
     it("conserve les articles entiers mesurés à côté du jeu, sans exiger de colonne locale à la page 2", () => {
       const printed = applyNewsLayout(beside(true), measuredBeside(["local:0", "local:2", "provincial:1"]));
@@ -114,14 +116,36 @@ describe("mise en page mesurée", () => {
     it("rend le jeu pleine largeur quand aucun article local n'a tenu à côté", () => {
       const printed = applyNewsLayout(beside(true), measuredBeside(["provincial:0"]));
       expect(printed.newsGroups.map((group) => group.key)).toEqual(["provincial"]);
+      expect(printed.localPlacement).toBeUndefined();
       const html = renderNewspaper(printed);
       expect(html).not.toContain('class="front-feature"');
       expect(html).toContain('<div class="game-slot">');
     });
 
+    it("conserve les articles mesurés sous les définitions des mots croisés", () => {
+      const printed = applyNewsLayout(beside(true, "crossword"), measuredBeside(["local:0", "local:2", "provincial:1"]));
+      expect(printed.newsGroups.find((group) => group.key === "local")!.items.map((item) => item.title)).toEqual(["Un pont", "Un marché"]);
+      const [pageOne, pageTwo] = renderNewspaper(printed).split('<main class="page page-2">');
+      expect(pageOne.split('<div class="g-extra">')[1]).toContain("Un marché");
+      expect(pageTwo).not.toContain("Un pont");
+      expect(pageOne).not.toContain('class="front-feature"');
+    });
+
+    it.each(["sudoku", "crossword"] as const)("garde la rubrique locale en page 2 quand la mesure l'y a déplacée (%s)", (kind) => {
+      const printed = applyNewsLayout(beside(true, kind), measuredBeside(["local:0", "local:1", "provincial:1"], movedToPageTwo));
+      expect(printed.localPlacement).toBe("page-two");
+      expect(printed.newsGroups.map((group) => group.key).sort()).toEqual(["local", "provincial"]);
+      const html = renderNewspaper(printed);
+      expect(html).not.toContain('class="front-feature"');
+      expect(html).not.toContain('<div class="g-extra"><section');
+      const columnOne = html.split('data-news-column="2"')[0].split('data-news-column="1"')[1];
+      expect(columnOne.indexOf('data-news-group="local"')).toBeLessThan(columnOne.indexOf('data-news-group="provincial"'));
+      expect(() => applyNewsLayout(beside(true, kind), measuredBeside(["topics:0"], movedToPageTwo))).toThrow("colonne");
+    });
+
     it.each([
       ["sans jeu", beside(false)],
-      ["avec un jeu qui exige toute la largeur", beside(true, "crossword")],
+      ["avec un jeu sans emplacement libre", beside(true, "crossword", false)],
     ])("traite la rubrique locale comme une rubrique de la colonne 1 %s", (_label, paper) => {
       expect(applyNewsLayout(paper, measuredBeside(["local:1"])).newsGroups.map((group) => group.key)).toEqual(["local"]);
       expect(() => applyNewsLayout(paper, measuredBeside(["topics:0"]))).toThrow("colonne");

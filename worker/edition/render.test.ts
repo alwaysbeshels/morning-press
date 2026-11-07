@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { WEATHER_PERIODS } from "../../shared/types";
+import { GAME_EXTRA_SLOT } from "../games";
 import { escapeHtml, renderNewspaper } from "./render";
 import type { Newspaper } from "./types";
 
@@ -173,13 +174,14 @@ describe("renderNewspaper", () => {
   });
 
   describe("actualités locales", () => {
+    const crosswordHtml = `<div class="g-test">grille</div><div class="g-side"><p>définitions</p>${GAME_EXTRA_SLOT}</div>`;
     const newsGroups: Newspaper["newsGroups"] = [
       { key: "local", label: "Laval", items: ["Un pont", "Une école", "Un marché"].map((title) => ({ title, summary: `${title} : le projet avance selon les plans annoncés.`, source: "TVA", topic: "Laval" })) },
       { key: "provincial", label: "", items: [{ title: "Budget du Québec", summary: "Le gouvernement présente ses priorités pour la prochaine année.", source: "CBC", topic: "" }] },
     ];
     const paper = (kind: "sudoku" | "crossword" | null, overrides: Partial<Newspaper> = {}): Newspaper => ({
       ...base, pages: 2, newsGroups,
-      game: kind ? { kind, html: '<div class="g-test">grille</div>', solutionHtml: "<div>solution</div>" } : null,
+      game: kind ? { kind, html: kind === "crossword" ? crosswordHtml : '<div class="g-test">grille</div>', solutionHtml: "<div>solution</div>" } : null,
       ...overrides,
     });
     const columnOne = (html: string) => html.split('data-news-column="2"')[0].split('data-news-column="1"')[1];
@@ -194,25 +196,53 @@ describe("renderNewspaper", () => {
       expect(html).not.toMatch(/\.front-local-news\s*\{[^}]*(?:max-height|overflow)/);
     });
 
-    it.each([
-      ["sans jeu", null],
-      ["avec des mots croisés, qui exigent toute la largeur", "crossword" as const],
-    ])("place la rubrique locale en tête de la colonne 1 de la page 2 %s", (_label, kind) => {
-      const html = renderNewspaper(paper(kind));
-      expect(html).not.toContain('class="front-feature"');
-      expect(html).not.toContain('class="front-local-news"');
-      const column = columnOne(html);
-      expect(column).toContain("Un marché");
-      expect(column.indexOf('data-news-group="local"')).toBeLessThan(column.indexOf('data-news-group="provincial"'));
-      if (kind) expect(html).toContain('<div class="game-slot"><div class="g-test">grille</div></div>');
+    it("loge les articles locaux sous les définitions des mots croisés, sans partager la page en deux", () => {
+      const html = renderNewspaper(paper("crossword"));
+      const [pageOne, pageTwo] = html.split('<main class="page page-2">');
+      expect(pageOne).not.toContain('class="front-feature"');
+      const slot = pageOne.split('<div class="g-extra">')[1];
+      for (const title of ["Un pont", "Une école", "Un marché"]) expect(slot).toContain(title);
+      expect(pageOne.indexOf("définitions")).toBeLessThan(pageOne.indexOf('<div class="g-extra">'));
+      expect(pageTwo).not.toContain("Un pont");
+      expect(columnOne(html)).not.toContain('data-news-group="local"');
+      expect(columnOne(html)).toContain("Budget du Québec");
     });
 
-    it("garde le jeu en pleine largeur sans article local ou sans actualités", () => {
-      const withoutLocal = renderNewspaper(paper("sudoku", { newsGroups: newsGroups.slice(1) }));
+    it("recopie tel quel un texte contenant des motifs de remplacement", () => {
+      const tricky: Newspaper["newsGroups"] = [{
+        key: "local", label: "Laval",
+        items: [{ title: "Gagnez 5 $& de plus $' ou $1", summary: "Un prix de 5 $` par famille.", source: "TVA", topic: "Laval" }],
+      }];
+      const pageOne = renderNewspaper(paper("crossword", { newsGroups: tricky })).split('<main class="page page-2">')[0];
+      expect(pageOne).toContain("Gagnez 5 $&amp; de plus $&#39; ou $1");
+      expect(pageOne).toContain("Un prix de 5 $` par famille.");
+      expect(pageOne.match(/class="g-extra"/g)).toHaveLength(1);
+    });
+
+    it.each([
+      ["sans jeu", paper(null)],
+      ["avec un jeu sans emplacement libre", paper("crossword", { game: { kind: "crossword", html: '<div class="g-test">grille</div>', solutionHtml: "<div>solution</div>" } })],
+      ["quand la mesure l'a déplacée parce que rien ne tenait à côté du jeu", paper("crossword", { localPlacement: "page-two" })],
+      ["même avec le sudoku, quand la mesure l'a déplacée", paper("sudoku", { localPlacement: "page-two" })],
+    ])("place la rubrique locale en tête de la colonne 1 de la page 2 %s", (_label, candidate) => {
+      const html = renderNewspaper(candidate);
+      const column = columnOne(html);
+      expect(html).not.toContain('class="front-feature"');
+      expect(html).not.toContain('class="front-local-news"');
+      expect(html).not.toContain('<div class="g-extra"><section');
+      expect(column).toContain("Un marché");
+      expect(column.indexOf('data-news-group="local"')).toBeLessThan(column.indexOf('data-news-group="provincial"'));
+      if (candidate.game) expect(html).toContain(`<div class="game-slot">${candidate.game.html}</div>`);
+    });
+
+    it.each(["sudoku", "crossword"] as const)("garde le jeu en pleine largeur sans article local ou sans actualités (%s)", (kind) => {
+      const withoutLocal = renderNewspaper(paper(kind, { newsGroups: newsGroups.slice(1) }));
       expect(withoutLocal).not.toContain('class="front-feature"');
-      expect(withoutLocal).toContain('<div class="game-slot"><div class="g-test">grille</div></div>');
-      const newsOff = renderNewspaper(paper("sudoku", { newsEnabled: false }));
+      expect(withoutLocal).not.toContain('<div class="g-extra"><section');
+      expect(withoutLocal).toContain(`<div class="game-slot">${paper(kind).game!.html}</div>`);
+      const newsOff = renderNewspaper(paper(kind, { newsEnabled: false }));
       expect(newsOff).not.toContain('class="front-feature"');
+      expect(newsOff).not.toContain('<div class="g-extra"><section');
       expect(newsOff).not.toContain("Un pont");
       expect(newsOff).not.toContain("Aucune actualité");
     });

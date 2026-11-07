@@ -12,19 +12,30 @@ export const NEWS_LAYOUT_SCRIPT = String.raw`(async () => {
       link.addEventListener('error', () => reject(new Error('Unable to load print stylesheet')), { once: true });
     })));
   await document.fonts.ready;
-  // À côté du jeu, on ne garde que les articles entiers qui tiennent dans la hauteur de la grille.
+  // À côté du jeu (sudoku : moitié droite ; mots croisés et codés : espace libre sous les définitions),
+  // on ne garde que les articles entiers qui tiennent dans la hauteur disponible.
   const feature = document.querySelector('.front-feature');
-  const local = feature?.querySelector('[data-news-group="local"]');
+  const slot = document.querySelector('.page-1 .g-extra');
+  const local = (feature || slot)?.querySelector('[data-news-group="local"]');
   if (local) {
     const list = local.querySelector('ul');
     const items = [...list.querySelectorAll('[data-news-item]')];
     items.forEach(item => item.remove());
-    const budget = feature.querySelector('.game-slot').getBoundingClientRect().height;
+    // Hauteur relevée avant d'ajouter les articles (la rangée du sudoku s'étirerait avec eux) ; en hauteur et non en
+    // position, car la page 1 est ancrée en bas : le bloc monte quand il grandit.
+    const budget = (slot || feature.querySelector('.game-slot')).getBoundingClientRect().height;
     for (const item of items) {
       list.append(item);
       if (local.getBoundingClientRect().height > budget + 0.5) item.remove();
     }
-    if (!list.children.length) local.remove();
+    if (!list.children.length) {
+      // Rien ne tient à côté du jeu : la rubrique ouvre la page 2, où la mesure par colonne la reprend.
+      items.forEach(item => list.append(item));
+      document.querySelector('.news-column .news-stack').prepend(local);
+      document.body.dataset.localPlacement = 'page-two';
+      // Le sudoku reprend alors toute la largeur de la page 1.
+      feature?.replaceWith(feature.querySelector('.game-slot'));
+    }
   }
   const page = document.querySelector('.page-1.daily');
   if (page) {
@@ -204,10 +215,11 @@ export function applyNewsLayout(paper: Newspaper, measuredHtml: string): Newspap
   if (selected.size !== ids.length || ids.some((id) => !candidates.has(id))) {
     throw new Error("La mesure des colonnes a retourné une sélection invalide");
   }
+  const placed: Newspaper = measuredHtml.includes('data-local-placement="page-two"') ? { ...paper, localPlacement: "page-two" } : paper;
   const newsGroups = paper.newsGroups
     .map((group) => ({ ...group, items: group.items.filter((_, index) => selected.has(`${group.key}:${index}`)) }))
     .filter((group) => group.items.length > 0);
-  for (const keys of newsColumns(paper)) {
+  for (const keys of newsColumns(placed)) {
     const belongs = (key: string) => keys.some((value) => value === key);
     if (paper.newsGroups.some((group) => belongs(group.key)) && !newsGroups.some((group) => belongs(group.key))) {
       throw new Error("Aucun article ne tient dans une colonne d'actualités");
@@ -220,7 +232,7 @@ export function applyNewsLayout(paper: Newspaper, measuredHtml: string): Newspap
     ...paper.sources.filter((source) => !originalProviders.has(source)),
     ...providerNames(newsGroups),
   ])];
-  return { ...paper, newsGroups, sources };
+  return { ...placed, newsGroups, sources };
 }
 
 export async function layoutNewspaper(
