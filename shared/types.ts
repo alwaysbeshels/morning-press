@@ -29,6 +29,24 @@ export interface NewsSection {
 
 export type PageCount = 1 | 2;
 
+export const MAX_WATCHLIST = 21;
+export const MAX_NEWS_TOPICS = 10;
+
+export interface Stock {
+  symbol: string;
+  name: string;
+  exchange: string;
+  categoryId?: string | null;
+}
+
+export const STOCK_COLORS = ["blue", "green", "purple", "amber", "rose", "teal", "slate", "orange"] as const;
+export type StockColor = (typeof STOCK_COLORS)[number];
+export interface StockCategory {
+  id: string;
+  name: string;
+  color: StockColor;
+}
+
 export const MEAL_TYPES = ["breakfast", "lunch", "dinner", "snack"] as const;
 export type MealType = (typeof MEAL_TYPES)[number];
 export const PROTEIN_CHOICES = ["chicken", "beef", "fish", "pork", "turkey", "seafood", "eggs", "dairy", "legumes", "tofu", "nuts"] as const;
@@ -71,6 +89,9 @@ export interface Preferences extends NewspaperDesign {
   newsEnabled: boolean;
   newsSections: Record<NewsSectionKey, NewsSection>;
   newsTopics: string[];
+  marketsEnabled: boolean;
+  marketWatchlist: Stock[];
+  marketCategories: StockCategory[];
   priorityKeywords: string[];
   ignoredSenders: string[];
   maxEvents: number;
@@ -223,6 +244,9 @@ export const DEFAULT_PREFERENCES: Preferences = {
   newsEnabled: true,
   newsSections: DEFAULT_NEWS_SECTIONS,
   newsTopics: ["technologie", "intelligence artificielle"],
+  marketsEnabled: true,
+  marketWatchlist: [],
+  marketCategories: [],
   priorityKeywords: [],
   ignoredSenders: [],
   maxEvents: 12,
@@ -247,6 +271,8 @@ export function withDefaultPreferences(
   const cooking = { ...DEFAULT_COOKING, ...stored?.cooking };
   return {
     ...DEFAULT_PREFERENCES, ...stored, newsSections: sections,
+    marketWatchlist: [...(stored?.marketWatchlist ?? [])],
+    marketCategories: (stored?.marketCategories ?? []).map((category) => ({ ...category })),
     cooking: {
       ...cooking, meals: [...cooking.meals], proteins: [...cooking.proteins], restrictions: [...cooking.restrictions],
     },

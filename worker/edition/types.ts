@@ -1,4 +1,4 @@
-import type { EmailFilter, GameKind, Language, NewsSectionKey, PageCount, WeatherPeriodKey } from "../../shared/types";
+import type { EmailFilter, GameKind, Language, NewsSectionKey, PageCount, Stock, StockCategory, WeatherPeriodKey } from "../../shared/types";
 import type { DailyExercise, DailyFact } from "../daily/content";
 import type { DailyRecipe } from "../daily/recipes";
 import type { NewspaperDesign } from "../../shared/newspaper-design";
@@ -46,6 +46,9 @@ export interface AccountData {
 
 export interface Weather {
   current: number;
+  currentCode?: number;
+  currentDescription?: string;
+  currentIsDay?: boolean;
   min: number;
   max: number;
   description: string;
@@ -78,6 +81,8 @@ export interface Markets {
   /** Vrai quand ce cours tombe pendant la séance : sinon, ce sont les cours de clôture. */
   open: boolean;
   quotes: MarketQuote[];
+  watchlist?: (Stock & { price: number | null; changePercent: number | null; currency: string | null })[];
+  categories?: StockCategory[];
 }
 
 export type NewsProvider = "google" | "bing" | "lapresse" | "radio-canada" | "cbc" | "ledevoir";
@@ -164,6 +169,7 @@ export interface Newspaper {
     exercise: DailyExercise | null;
   };
   firstPageColumns?: string[][];
+  firstPageTight?: boolean;
   omitted?: { events: number; emails: number; priorities: number; reminders: number; upcoming?: number; news?: number };
   /** Brèves de la page 1 (mode 1 page). */
   news: NewsItem[];

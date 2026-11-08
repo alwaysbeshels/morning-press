@@ -1,7 +1,8 @@
 import { z } from "zod";
 import { en, fr } from "zod/locales";
 import { COLOR_INTENSITIES, NEWSPAPER_STYLES } from "./newspaper-design";
-import { DEFAULT_COOKING, EDITION_LIST_LIMIT, EMAIL_FILTERS, FOOD_RESTRICTIONS, GAME_KINDS, isProteinAllowed, LANGUAGES, MEAL_TYPES, PROTEIN_CHOICES, type Language } from "./types";
+import { categoryNameKey } from "./stocks";
+import { DEFAULT_COOKING, EDITION_LIST_LIMIT, EMAIL_FILTERS, FOOD_RESTRICTIONS, GAME_KINDS, isProteinAllowed, LANGUAGES, MAX_NEWS_TOPICS, MAX_WATCHLIST, MEAL_TYPES, PROTEIN_CHOICES, STOCK_COLORS, type Language } from "./types";
 
 const shortText = (max: number) => z.string().trim().min(1).max(max);
 
@@ -13,6 +14,18 @@ export const scheduleSchema = z.object({
 });
 
 const newsSectionSchema = z.object({ enabled: z.boolean(), query: z.string().trim().max(80) });
+
+export const stockSchema = z.object({
+  symbol: z.string().trim().toUpperCase().regex(/^[A-Z0-9^][A-Z0-9.^=-]{0,31}$/),
+  name: shortText(200),
+  exchange: z.string().trim().max(80),
+});
+
+const stockCategorySchema = z.object({
+  id: z.uuid(),
+  name: shortText(32),
+  color: z.enum(STOCK_COLORS),
+});
 
 export const newspaperDesignSchema = z.object({
   newspaperStyle: z.enum(NEWSPAPER_STYLES).default("base"),
@@ -51,7 +64,12 @@ export const preferencesSchema = z
       american: newsSectionSchema,
       international: newsSectionSchema,
     }),
-    newsTopics: z.array(shortText(80)).max(8),
+    newsTopics: z.array(shortText(80)).max(MAX_NEWS_TOPICS)
+      .transform((items) => items.filter((item, index) => items.findIndex((other) => other.toLowerCase() === item.toLowerCase()) === index)),
+    marketsEnabled: z.boolean().default(true),
+    marketWatchlist: z.array(stockSchema.extend({ categoryId: z.uuid().nullable().optional() })).max(MAX_WATCHLIST)
+      .transform((items) => items.filter((item, index) => items.findIndex((other) => other.symbol === item.symbol) === index)).default([]),
+    marketCategories: z.array(stockCategorySchema).max(MAX_WATCHLIST).default([]),
     priorityKeywords: z.array(shortText(60)).max(40),
     ignoredSenders: z.array(shortText(254)).max(100),
     maxEvents: z.number().int().min(1).max(20),
@@ -65,6 +83,14 @@ export const preferencesSchema = z
       .transform((kinds) => [...new Set(kinds)]),
     cooking: cookingSchema.default(DEFAULT_COOKING),
     exerciseEnabled: z.boolean().default(false),
+  })
+  .refine((prefs) => {
+    const ids = prefs.marketCategories.map((category) => category.id);
+    const names = prefs.marketCategories.map((category) => categoryNameKey(category.name));
+    return new Set(ids).size === ids.length && new Set(names).size === names.length && !names.includes("general");
+  }, { path: ["marketCategories"], message: "Chaque catégorie doit avoir un nom et un identifiant uniques, autres que Général" })
+  .refine((prefs) => prefs.marketWatchlist.every((stock) => !stock.categoryId || prefs.marketCategories.some((category) => category.id === stock.categoryId)), {
+    path: ["marketWatchlist"], message: "Une catégorie boursière n'existe plus",
   })
   .refine((prefs) => prefs.pages === 1 || !prefs.gameEnabled || prefs.gameKinds.length > 0, {
     path: ["gameKinds"],
@@ -97,6 +123,11 @@ export type SettingsUpdate = z.infer<typeof settingsUpdateSchema>;
 export type AccountUpdate = z.infer<typeof accountUpdateSchema>;
 
 const VALIDATION_MESSAGES: Record<string, Record<Language, string>> = {
+  "Chaque catégorie doit avoir un nom et un identifiant uniques, autres que Général": {
+    fr: "Chaque catégorie doit avoir un nom et un identifiant uniques, autres que Général",
+    en: "Each category must have a unique name and ID, other than General",
+  },
+  "Une catégorie boursière n'existe plus": { fr: "Une catégorie boursière n'existe plus", en: "A stock category no longer exists" },
   "Format attendu : HH:MM": { fr: "Format attendu : HH:MM", en: "Expected format: HH:MM" },
   "Fuseau horaire invalide": { fr: "Fuseau horaire invalide", en: "Invalid time zone" },
   "Choisissez au moins un jeu": { fr: "Choisissez au moins un jeu", en: "Choose at least one game" },

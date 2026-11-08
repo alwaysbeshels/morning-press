@@ -75,7 +75,7 @@ export function describeWeatherCode(code: number, language: Language = "fr"): st
 
 const values = z.array(z.number().nullable());
 const weatherSchema = z.object({
-  current: z.object({ temperature_2m: z.number(), weather_code: z.number().nullable().optional() }),
+  current: z.object({ temperature_2m: z.number(), weather_code: z.number().nullable().optional(), is_day: z.number().nullable().optional() }),
   daily: z.object({
     time: z.array(z.string().regex(/^\d{4}-\d{2}-\d{2}$/)).min(1),
     weather_code: values, temperature_2m_max: values, temperature_2m_min: values,
@@ -98,7 +98,7 @@ export async function fetchWeather(
   const url = new URL("https://api.open-meteo.com/v1/forecast");
   url.searchParams.set("latitude", String(latitude));
   url.searchParams.set("longitude", String(longitude));
-  url.searchParams.set("current", "temperature_2m,weather_code");
+  url.searchParams.set("current", "temperature_2m,weather_code,is_day");
   url.searchParams.set(
     "daily",
     "weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max,precipitation_sum",
@@ -159,6 +159,11 @@ export function parseWeather(input: unknown, language: Language = "fr"): Weather
   });
   return {
     current: Math.round(current),
+    ...(body.current.weather_code == null ? {} : {
+      currentCode: body.current.weather_code,
+      currentDescription: describeWeatherCode(body.current.weather_code, language),
+    }),
+    ...(body.current.is_day == null ? {} : { currentIsDay: body.current.is_day === 1 }),
     min: Math.round(min),
     max: Math.round(max),
     description: describeWeatherCode(code, language),

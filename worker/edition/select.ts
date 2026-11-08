@@ -388,8 +388,10 @@ export function buildNewspaper(input: BuildInput): Newspaper {
   const newsGroups = twoPages ? groupNews(feeds, ITEMS_PER_FEED) : [];
 
   const sources = input.accounts.map((account) => account.label);
+  const markets = preferences.marketsEnabled && input.markets
+    ? { ...input.markets, categories: preferences.marketCategories } : null;
   if (input.weather) sources.push("Open-Meteo");
-  if (input.markets) sources.push(MARKETS_SOURCE);
+  if (markets) sources.push(MARKETS_SOURCE);
   const newsProviders = new Set([...news, ...newsGroups.flatMap((group) => group.items)].map((item) => item.provider ?? "google"));
   for (const provider of newsProviders) sources.push(newsProviderName(language, provider));
 
@@ -404,7 +406,7 @@ export function buildNewspaper(input: BuildInput): Newspaper {
     city: preferences.city,
     region: preferences.region,
     weather: input.weather,
-    markets: input.markets ?? null,
+    markets,
     quote: quoteOfTheDay(today, language),
     events,
     priorities,

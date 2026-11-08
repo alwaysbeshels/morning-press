@@ -6,6 +6,7 @@ import type {
   MeDto,
   SettingsDto,
   Language,
+  Stock,
 } from "@shared/types";
 import type { AccountUpdate, SettingsUpdate } from "@shared/schemas";
 import { getLanguage, messages } from "@/lib/i18n";
@@ -64,6 +65,8 @@ export const api = {
   me: () => request<MeDto>("/api/me"),
   dashboard: () => request<DashboardDto>("/api/dashboard"),
   settings: () => request<SettingsDto>("/api/settings"),
+  searchStocks: (query: string, signal?: AbortSignal) =>
+    request<Stock[]>(`/api/stocks/search?${new URLSearchParams({ q: query })}`, { signal }),
   updateSettings: (body: SettingsUpdate) => request<SettingsDto>("/api/settings", json("PUT", body)),
   accounts: () => request<AccountDto[]>("/api/accounts"),
   updateAccount: (id: string, body: AccountUpdate) => request<AccountDto[]>(`/api/accounts/${id}`, json("PATCH", body)),
@@ -90,6 +93,7 @@ export const queryKeys = {
   me: ["me"] as const,
   dashboard: ["dashboard"] as const,
   settings: ["settings"] as const,
+  stocks: (query: string) => ["stocks", query] as const,
   accounts: ["accounts"] as const,
   editions: ["editions"] as const,
   edition: (id: string) => ["editions", id] as const,

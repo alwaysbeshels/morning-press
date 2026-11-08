@@ -64,6 +64,9 @@ describe("formulaire des préférences par section", () => {
       ["news", withPrefs({ newsEnabled: false })],
       ["news", withPrefs({ newsSections: { ...base.prefs.newsSections, local: { enabled: true, query: "Laval" } } })],
       ["news", (values) => ({ ...values, topics: "Tech\nSanté" })],
+      ["markets", withPrefs({ marketsEnabled: false })],
+      ["markets", withPrefs({ marketWatchlist: [{ symbol: "RY.TO", name: "Royal Bank", exchange: "Toronto" }] })],
+      ["markets", withPrefs({ marketCategories: [{ id: "00000000-0000-4000-8000-000000000001", name: "Techno", color: "blue" }] })],
       ["emails", withPrefs({ emailsEnabled: false })],
       ["emails", (values) => ({ ...values, keywords: "école" })],
       ["emails", (values) => ({ ...values, ignored: "promo@boutique.com" })],
@@ -96,6 +99,22 @@ describe("formulaire des préférences par section", () => {
     edits = editSection("place", withPrefs({ city: ` ${base.prefs.city} ` }), edits);
     edits = editSection("game", withPrefs({ gameKinds: [...base.prefs.gameKinds].reverse() }), edits);
     expect(describeChanges(base, applyEdits(base, edits), fr)).toEqual([]);
+  });
+
+  it("enregistre et détecte l'ordre des titres, leur catégorie et les couleurs", () => {
+    const category = { id: "00000000-0000-4000-8000-000000000001", name: "Techno", color: "blue" as const };
+    const stocks = ["MSFT", "AAPL"].map((symbol) => ({ symbol, name: symbol, exchange: "", categoryId: null }));
+    const initial = withPrefs({ marketWatchlist: stocks, marketCategories: [category] })(base);
+    for (const patch of [
+      { marketWatchlist: [...stocks].reverse() },
+      { marketWatchlist: stocks.map((stock, i) => i ? stock : { ...stock, categoryId: category.id }) },
+      { marketCategories: [{ ...category, color: "purple" as const }] },
+    ]) {
+      const edited = withPrefs(patch)(initial);
+      expect(describeChanges(initial, edited, fr).map((change) => change.section)).toEqual(["markets"]);
+      const payload = settingsUpdateSchema.parse(settingsPayload(applyEdits(initial, { markets: pickSection(edited, "markets") })));
+      expect(payload.preferences).toMatchObject(patch);
+    }
   });
 
   it("décrit les changements de façon lisible en français et en anglais", () => {
@@ -152,5 +171,15 @@ describe("formulaire des préférences par section", () => {
     expect(withoutSaved(sent, sent)).toEqual({});
     expect(withoutSaved(again, sent)).toEqual({ place: again.place });
     expect(withoutSaved(other, sent)).toEqual({ limits: other.limits });
+  });
+
+  it("enregistre et retire les titres indépendamment des sujets et conserve la liste quand la bourse est masquée", () => {
+    const stock = { symbol: "RY.TO", name: "Royal Bank", exchange: "Toronto" };
+    let edits = editSection("markets", withPrefs({ marketsEnabled: false, marketWatchlist: [stock] }));
+    edits = editSection("news", (values) => ({ ...values, topics: "Science" }), edits);
+    const payload = settingsUpdateSchema.parse(settingsPayload(applyEdits(base, { markets: edits.markets })));
+    expect(payload.preferences).toMatchObject({ marketsEnabled: false, marketWatchlist: [stock], newsTopics: saved.preferences.newsTopics });
+    const removed = editSection("markets", withPrefs({ marketWatchlist: [] }), edits);
+    expect(settingsPayload(applyEdits(base, removed)).preferences).toMatchObject({ newsTopics: ["Science"], marketWatchlist: [] });
   });
 });

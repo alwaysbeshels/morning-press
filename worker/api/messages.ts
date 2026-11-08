@@ -20,6 +20,10 @@ export const API_MESSAGES = {
   notFound: { fr: "Ressource introuvable.", en: "Resource not found." },
   invalidSettings: { fr: "Paramètres invalides", en: "Invalid settings" },
   invalidData: { fr: "Données invalides", en: "Invalid data" },
+  stockSearchUnavailable: {
+    fr: "La recherche boursière est indisponible. Réessayez dans un instant.",
+    en: "Stock search is unavailable. Please try again shortly.",
+  },
   editionRunning: { fr: "Une édition est déjà en cours de génération.", en: "An edition is already being generated." },
   editionNotFound: { fr: "Édition introuvable", en: "Edition not found" },
   editionDeleteRunning: {

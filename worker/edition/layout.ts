@@ -1,6 +1,5 @@
 import { z } from "zod";
 import { newsProviderName } from "./i18n";
-import { MARKETS_SOURCE } from "./select";
 import { PAGE_ONE_SECTIONS, newsColumns, pageOneSectionKeys, renderNewspaper } from "./render";
 import type { Newspaper } from "./types";
 
@@ -17,28 +16,31 @@ export const NEWS_LAYOUT_SCRIPT = String.raw`(async () => {
   const feature = document.querySelector('.front-feature');
   const slot = document.querySelector('.page-1 .g-extra');
   const local = (feature || slot)?.querySelector('[data-news-group="local"]');
-  if (local) {
+  const localItems = [...(local?.querySelectorAll('[data-news-item]') ?? [])];
+  const fitLocalNews = () => {
+    if (!local?.closest('.page-1')) return;
     const list = local.querySelector('ul');
-    const items = [...list.querySelectorAll('[data-news-item]')];
-    items.forEach(item => item.remove());
+    localItems.forEach(item => item.remove());
     // Hauteur relevée avant d'ajouter les articles (la rangée du sudoku s'étirerait avec eux) ; en hauteur et non en
     // position, car la page 1 est ancrée en bas : le bloc monte quand il grandit.
     const budget = (slot || feature.querySelector('.game-slot')).getBoundingClientRect().height;
-    for (const item of items) {
+    for (const item of localItems) {
       list.append(item);
       if (local.getBoundingClientRect().height > budget + 0.5) item.remove();
     }
     if (!list.children.length) {
       // Rien ne tient à côté du jeu : la rubrique ouvre la page 2, où la mesure par colonne la reprend.
-      items.forEach(item => list.append(item));
+      localItems.forEach(item => list.append(item));
       document.querySelector('.news-column .news-stack').prepend(local);
       document.body.dataset.localPlacement = 'page-two';
       // Le sudoku reprend alors toute la largeur de la page 1.
       feature?.replaceWith(feature.querySelector('.game-slot'));
     }
-  }
+  };
+  fitLocalNews();
   const page = document.querySelector('.page-1.daily');
   if (page) {
+    page.removeAttribute('data-page-layout');
     await Promise.all([...page.querySelectorAll('img')].map(image => image.decode()));
     const area = page.querySelector('.columns');
     const sections = [...area.querySelectorAll('[data-page-section]')];
@@ -55,12 +57,13 @@ export const NEWS_LAYOUT_SCRIPT = String.raw`(async () => {
     const order = ['priorities', 'events', 'emails', 'upcoming', 'reminders', 'recipe', 'exercise', 'fact', 'news'];
     const weights = { priorities: 3, events: 3, emails: 2, upcoming: 1, reminders: 1, news: 2 };
     let best = null;
-    // La bourse cède sa place quand les blocs fixes (jeu, recette, exercice...) ne tiendraient plus.
-    const markets = page.querySelector('.markets');
-    for (const withMarkets of markets ? [true, false] : [false]) {
+    let lastFit = null;
+    // Resserre les blocs du jour au besoin, sans sacrifier la bourse ni les extras.
+    for (const tight of [false, true]) {
       if (best) break;
-      if (markets && !withMarkets) { markets.remove(); page.dataset.markets = 'dropped'; }
-      for (const count of [2, 3]) {
+      page.classList.toggle('tight', tight);
+      if (tight) fitLocalNews();
+      for (const count of tight ? [3] : [2, 3]) {
         page.classList.toggle('compact', count === 3);
         for (const group of groups) {
           group.count = group.section.dataset.pageSection === 'upcoming' && group.items.length ? 1 : 0;
@@ -77,6 +80,7 @@ export const NEWS_LAYOUT_SCRIPT = String.raw`(async () => {
           const sorted = [...sections].sort((a, b) => heights.get(b) - heights.get(a));
           const capacity = slots[0].getBoundingClientRect().height - 2;
           const gap = parseFloat(getComputedStyle(slots[0]).rowGap);
+          lastFit = { capacity, sections: Object.fromEntries([...heights].map(([section, height]) => [section.dataset.pageSection, height])) };
           const bins = slots.map(() => ({ height: 0, sections: [] }));
           const place = index => {
             if (index === sorted.length) return true;
@@ -123,14 +127,16 @@ export const NEWS_LAYOUT_SCRIPT = String.raw`(async () => {
         }
         const score = groups.reduce((total, group) => total + group.count * weights[group.section.dataset.pageSection], 0);
         if (!best || score > best.score + 2) best = {
-          score, count, html: area.innerHTML,
+          score, count, tight, html: area.innerHTML,
           keys: slots.map(slot => [...slot.children].map(section => section.dataset.pageSection)),
         };
       }
     }
-    if (!best) throw new Error('The complete daily blocks do not fit on the first page');
+    if (!best) throw new Error('The complete daily blocks do not fit on the first page: ' + JSON.stringify(lastFit));
     area.innerHTML = best.html;
     page.classList.toggle('compact', best.count === 3);
+    page.classList.toggle('tight', best.tight);
+    page.dataset.pageDensity = best.tight ? 'tight' : 'normal';
     page.dataset.pageColumns = encodeURIComponent(JSON.stringify(best.keys));
     page.dataset.pageLayout = 'ready';
   }
@@ -192,14 +198,13 @@ export function applyPageOneLayout(paper: Newspaper, measuredHtml: string): News
   if (selected.size !== ids.length || ids.some((id) => !candidates.has(id))) throw new Error("Sélection personnelle invalide");
   const filtered = <T>(key: typeof PERSONAL_KEYS[number], values: T[]) => values.filter((_, index) => selected.has(`${key}:${index}`));
   const omitted = { events: 0, emails: 0, priorities: 0, reminders: 0, ...paper.omitted };
-  const marketsDropped = measuredHtml.includes('data-markets="dropped"');
+  if (measuredHtml.includes('data-markets="dropped"')) throw new Error("La mesure a supprimé la bourse");
   for (const key of PERSONAL_KEYS) {
     const kept = items[key].filter((_, index) => selected.has(`${key}:${index}`)).length;
     omitted[key] = (paper.omitted?.[key] ?? 0) + items[key].length - kept;
   }
   return {
-    ...paper, firstPageColumns, omitted,
-    ...(marketsDropped ? { markets: null, sources: paper.sources.filter((source) => source !== MARKETS_SOURCE) } : {}),
+    ...paper, firstPageColumns, firstPageTight: measuredHtml.includes('data-page-density="tight"'), omitted,
     events: filtered("events", paper.events), emails: filtered("emails", paper.emails),
     priorities: filtered("priorities", paper.priorities), reminders: filtered("reminders", paper.reminders),
     news: filtered("news", paper.news), daily: { ...paper.daily, upcoming: filtered("upcoming", paper.daily.upcoming) },

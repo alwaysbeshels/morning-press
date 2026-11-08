@@ -19,7 +19,7 @@ export interface JournalText {
   weatherUnavailable: string;
   weatherLine: (min: string, max: string, precipitation: number | null) => string;
   /** Bande boursière de la page 1 : `close` reçoit la date de la séance, `live` l'heure du cours. */
-  markets: { title: string; close: (date: string) => string; live: (time: string) => string; names: Record<MarketKey, string> };
+  markets: { title: string; watchlist: string; unavailable: string; close: (date: string) => string; live: (time: string) => string; names: Record<MarketKey, string> };
   daily: {
     quote: string; fact: string; upcoming: string; noUpcoming: string; ongoing: string; deadline: string;
     recipe: string; noRecipe: string; ingredients: string; preparation: string; recipeSafety: string;
@@ -83,6 +83,8 @@ const FR: JournalText = {
     `Min ${min} · Max ${max}${precipitation ? ` · Précip. ${precipitation}\u00a0%` : ""}`,
   markets: {
     title: "Bourse",
+    watchlist: "Mes titres",
+    unavailable: "Indisponible",
     close: (date) => `Clôture du ${date}`,
     live: (time) => `En séance · ${time}`,
     names: { tsx: "S&P/TSX", sp500: "S&P 500", dow: "Dow Jones", nasdaq: "Nasdaq", oil: "Pétrole WTI", cad: "Dollar CA" },
@@ -118,7 +120,7 @@ const FR: JournalText = {
     photo: "Photo illustrative · domaine public", exercise: "Bouger aujourd'hui",
     exerciseSafety: "À votre rythme, sans forcer. Arrêtez en cas de douleur ou de malaise.",
     source: "Source",
-    periods: { morning: "Avant-midi · 6–12 h", afternoon: "Après-midi · 12–18 h", evening: "Soir · 18–24 h", night: "Nuit · 0–6 h demain" },
+    periods: { morning: "Avant-midi", afternoon: "Après-midi", evening: "Soir", night: "Nuit" },
     precipitation: (chance) => chance === null ? "Précip. inconnues" : `Précip. ${chance} %`,
   },
   sourceNames: { weather: "Météo", markets: "Bourse", news: "Actualités", pdf: "PDF", game: "Jeu du jour", recipe: "Cuisine du jour", generation: "Génération" },
@@ -187,6 +189,8 @@ const EN: JournalText = {
     `Low ${min} · High ${max}${precipitation ? ` · Precip. ${precipitation}%` : ""}`,
   markets: {
     title: "Markets",
+    watchlist: "My watchlist",
+    unavailable: "Unavailable",
     close: (date) => `Close: ${date}`,
     live: (time) => `Intraday · ${time}`,
     names: { tsx: "S&P/TSX", sp500: "S&P 500", dow: "Dow Jones", nasdaq: "Nasdaq", oil: "WTI crude", cad: "CDN dollar" },
@@ -222,7 +226,7 @@ const EN: JournalText = {
     photo: "Illustrative photo · public domain", exercise: "Move today",
     exerciseSafety: "Go at your own pace, without straining. Stop if you feel pain or unwell.",
     source: "Source",
-    periods: { morning: "Morning · 6 am–noon", afternoon: "Afternoon · noon–6 pm", evening: "Evening · 6 pm–midnight", night: "Night · midnight–6 am tomorrow" },
+    periods: { morning: "Morning", afternoon: "Afternoon", evening: "Evening", night: "Night" },
     precipitation: (chance) => chance === null ? "Precip. unknown" : `Precip. ${chance}%`,
   },
   sourceNames: { weather: "Weather", markets: "Markets", news: "News", pdf: "PDF", game: "Daily game", recipe: "Today's kitchen", generation: "Generation" },

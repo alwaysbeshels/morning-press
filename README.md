@@ -76,7 +76,8 @@ Tant qu'un secret vaut `A_CONFIGURER` (valeur du premier déploiement), la fonct
 3. **Préférences** :
    - langue du journal (français ou anglais, indépendante de celle du site) et nombre de pages (1 ou 2) ;
    - heure, jours, fuseau horaire, ville ;
-   - lecture rapide : une section par portée (locale, provinciale, nationale, américaine, internationale) avec le lieu ou le sujet à suivre, plus vos propres sujets ;
+   - lecture rapide : une section par portée (locale, provinciale, nationale, américaine, internationale) avec le lieu ou le sujet à suivre, plus **10 sujets personnels maximum**, ajoutés un par un et retirables avec le ×, sans niveaux de priorité ;
+   - bourse : interrupteur global et **21 titres personnalisés maximum**, recherchés par symbole ou compagnie (actions et FNB), puis ajoutés ou retirés avec le × ; tri **A–Z par symbole dans chaque catégorie**, ou ordre manuel en glissant la poignée (souris, tactile ou clavier : espace, flèches, espace). La recherche et la création de catégories sont côte à côte sur écran large ; les titres sont disposés sur trois colonnes, puis deux ou une sur les petits écrans. Les catégories ont un nom et une couleur douce modifiables. Un nouveau titre va dans **Général**, qui reste neutre et sans titre imprimé ; supprimer une catégorie y replace ses titres. Masquer la bourse conserve la liste et les catégories ;
    - courriels : interrupteur global, mots-clés prioritaires, expéditeurs ignorés ;
    - jeu du jour (mode 2 pages seulement) : jeux possibles, choisis au hasard à chaque génération (nouvelle grille, et un autre jeu que l'édition précédente quand plusieurs sont cochés) ; grille en page 1 et solution à l'envers dans un encadré au bas de la troisième colonne de la page 2 ;
    - cuisine optionnelle : repas et protéines à choix multiples, ingrédients à exclure, végétarien ou vegan, photo illustrative lorsque disponible ;
@@ -93,7 +94,8 @@ Les filtres portent sur les courriels reçus depuis 24 heures, dans la limite ch
 
 La première page contient aussi :
 
-- la météo de **6–12 h, 12–18 h, 18–24 h, puis 0–6 h le lendemain**, dans le fuseau choisi ; minimum/maximum, condition et probabilité maximale de précipitations par période ;
+- la température actuelle et une petite icône juste après l'heure de génération ; les prévisions **avant-midi, après-midi, soir et nuit** à droite de la citation, sans plages horaires imprimées. Les périodes couvrent toujours 6–12 h, 12–18 h, 18–24 h et 0–6 h le lendemain dans le fuseau choisi ; minimum/maximum, condition et probabilité maximale de précipitations par période ;
+- la barre boursière habituelle (activée par défaut), suivie des titres personnalisés sur au plus **trois lignes de sept** (quatre lignes au total). Les catégories sont regroupées sur un fond discret, avec un petit titre répété à chaque continuation. Un parcours en serpentin garde les continuations en contact, y compris en forme de L ; les titres de chaque catégorie gardent leur ordre de lecture gauche-droite. Les prix indiquent leur devise et un cours absent est signalé, jamais remplacé par zéro. Si la première page est chargée, les blocs du jour et le jeu sont resserrés plutôt que de supprimer la bourse. Yahoo Finance limite chaque requête à 20 symboles : une requête suffit jusqu'à 14 titres, deux sont nécessaires au-delà. Les reprises des flux d'actualités sont limitées à trois avec au plus huit sujets, deux avec neuf et une avec dix ; lorsque la bourse est activée avec plus de 14 titres, une reprise supplémentaire est retirée pour préserver le budget de sous-requêtes ;
 - les rendez-vous et échéances du calendrier de **demain au septième jour inclus**, y compris les événements sur plusieurs jours ; les échéances sont repérées dans les titres, pas inventées depuis les courriels ;
 - une citation traditionnelle et un fait amusant avec un lien vers sa source (NASA, USGS ou NOAA).
 

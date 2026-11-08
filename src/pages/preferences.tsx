@@ -7,6 +7,7 @@ import { CircleDotIcon, Loader2Icon, SaveIcon } from "lucide-react";
 import { toast } from "sonner";
 import { PageHeader } from "@/components/layout";
 import { NewspaperDesignPicker } from "@/components/newspaper-design";
+import { StockList, TopicList } from "@/components/preference-lists";
 import { UnsavedChangesDialog } from "@/components/unsaved-changes-dialog";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
@@ -25,6 +26,7 @@ import {
   applyEdits,
   describeChanges,
   FORM_SECTIONS,
+  lines,
   pickSection,
   settingsPayload,
   toFormValues,
@@ -435,13 +437,27 @@ function PreferencesForm({ saved }: { saved: SettingsDto }) {
               <p id="sections-help" className="text-sm text-muted-foreground">
                 {p.sectionsHelp}
               </p>
-              <div className="space-y-2 pt-2">
-                <Label htmlFor="topics">{p.topics}</Label>
-                <Textarea id="topics" rows={3} value={topics} onChange={(event) => setText("news", "topics", event.target.value)} />
-              </div>
+              <TopicList topics={lines(topics)} onChange={(items) => setText("news", "topics", items.join("\n"))} />
             </fieldset>
           </CardContent>
           {footer("news", p.newsTitle)}
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>{p.marketsTitle}</CardTitle>
+            <CardDescription>{p.marketsDescription}</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-5">
+            <div className="flex items-center gap-3">
+              <Switch id="markets" checked={prefs.marketsEnabled}
+                onCheckedChange={(marketsEnabled) => setPrefs("markets", { marketsEnabled })} />
+              <Label htmlFor="markets">{p.marketsEnabled}</Label>
+            </div>
+            <StockList stocks={prefs.marketWatchlist} categories={prefs.marketCategories} enabled={prefs.marketsEnabled}
+              onChange={(marketWatchlist, marketCategories) => setPrefs("markets", { marketWatchlist, marketCategories })} />
+          </CardContent>
+          {footer("markets", p.marketsTitle)}
         </Card>
 
         <Card>

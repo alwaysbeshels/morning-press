@@ -282,6 +282,14 @@ describe("buildNewspaper — options", () => {
     expect(paper.reminders.some((item) => item.text.includes("Facture Hydro"))).toBe(false);
   });
 
+  it("masque toute la bourse et sa source quand l'option est désactivée", () => {
+    const markets = { asOf: NOW, open: false, quotes: [{ key: "tsx" as const, price: 123, changePercent: 1, currency: "CAD" }] };
+    expect(build({}, { markets }).markets).toEqual({ ...markets, categories: [] });
+    const paper = build({ marketsEnabled: false }, { markets });
+    expect(paper.markets).toBeNull();
+    expect(paper.sources).not.toContain("Yahoo Finance");
+  });
+
   it("mélange les brèves sur une seule page, sans jeu", () => {
     const paper = build({ pages: 1, maxNews: 2 });
     expect(paper.pages).toBe(1);

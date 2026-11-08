@@ -10,6 +10,7 @@ import { connectionRoutes } from "./routes/connections";
 import { editionRoutes } from "./routes/editions";
 import { manifestRoutes } from "./routes/manifest";
 import { settingsRoutes } from "./routes/settings";
+import { stockRoutes } from "./routes/stocks";
 import { newspaperPreviewRoutes } from "./routes/newspaper-preview";
 
 const APP_CSP = [
@@ -59,6 +60,8 @@ app.use("*", async (c, next) => {
 
 // L'aperçu est authentifié, mais ne doit ni ouvrir la base ni créer d'utilisateur.
 app.route("/api/newspaper-preview", newspaperPreviewRoutes);
+// Recherche authentifiée, sans accès à la base de données.
+app.route("/api/stocks", stockRoutes);
 // Le manifeste reste derrière Access : index.html le demande avec crossorigin="use-credentials".
 app.route("/manifest.webmanifest", manifestRoutes);
 

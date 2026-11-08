@@ -55,7 +55,7 @@ body {
 .masthead h1, .daily .columns h2, .news-group h3, .minihead h2, .g-title, .markets h2 {
   color: var(--accent); font-family: var(--heading-font); border-color: var(--accent);
 }
-.weather .temp, .forecast strong { color: var(--accent); }
+.current-weather, .forecast strong { color: var(--accent); }
 .meta, .empty, footer, .omitted, .daily .daily-safety, .news-group .kicker, .mk-name, .markets-when { color: var(--muted); }
 .quote-label, .tag, .news-group .kicker { color: var(--secondary); }
 .forecast, .solution-slot, li, .col + .col, .news-column + .news-column::before, .markets li { border-color: var(--line); }

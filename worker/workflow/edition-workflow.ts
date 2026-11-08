@@ -153,15 +153,23 @@ export class EditionWorkflow extends WorkflowEntrypoint<Env, EditionParams> {
         errors.push(sourceError(t.sourceNames.weather, "weather"));
         return null;
       });
-    // Sans reprise : chaque essai coûte une sous-requête du budget partagé de l'édition.
-    const markets = await step
-      .do("bourse", { retries: { limit: 0, delay: "5 seconds" }, timeout: "30 seconds" }, (): Promise<Markets> => fetchMarkets())
+    // Sans reprise : chaque essai consomme une ou deux sous-requêtes du budget partagé de l'édition.
+    const markets = context.preferences.marketsEnabled ? await step
+      .do("bourse", { retries: { limit: 0, delay: "5 seconds" }, timeout: "30 seconds" }, (): Promise<Markets> =>
+        fetchMarkets(context.preferences.marketWatchlist))
       .catch(() => {
         errors.push(sourceError(t.sourceNames.markets, "markets"));
         return null;
-      });
+      }) : null;
+    if (markets?.watchlist?.some((stock) => stock.price === null || stock.changePercent === null)) {
+      errors.push(sourceError(t.sourceNames.markets, "markets"));
+    }
 
     const feeds = newsEnabled ? newsFeeds(context.preferences) : [];
+    // Une reprise libère deux requêtes : sujets 9/10, puis second lot boursier au-delà de 14 titres.
+    const newsRetries = Math.max(0, MAX_NEWS_RETRIES
+      - Math.max(0, feeds.filter((feed) => feed.group === "topics").length - 8)
+      - (context.preferences.marketsEnabled && context.preferences.marketWatchlist.length > 14 ? 1 : 0));
     // Une seule lecture de chaque une pour toutes les rubriques ; sans elle, chaque rubrique garde son ordre.
     const featured: FeaturedTitles = feeds.some((feed) => feed.publishers?.some((publisher) => publisher.featuredUrl))
       ? await step
@@ -199,7 +207,7 @@ export class EditionWorkflow extends WorkflowEntrypoint<Env, EditionParams> {
     }
     for (const [attempt, { index, feed }] of failedFeeds.entries()) {
       try {
-        if (attempt >= MAX_NEWS_RETRIES) throw new Error("reprise non tentée : budget de sous-requêtes");
+        if (attempt >= newsRetries) throw new Error("reprise non tentée : budget de sous-requêtes");
         news.push(
           await step.do(
             `actualités ${index + 1} (reprise)`,

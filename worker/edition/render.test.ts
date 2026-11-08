@@ -109,7 +109,7 @@ describe("renderNewspaper", () => {
     // 10 h 30 UTC : 6 h 30 à Toronto (heure avancée de l'Est)
     const issue = 'Samedi 31 octobre 2026 · <span class="gen-time">6\u00a0h\u00a030</span>';
     const html = renderNewspaper(base);
-    expect(html).toContain(`<div>${issue}</div>`);
+    expect(html).toContain(`<div class="dateline-time">${issue}<span class="current-weather"`);
     expect(html.match(/class="gen-time"/g)).toHaveLength(1);
     // Le titre de l'onglet garde la date seule.
     expect(html).toContain("<title>Mon Journal du Matin — Samedi 31 octobre 2026</title>");
@@ -117,10 +117,10 @@ describe("renderNewspaper", () => {
 
   it("affiche l'heure de génération en anglais et dans le fuseau du journal", () => {
     expect(renderNewspaper({ ...base, language: "en" }))
-      .toContain('<div>Saturday, October 31, 2026 · <span class="gen-time">6:30\u00a0a.m.</span></div>');
+      .toContain('<div class="dateline-time">Saturday, October 31, 2026 · <span class="gen-time">6:30\u00a0a.m.</span><span class="current-weather"');
     // Le même instant donne 3 h 30 à Vancouver.
     expect(renderNewspaper({ ...base, timezone: "America/Vancouver" }))
-      .toContain('<div>Samedi 31 octobre 2026 · <span class="gen-time">3\u00a0h\u00a030</span></div>');
+      .toContain('<div class="dateline-time">Samedi 31 octobre 2026 · <span class="gen-time">3\u00a0h\u00a030</span><span class="current-weather"');
   });
 
   it("place la lecture rapide à gauche quand les courriels sont désactivés", () => {
@@ -255,19 +255,27 @@ describe("renderNewspaper", () => {
       .toContain("1 more item not printed");
   });
 
-  it("illustre la météo du jour et de chaque période par une icône", () => {
+  it.each(["fr", "en"] as const)("illustre chaque période sans afficher les plages horaires (%s)", (language) => {
     const html = renderNewspaper({
-      ...base,
+      ...base, language,
       weather: {
-        ...base.weather!, code: 61,
+        ...base.weather!, code: 3, currentCode: 61, currentDescription: "Pluie légère",
         periods: WEATHER_PERIODS.map((key) => ({
           key, date: "2026-10-31", min: 2, max: 8, description: key === "night" ? "Ciel dégagé" : "Pluie légère",
           precipitationProbability: 60, code: key === "night" ? 0 : 61, isDay: key !== "night",
         })),
       },
     });
-    const header = html.slice(html.indexOf('<div class="weather">'), html.indexOf('<div class="forecast">'));
+    const header = html.slice(html.indexOf('<div class="dateline-time">'), html.indexOf("<h1>"));
     expect(header).toContain('data-weather-icon="rain"');
+    expect(header.indexOf('class="current-weather"')).toBeGreaterThan(header.indexOf('class="gen-time"'));
+    const subhead = html.slice(html.indexOf('<div class="subhead">'), html.indexOf("</header>"));
+    expect(subhead).toContain('class="forecast"');
+    expect(subhead.indexOf('class="forecast"')).toBeGreaterThan(subhead.indexOf("</blockquote>"));
+    expect(subhead).not.toContain('class="current-weather"');
+    expect([...subhead.matchAll(/<strong>([^<]*)<\/strong>/g)].map((match) => match[1])).toEqual(language === "fr"
+      ? ["Avant-midi", "Après-midi", "Soir", "Nuit"]
+      : ["Morning", "Afternoon", "Evening", "Night"]);
     const periods = [...html.matchAll(/data-weather-period="(\w+)">(<svg[^>]*data-weather-icon="([\w-]+)")?/g)];
     expect(periods.map((match) => [match[1], match[3]])).toEqual([
       ["morning", "rain"], ["afternoon", "rain"], ["evening", "rain"], ["night", "moon"],
@@ -318,6 +326,41 @@ describe("renderNewspaper", () => {
   it("omet la bourse quand les cotations sont indisponibles", () => {
     expect(renderNewspaper(base)).not.toContain('class="markets"');
     expect(renderNewspaper({ ...base, markets: null })).not.toContain('class="markets"');
+  });
+
+  it("ajoute les 21 titres après la barre des indices, échappe leur nom et signale les cours manquants", () => {
+    const watchlist = Array.from({ length: 21 }, (_, i) => ({
+      symbol: `S${i}`, name: '<img src=x onerror="alert(1)">', exchange: "Toronto",
+      price: i === 13 ? null : 123.45, currency: "CAD", changePercent: i === 13 ? null : -1,
+    }));
+    for (const language of ["fr", "en"] as const) {
+      const html = renderNewspaper({ ...base, language, markets: { ...markets, watchlist } });
+      const body = strip(html);
+      expect(body.match(/data-stock=/g)).toHaveLength(21);
+      expect(body.indexOf('class="market-watchlist"')).toBeGreaterThan(body.indexOf('data-market="cad"'));
+      expect(body).toContain("123");
+      expect(body).toContain("CAD");
+      expect(body).toContain(language === "fr" ? "Indisponible" : "Unavailable");
+      expect(body).not.toContain('<img src=x');
+      expect(body).toContain("&lt;img");
+    }
+  });
+
+  it.each(["fr", "en"] as const)("imprime seulement les noms des catégories personnalisées (%s)", (language) => {
+    const categories = [{ id: "00000000-0000-4000-8000-000000000001", name: '<img src=x onerror="alert(1)">', color: "blue" as const }];
+    const watchlist = Array.from({ length: 8 }, (_, i) => ({
+      symbol: `S${i}`, name: `Name ${i}`, exchange: "", price: 5, currency: "USD", changePercent: 1,
+      categoryId: i < 5 ? null : categories[0].id,
+    }));
+    const body = strip(renderNewspaper({ ...base, language, markets: { ...markets, categories, watchlist } }));
+    expect(body.match(/data-stock=/g)).toHaveLength(8);
+    expect(body).not.toContain("Général");
+    expect(body).not.toContain("General");
+    expect(body).toContain("background:#edf4fc");
+    expect(body.match(/class="mk-category"/g)).toHaveLength(3);
+    expect(body.match(/class="mk-category" title=/g)).toHaveLength(2);
+    expect(body).not.toContain("<img");
+    expect(body).toContain("&lt;img");
   });
 });
 

@@ -77,14 +77,17 @@ describe("mise en page mesurée", () => {
     expect(() => applyPageOneLayout(paper, `<main data-page-layout="ready" data-page-columns="${encodeURIComponent('[["events"],[]]')}"></main>`)).toThrow();
   });
 
-  it("retire la bourse et sa source lorsque la mesure l'a écartée de la page 1", () => {
+  it("conserve la bourse et sa source dans la mise en page resserrée", () => {
     const markets = { asOf: Date.parse("2026-10-30T20:00:00Z"), open: false, quotes: [{ key: "tsx" as const, price: 25_000, changePercent: 0.4, currency: "CAD" }] };
     const paper = { ...fixture(), markets, sources: [...fixture().sources, "Yahoo Finance"] };
     expect(applyPageOneLayout(paper, measuredPageOne).markets).toEqual(markets);
-    const dropped = applyPageOneLayout(paper, measuredPageOne.replace("<main", '<main data-markets="dropped"'));
-    expect(dropped.markets).toBeNull();
-    expect(dropped.sources).not.toContain("Yahoo Finance");
-    expect(renderNewspaper(dropped)).not.toContain('class="markets"');
+    const tight = applyPageOneLayout(paper, measuredPageOne.replace("<main", '<main data-page-density="tight"'));
+    expect(tight.markets).toEqual(markets);
+    expect(tight.sources).toContain("Yahoo Finance");
+    expect(tight.firstPageTight).toBe(true);
+    expect(renderNewspaper(tight)).toContain('class="page page-1 daily tight"');
+    expect(renderNewspaper(tight)).toContain('class="markets"');
+    expect(() => applyPageOneLayout(paper, measuredPageOne.replace("<main", '<main data-markets="dropped"'))).toThrow("supprimé la bourse");
   });
 
   describe("actualités locales de la première page", () => {

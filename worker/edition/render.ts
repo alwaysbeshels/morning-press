@@ -1,4 +1,5 @@
 import type { GameKind } from "../../shared/types";
+import { STOCK_PALETTES, stockSegments } from "../../shared/stocks";
 import { GAME_EXTRA_SLOT, GAME_STYLES, withGameExtra } from "../games";
 import { escapeHtml } from "./html";
 import { formatLongDate, formatShortDate, formatTemperature, formatTime, formatTimeRange, truncate } from "./format";
@@ -58,7 +59,24 @@ function renderMarkets(paper: Newspaper, t: JournalText): string {
     const trend = change > 0 ? "up" : change < 0 ? "down" : "flat";
     return `<li data-market="${quote.key}"><span class="mk-name">${escapeHtml(t.markets.names[quote.key])}</span><span class="mk-value">${escapeHtml(value)}</span><span class="mk-change ${trend}">${trend === "flat" ? "" : MARKET_ARROW}${escapeHtml(percent.format(Math.abs(change) / 100))}</span></li>`;
   }).join("");
-  return `<section class="markets"><h2>${escapeHtml(t.markets.title)}<span class="markets-when">${escapeHtml(when)}</span></h2><ul>${cells}</ul></section>`;
+  const stockCells = new Map(markets.watchlist?.map((stock) => {
+    const price = stock.price === null ? t.markets.unavailable :
+      `${new Intl.NumberFormat(t.htmlLang, { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(stock.price)}${stock.currency ? ` ${stock.currency}` : ""}`;
+    const change = stock.changePercent === null ? null : Math.round(stock.changePercent * 100) / 100;
+    const trend = change === null || change === 0 ? "flat" : change > 0 ? "up" : "down";
+    return [stock.symbol, `<li data-stock="${escapeHtml(stock.symbol)}"><span class="mk-name" title="${escapeHtml(`${stock.name} · ${stock.exchange}`)}">${escapeHtml(stock.symbol)}</span><span class="mk-value">${escapeHtml(price)}</span><span class="mk-change ${trend}">${change === null ? escapeHtml(t.markets.unavailable) : `${trend === "flat" ? "" : MARKET_ARROW}${escapeHtml(percent.format(Math.abs(change) / 100))}`}</span></li>`] as const;
+  }) ?? []);
+  const grouped = markets.categories?.some((category) => markets.watchlist?.some((stock) => stock.categoryId === category.id));
+  const segments = grouped ? stockSegments(markets.watchlist ?? [], markets.categories ?? []) : [];
+  const labelledRows = new Set(segments.filter((segment) => segment.category).map((segment) => segment.row));
+  const personal = grouped ? `<div class="market-watchlist market-categories" aria-label="${escapeHtml(t.markets.watchlist)}">${segments.map(({ row, column, category, stocks }) => {
+    const palette = category ? STOCK_PALETTES[category.color] : null;
+    const heading = category ? `<div class="mk-category" title="${escapeHtml(category.name)}">${escapeHtml(category.name)}</div>` :
+      labelledRows.has(row) ? '<div class="mk-category" aria-hidden="true"></div>' : "";
+    return `<div class="market-group" data-market-category="${escapeHtml(category?.id ?? "general")}" style="grid-row:${row + 1};grid-column:${column + 1}/span ${stocks.length};--stock-columns:${stocks.length}${palette ? `;background:${palette.background};border-color:${palette.border}` : ""}">
+      ${heading}<ul>${stocks.map((stock) => stockCells.get(stock.symbol)).join("")}</ul></div>`;
+  }).join("")}</div>` : stockCells.size ? `<ul class="market-watchlist" aria-label="${escapeHtml(t.markets.watchlist)}">${[...stockCells.values()].join("")}</ul>` : "";
+  return `<section class="markets"><div class="market-overview"><h2>${escapeHtml(t.markets.title)}<span class="markets-when">${escapeHtml(when)}</span></h2><ul>${cells}</ul></div>${personal}</section>`;
 }
 
 export const PAGE_ONE_SECTIONS = ["priorities", "events", "emails", "upcoming", "reminders", "recipe", "exercise", "fact", "news"] as const;
@@ -191,21 +209,8 @@ export function renderNewspaper(paper: Newspaper): string {
   const frontLocal = frontLocalGroup(paper);
 
   const weatherHtml = weather
-    ? `<div class="weather">
-  ${weatherIconSvg(weather.code)}
-  <div class="wx-text">
-    <div class="temp">${escapeHtml(formatTemperature(weather.current))}</div>
-    <div>${escapeHtml(weather.description)}</div>
-    <div class="meta">${escapeHtml(
-      t.weatherLine(
-        formatTemperature(weather.min),
-        formatTemperature(weather.max),
-        weather.precipitationProbability !== null && weather.precipitationProbability > 0 ? weather.precipitationProbability : null,
-      ),
-    )}</div>
-  </div>
-</div>`
-    : `<div class="weather"><div class="meta">${escapeHtml(t.weatherUnavailable)}</div></div>`;
+    ? `<span class="current-weather" title="${escapeHtml(weather.currentDescription ?? weather.description)}">${weatherIconSvg(weather.currentCode ?? weather.code, weather.currentIsDay)}<span>${escapeHtml(formatTemperature(weather.current))}</span></span>`
+    : `<span class="current-weather">${escapeHtml(t.weatherUnavailable)}</span>`;
 
   const events = paper.events.length
     ? `<ul class="events">${paper.events.map((event) => renderEvent(event, paper, t)).join("")}</ul>`
@@ -284,7 +289,8 @@ export function renderNewspaper(paper: Newspaper): string {
   const forecast = weather?.periods?.length ? `<div class="forecast">${weather.periods.map((period) =>
     `<div data-weather-period="${period.key}">${weatherIconSvg(period.code, period.isDay)}<div class="wx-text"><strong>${escapeHtml(t.daily.periods[period.key])}</strong>
       <div>${escapeHtml(`${formatTemperature(period.min)} – ${formatTemperature(period.max)}`)}</div>
-      <div>${escapeHtml(period.description)}</div><div class="meta">${escapeHtml(t.daily.precipitation(period.precipitationProbability))}</div></div></div>`).join("")}</div>` : "";
+      <div>${escapeHtml(period.description)}</div><div class="meta">${escapeHtml(t.daily.precipitation(period.precipitationProbability))}</div></div></div>`).join("")}</div>` :
+    `<div class="forecast-summary">${escapeHtml(weather ? `${weather.description} · ${t.weatherLine(formatTemperature(weather.min), formatTemperature(weather.max), weather.precipitationProbability)}` : t.weatherUnavailable)}</div>`;
 
   return `<!doctype html>
 <html lang="${t.htmlLang}">
@@ -298,18 +304,17 @@ export function renderNewspaper(paper: Newspaper): string {
 <style>${STYLES}${paper.game ? GAME_STYLES : ""}${newspaperDesignCss(paper.design)}</style>
 </head>
 <body class="${twoPages ? "two-pages" : "one-page"}">
-<main class="page page-1${paper.daily ? " daily" : ""}${compact ? " compact" : ""}">
+<main class="page page-1${paper.daily ? " daily" : ""}${compact ? " compact" : ""}${paper.firstPageTight ? " tight" : ""}${(paper.markets?.watchlist?.length ?? 0) > 14 ? " many-stocks" : ""}"${paper.firstPageColumns ? ' data-page-layout="ready"' : ""}>
   <header class="masthead">
     <div class="dateline">
-      <div>${escapeHtml(longDate)} · <span class="gen-time">${escapeHtml(time)}</span></div>
+      <div class="dateline-time">${escapeHtml(longDate)} · <span class="gen-time">${escapeHtml(time)}</span>${weatherHtml}</div>
       <div>${escapeHtml(`${paper.city}, ${paper.region}`)}</div>
     </div>
     <h1>${escapeHtml(t.title)}</h1>
     <div class="subhead">
       <blockquote>${paper.daily ? `<span class="quote-label">${escapeHtml(t.daily.quote)}</span>` : ""}${escapeHtml(t.quote(paper.quote))}</blockquote>
-      ${weatherHtml}
+      ${forecast}
     </div>
-    ${forecast}
   </header>
   <div class="columns">
     ${columns.map((column) => `<div class="col">${column}</div>`).join("\n")}
@@ -353,18 +358,18 @@ body {
 @media screen { .two-pages .page { height: 11in; } }
 .two-pages .columns { flex: 1; min-height: 0; }
 .page-2 { break-before: page; }
-.masthead { border-bottom: 3px double #1a1a1a; padding-bottom: 6pt; margin-bottom: 8pt; }
+.masthead { border-bottom: 3px double #1a1a1a; padding-bottom: 4pt; margin-bottom: 4pt; }
 .dateline { display: flex; justify-content: space-between; font-size: 8.5pt; text-transform: uppercase; letter-spacing: 0.06em; border-bottom: 1px solid #1a1a1a; padding-bottom: 3pt; }
 /* « 6 h 30 » garde ses minuscules : en capitales, l'abréviation de l'heure deviendrait « 6 H 30 ». */
 .gen-time { text-transform: none; }
+.dateline-time { display: flex; flex-wrap: wrap; align-items: center; gap: 0 4pt; }
+.current-weather { display: inline-flex; align-items: center; gap: 3pt; padding-left: 5pt; margin-left: 2pt; border-left: 1px solid #c8c2b5; font-size: 8pt; text-transform: none; letter-spacing: 0; white-space: nowrap; }
+.current-weather .wx-icon { width: 12pt; height: 12pt; }
 h1 { font-family: "Playfair Display", Georgia, serif; font-weight: 900; font-size: 34pt; text-align: center; margin: 4pt 0 6pt; letter-spacing: -0.01em; }
-.subhead { display: flex; justify-content: space-between; align-items: center; gap: 16pt; border-top: 1px solid #1a1a1a; padding-top: 5pt; }
+.subhead { display: flex; justify-content: space-between; align-items: center; gap: 10pt; border-top: 1px solid #1a1a1a; padding-top: 5pt; }
 blockquote { margin: 0; font-style: italic; flex: 1; }
-.weather { display: flex; align-items: center; justify-content: flex-end; gap: 6pt; text-align: right; min-width: 1.9in; }
-.weather .temp { font-family: "Playfair Display", Georgia, serif; font-size: 16pt; font-weight: 700; line-height: 1; }
 .wx-icon { display: block; flex: none; color: var(--accent, #1a1a1a); }
 .wx-cloud { fill: var(--wx-bg, #fff); }
-.weather .wx-icon { width: 30pt; height: 30pt; }
 .columns { display: grid; grid-template-columns: 1.15fr 1fr; gap: 14pt; }
 .col + .col { border-left: 1px solid #c8c2b5; padding-left: 14pt; }
 section { margin-bottom: 9pt; break-inside: avoid; }
@@ -419,12 +424,23 @@ footer { margin-top: 6pt; padding-top: 4pt; border-top: 1px solid #1a1a1a; text-
 .g-extra .title { font-size: 8.5pt; line-height: 1.15; }
 .g-extra .news-summary { margin: 1pt 0; font-size: 7pt; line-height: 1.15; }
 .g-extra .meta { font-size: 6.5pt; line-height: 1.15; }
-/* Bande boursière : une seule rangée, le titre puis une cellule par cotation. */
-.page-1 .markets { flex: none; display: grid; grid-template-columns: auto; grid-auto-columns: minmax(0, 1fr); grid-auto-flow: column; align-items: center; gap: 0 6pt; margin: 3pt 0 0; padding-top: 2pt; border-top: 1px solid #1a1a1a; }
+/* Bande boursière : indices, puis titres personnalisés en rangées de sept. */
+.page-1 .markets { flex: none; margin: 3pt 0 0; padding-top: 2pt; border-top: 1px solid #1a1a1a; }
+.market-overview { display: grid; grid-template-columns: auto; grid-auto-columns: minmax(0, 1fr); grid-auto-flow: column; align-items: center; gap: 0 6pt; }
 .page-1 .markets + .game-slot, .page-1 .markets + .front-feature { margin-top: 4pt; }
 .markets h2 { margin: 0; padding: 0 2pt 0 0; border: 0; font-size: 10pt; line-height: 1.05; max-width: 0.95in; }
 .markets-when { display: block; margin-top: 1pt; font-family: "Source Serif 4", Georgia, serif; font-size: 5.5pt; font-weight: 400; line-height: 1.05; text-transform: uppercase; letter-spacing: 0.04em; color: #5c564b; }
-.markets ul { display: contents; }
+.market-overview ul { display: contents; }
+.market-watchlist { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 4pt 0; margin-top: 4pt; padding-top: 4pt; border-top: 1px solid #c8c2b5; }
+.market-watchlist li:nth-child(7n + 1) { border-left: 0; padding-left: 0; }
+.market-watchlist li:nth-child(n + 8) { border-top: 1px solid #c8c2b5; padding-top: 4pt; }
+.market-watchlist .mk-value { font-size: 8pt; }
+.market-watchlist .mk-name { overflow-wrap: anywhere; white-space: normal; }
+.market-categories { gap: 0; padding-top: 0; border-top: 0; }
+.market-group { min-width: 0; padding: 2pt 3pt; border-top: 1px solid #c8c2b5; }
+.market-group ul { display: grid; grid-template-columns: repeat(var(--stock-columns), minmax(0, 1fr)); }
+.market-group li:first-child { border-left: 0; padding-left: 0; }
+.mk-category { min-height: 5.5pt; font-size: 5.5pt; font-weight: 600; line-height: 1; margin-bottom: 1pt; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .markets li { min-width: 0; padding: 0 0 0 6pt; border: 0; border-left: 1px solid #c8c2b5; line-height: 1.05; white-space: nowrap; }
 .mk-name { display: block; font-size: 6pt; text-transform: uppercase; letter-spacing: 0.05em; color: #5c564b; }
 .mk-value { display: block; font-size: 8pt; font-weight: 600; font-variant-numeric: tabular-nums; }
@@ -456,6 +472,9 @@ footer { margin-top: 6pt; padding-top: 4pt; border-top: 1px solid #1a1a1a; text-
 @media screen { .daily.page { height: 11in; } }
 .daily .masthead, .daily footer { flex: none; }
 .daily .columns { flex: 1; min-height: 0; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12pt; }
+/* Après la mesure, seul le pied de page reste ancré en bas : aucun vide avant la bourse. */
+.daily[data-page-layout="ready"] .columns { flex: none; }
+.daily[data-page-layout="ready"] footer { margin-top: auto; }
 .daily.compact .columns { grid-template-columns: repeat(3, minmax(0, 1fr)); font-size: 8.5pt; line-height: 1.22; gap: 9pt; }
 .daily .col { display: flex; flex-direction: column; gap: 7pt; min-width: 0; min-height: 0; }
 .daily .col + .col { padding-left: 0; border: none; }
@@ -474,11 +493,26 @@ footer { margin-top: 6pt; padding-top: 4pt; border-top: 1px solid #1a1a1a; text-
 .daily .recipe-steps { clear: both; list-style: decimal; padding-left: 12pt; }
 .daily .recipe-steps li { padding: 2pt 0; }
 .daily .daily-safety { font-size: 7pt; line-height: 1.2; color: #5c564b; }
+.daily.tight .columns { font-size: 8pt; line-height: 1.15; }
+.daily.tight .col { gap: 5pt; }
+.daily.tight .columns h2 { font-size: 10.5pt; margin-bottom: 3pt; }
+.daily.tight .columns p { margin: 2pt 0; }
+.daily.tight .recipe-steps li { padding: 1pt 0; }
+.daily.tight .g-sudoku td { width: 0.30in; height: 0.30in; }
+.daily.tight .g-cross td, .daily.tight .g-code td { width: 0.22in; height: 0.22in; }
+.daily.tight .g-instr { margin-bottom: 4pt; }
+.daily.tight.many-stocks .g-sudoku td { width: 0.27in; height: 0.27in; }
+.daily.tight.many-stocks .g-cross td, .daily.tight.many-stocks .g-code td { width: 0.21in; height: 0.21in; }
+.daily.tight.many-stocks .game-slot, .daily.tight.many-stocks .front-feature { margin-top: 2pt; padding-top: 4pt; }
+.daily.tight.many-stocks .front-feature .game-slot { margin-top: 0; padding-top: 0; }
+.daily.tight.many-stocks .masthead h1 { margin-top: 2pt; margin-bottom: 3pt; }
+.daily.tight.many-stocks .col { gap: 4pt; }
 .quote-label { display: block; font-size: 7pt; font-style: normal; font-weight: 600; text-transform: uppercase; margin-bottom: 2pt; }
-.forecast { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8pt; border-top: 1px solid #c8c2b5; margin-top: 6pt; padding-top: 5pt; font-size: 8pt; line-height: 1.2; }
+.forecast { flex: 0 0 67%; min-width: 0; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 5pt; border-left: 1px solid #c8c2b5; padding-left: 7pt; font-size: 7pt; line-height: 1.2; }
+.forecast-summary { flex: 0 0 60%; text-align: right; font-size: 8pt; }
 .forecast strong { display: block; margin-bottom: 2pt; }
-.forecast > div { display: flex; align-items: center; gap: 4pt; }
-.forecast .wx-icon { width: 20pt; height: 20pt; }
+.forecast > div { display: flex; align-items: flex-start; gap: 3pt; }
+.forecast .wx-icon { width: 15pt; height: 15pt; }
 .forecast .wx-text { min-width: 0; }
-.forecast .meta { font-size: 7pt; }
+.forecast .meta { font-size: 6pt; }
 `;

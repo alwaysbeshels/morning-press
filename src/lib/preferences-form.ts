@@ -29,7 +29,7 @@ export interface FormPatch {
   ignored?: string;
 }
 
-export const FORM_SECTIONS = ["layout", "design", "schedule", "place", "news", "emails", "game", "cooking", "exercise", "limits"] as const;
+export const FORM_SECTIONS = ["layout", "design", "schedule", "place", "news", "markets", "emails", "game", "cooking", "exercise", "limits"] as const;
 export type FormSection = (typeof FORM_SECTIONS)[number];
 
 /** Modifications non enregistrées, conservées séparément pour chaque section du formulaire. */
@@ -48,6 +48,7 @@ export const SECTION_FIELDS: Record<FormSection, SectionFields> = {
   schedule: { schedule: ["enabled", "time", "timezone", "days"] },
   place: { prefs: ["city", "region", "latitude", "longitude"] },
   news: { prefs: ["newsEnabled", "newsSections"], text: ["topics"] },
+  markets: { prefs: ["marketsEnabled", "marketWatchlist", "marketCategories"] },
   emails: { prefs: ["emailsEnabled"], text: ["keywords", "ignored"] },
   game: { prefs: ["gameEnabled", "gameKinds"] },
   cooking: { prefs: ["cooking"] },
@@ -200,6 +201,15 @@ function sectionDefinitions(t: Messages): Record<FormSection, { title: string; f
           ),
         ),
         field(c.topics, (v) => lines(v.topics), list),
+      ],
+    },
+    markets: {
+      title: p.marketsTitle,
+      fields: [
+        flag(p.marketsEnabled, (v) => v.prefs.marketsEnabled),
+        field(p.watchlist, (v) => v.prefs.marketWatchlist.map((stock) =>
+          `${stock.symbol} (${v.prefs.marketCategories.find((category) => category.id === stock.categoryId)?.name ?? p.stockGeneral})`), list),
+        field(p.stockCategories, (v) => v.prefs.marketCategories.map((category) => `${category.name} (${p.stockColors[category.color]})`), list),
       ],
     },
     emails: {

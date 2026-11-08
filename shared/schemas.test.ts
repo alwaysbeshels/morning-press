@@ -4,6 +4,26 @@ import { DEFAULT_COOKING, DEFAULT_PREFERENCES, EMAIL_FILTERS, withDefaultPrefere
 import { COLOR_INTENSITIES, NEWSPAPER_STYLES } from "./newspaper-design";
 
 describe("préférences du journal", () => {
+  it("accepte exactement 10 sujets et 21 titres, sans perdre les choix quand la bourse est masquée", () => {
+    const newsTopics = Array.from({ length: 10 }, (_, i) => `Sujet ${i}`);
+    const marketWatchlist = Array.from({ length: 21 }, (_, i) => ({ symbol: `S${i}`, name: `Société ${i}`, exchange: "Toronto" }));
+    const preferences = { ...DEFAULT_PREFERENCES, newsTopics, marketWatchlist, marketsEnabled: false };
+    expect(preferencesSchema.parse(preferences)).toMatchObject({ newsTopics, marketWatchlist, marketsEnabled: false });
+    expect(preferencesSchema.safeParse({ ...preferences, newsTopics: [...newsTopics, "Autre"] }).success).toBe(false);
+    expect(preferencesSchema.safeParse({ ...preferences, marketWatchlist: [...marketWatchlist, { symbol: "EXTRA", name: "Extra", exchange: "" }] }).success).toBe(false);
+  });
+
+  it("normalise les doublons et conserve la bourse par défaut pour les anciens réglages", () => {
+    const { marketsEnabled: _enabled, marketWatchlist: _watchlist, marketCategories: _categories, ...legacy } = DEFAULT_PREFERENCES;
+    expect(withDefaultPreferences(legacy)).toMatchObject({ marketsEnabled: true, marketWatchlist: [], marketCategories: [] });
+    expect(preferencesSchema.parse(legacy)).toMatchObject({ marketsEnabled: true, marketWatchlist: [], marketCategories: [] });
+    expect(preferencesSchema.parse({ ...legacy, newsTopics: [" Science ", "science", "Santé"], marketWatchlist: [
+      { symbol: " ry.to ", name: "Royal Bank", exchange: "Toronto" },
+      { symbol: "RY.TO", name: "Royal Bank", exchange: "Toronto" },
+    ] })).toMatchObject({ newsTopics: ["Science", "Santé"], marketWatchlist: [{ symbol: "RY.TO" }] });
+    expect(preferencesSchema.safeParse({ ...legacy, marketWatchlist: [{ symbol: "AAPL,OTHER", name: "Bad", exchange: "" }] }).success).toBe(false);
+  });
+
   it("conserve les valeurs anciennes et complète les nouvelles", () => {
     const preferences = withDefaultPreferences({ city: "Laval", maxEmails: 4, newsTopics: ["science"] });
     expect(preferences).toMatchObject({ city: "Laval", maxEmails: 4, newsTopics: ["science"], language: "fr", pages: 1 });

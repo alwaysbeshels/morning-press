@@ -12,6 +12,11 @@ const RSS = `<?xml version="1.0"?><rss><channel><title>Google</title>
 </channel></rss>`;
 
 describe("news", () => {
+  it("recherche les dix sujets enregistrés, sans en perdre les deux derniers", () => {
+    const newsTopics = Array.from({ length: 10 }, (_, i) => `Sujet ${i}`);
+    expect(newsFeeds({ language: "fr", newsSections: DEFAULT_NEWS_SECTIONS, newsTopics })
+      .filter((feed) => feed.group === "topics").map((feed) => feed.label)).toEqual(newsTopics);
+  });
   it("construit l'URL en français canadien", () => {
     const url = new URL(googleNewsUrl("intelligence artificielle"));
     expect(url.searchParams.get("q")).toBe("intelligence artificielle when:1d");
@@ -158,12 +163,22 @@ describe("weather", () => {
       parseWeather(forecast()),
     ).toMatchObject({
       current: 7,
+      currentCode: 3,
+      currentDescription: describeWeatherCode(3),
       min: 3,
       max: 10,
       description: describeWeatherCode(61),
       code: 61,
       precipitationProbability: 80,
       precipitationSum: 4.2,
+    });
+  });
+  it("distingue les conditions actuelles de la prévision du jour, y compris la nuit", () => {
+    const body = forecast();
+    body.current = { temperature_2m: 4, weather_code: 0, is_day: 0 };
+    expect(parseWeather(body, "en")).toMatchObject({
+      current: 4, currentCode: 0, currentDescription: "Clear sky", currentIsDay: false,
+      code: 61, description: "Light rain",
     });
   });
   it("garde le code WMO de la journée et de chaque période pour l'icône", () => {

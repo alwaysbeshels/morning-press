@@ -168,6 +168,19 @@ describe.skipIf(!process.env.CHROME_PATH)("PDF Lettre dans Chrome", () => {
     }))));
 
   const cases = [
+    ...(["fr", "en"] as const).flatMap((language) => [null, ...GAME_KINDS].flatMap((kind) => (["none", "all"] as const).map((extras) => ({
+      language, pages: kind ? 2 as const : 1 as const, kind, dense: true, profile: "regular" as const,
+      extras, newspaperStyle: extras === "all" ? "editorial" as const : "base" as const,
+      colorIntensity: extras === "all" ? "expressive" as const : "subtle" as const, seed: "watchlist-21",
+    })))),
+    ...(["fr", "en"] as const).flatMap((language) => [null, ...GAME_KINDS].map((kind) => ({
+      language, pages: kind ? 2 as const : 1 as const, kind, dense: true, profile: "regular" as const,
+      extras: "all" as const, newspaperStyle: "editorial" as const, colorIntensity: "expressive" as const, seed: "watchlist-21-categories",
+    }))),
+    ...NEWSPAPER_STYLES.filter((style) => style !== "editorial").flatMap((newspaperStyle) => (["fr", "en"] as const).map((language) => ({
+      language, pages: 2 as const, kind: "codeword" as const, dense: true, profile: "regular" as const,
+      extras: "all" as const, newspaperStyle, colorIntensity: "expressive" as const, seed: "watchlist-21-categories",
+    }))),
     ...legacyCases.map((test) => ({ ...test, newspaperStyle: "base" as const, colorIntensity: "subtle" as const, seed: "print-regression" })),
     ...gridCases,
     ...NEWSPAPER_STYLES.flatMap((newspaperStyle, index) => COLOR_INTENSITIES
@@ -206,6 +219,24 @@ describe.skipIf(!process.env.CHROME_PATH)("PDF Lettre dans Chrome", () => {
     try {
       const candidates = fixture(language, pages, kind, dense, profile, extras, seed);
       candidates.design = { newspaperStyle, colorIntensity };
+      if (seed.startsWith("watchlist-21")) {
+        candidates.markets!.watchlist = Array.from({ length: 21 }, (_, i) => ({
+          symbol: `STOCK${i}.TO`, name: `Company ${i}`, exchange: "Toronto",
+          price: 12345.67, currency: "CAD", changePercent: -12.34,
+        }));
+        candidates.weather!.currentCode = 0;
+        candidates.weather!.currentIsDay = false;
+        candidates.weather!.periods!.forEach((period) => { period.code = 61; });
+        if (seed.endsWith("-categories")) {
+          candidates.markets!.categories = [
+            { id: "00000000-0000-4000-8000-000000000001", name: "Technologie et communications", color: "blue" },
+            { id: "00000000-0000-4000-8000-000000000002", name: "Banques", color: "green" },
+          ];
+          candidates.markets!.watchlist.forEach((stock, i) => {
+            stock.categoryId = i < 5 ? null : candidates.markets!.categories![i < 8 ? 0 : 1].id;
+          });
+        }
+      }
       const { frameTree } = await send<{ frameTree: { frame: { id: string } } }>("Page.getFrameTree");
       await send("Emulation.setEmulatedMedia", { media: "print" });
       const { paper, html } = await layoutNewspaper(candidates, {
@@ -228,9 +259,10 @@ describe.skipIf(!process.env.CHROME_PATH)("PDF Lettre dans Chrome", () => {
         game: number; gamePage: string | null; solutionPage: string | null; solutionAtBottom: boolean;
         omitted: number; rotation: string | null; ink: string; gridInks: string[];
         firstPageColumns: number; forecastPeriods: number; imagesLoaded: boolean; pageOneText: string;
+        weatherBesideQuote: boolean; currentAfterTime: boolean; headerRuleSpacing: { before: number; after: number }; dailyFooterAtBottom: boolean;
         columns: { groups: string[]; fill: number; bottom: number; answers: number; answersInside: boolean }[];
         frontLocal: { slot: boolean; articles: number; bottom: number; limit: number; clamp: string } | null;
-        markets: { cells: number; overflow: string[]; rows: number; belowColumns: boolean; aboveGame: boolean } | null;
+        markets: { cells: number; overflow: string[]; rows: number; separatedRows: boolean; belowColumns: boolean; closeToColumns: boolean; aboveGame: boolean } | null;
       } } }>("Runtime.evaluate", {
         awaitPromise: true,
         returnByValue: true,
@@ -270,6 +302,26 @@ describe.skipIf(!process.env.CHROME_PATH)("PDF Lettre dans Chrome", () => {
             omitted: document.querySelectorAll('.omitted:not([hidden])').length,
             firstPageColumns: document.querySelectorAll('.page-1 .col').length,
             forecastPeriods: document.querySelectorAll('[data-weather-period]').length,
+            weatherBesideQuote: (() => {
+              const forecast = document.querySelector('.subhead .forecast').getBoundingClientRect();
+              const quote = document.querySelector('.subhead blockquote').getBoundingClientRect();
+              return forecast.left >= quote.right && forecast.top < quote.bottom && quote.top < forecast.bottom;
+            })(),
+            currentAfterTime: (() => {
+              const current = document.querySelector('.current-weather').getBoundingClientRect();
+              const time = document.querySelector('.gen-time').getBoundingClientRect();
+              return current.left >= time.right && current.top < time.bottom && time.top < current.bottom;
+            })(),
+            headerRuleSpacing: (() => {
+              const header = document.querySelector('.page-1 .masthead');
+              return {
+                before: header.getBoundingClientRect().bottom - parseFloat(getComputedStyle(header).borderBottomWidth) -
+                  header.querySelector('.subhead').getBoundingClientRect().bottom,
+                after: document.querySelector('.page-1 .columns').getBoundingClientRect().top - header.getBoundingClientRect().bottom,
+              };
+            })(),
+            dailyFooterAtBottom: Math.abs(document.querySelector('.page-1').getBoundingClientRect().bottom -
+              document.querySelector('.page-1 footer').getBoundingClientRect().bottom) < 1,
             imagesLoaded: [...document.images].every(image => image.complete && image.naturalWidth > 0),
             pageOneText: document.querySelector('.page-1').innerText,
             rotation: solution ? getComputedStyle(solution).transform : null,
@@ -292,11 +344,21 @@ describe.skipIf(!process.env.CHROME_PATH)("PDF Lettre dans Chrome", () => {
               const cells = [...strip.querySelectorAll('li')];
               const top = strip.getBoundingClientRect().top;
               const game = document.querySelector('.page-1 .front-feature, .page-1 > .game-slot');
+              const lastBlockBottom = Math.max(...[...document.querySelectorAll('.page-1 [data-page-section]')].map(section => section.getBoundingClientRect().bottom));
               return {
                 cells: cells.length,
                 overflow: [...strip.querySelectorAll('h2, li, li > span')].filter(el => el.scrollWidth > el.clientWidth + 1).map(el => el.textContent),
                 rows: new Set(cells.map(cell => Math.round(cell.getBoundingClientRect().top))).size,
+                separatedRows: strip.querySelector('.market-categories') ?
+                  [...strip.querySelectorAll('.market-group')].every(group => parseFloat(getComputedStyle(group).borderTopWidth) > 0) :
+                  [...strip.querySelectorAll('.market-watchlist li')].slice(7).every(cell => {
+                  const style = getComputedStyle(cell);
+                  const firstSeparator = getComputedStyle(cell.parentElement);
+                  return style.borderTopStyle === 'solid' && parseFloat(style.borderTopWidth) > 0 &&
+                    style.borderTopWidth === firstSeparator.borderTopWidth && style.borderTopColor === firstSeparator.borderTopColor;
+                }),
                 belowColumns: top >= document.querySelector('.page-1 .columns').getBoundingClientRect().bottom - 1,
+                closeToColumns: top - lastBlockBottom >= 0 && top - lastBlockBottom <= 5,
                 aboveGame: !game || strip.getBoundingClientRect().bottom <= game.getBoundingClientRect().top + 1,
               };
             })(),
@@ -337,15 +399,20 @@ describe.skipIf(!process.env.CHROME_PATH)("PDF Lettre dans Chrome", () => {
       expect(metrics.result.value.game).toBe(pages === 2 && kind ? 1 : 0);
       expect(metrics.result.value.omitted).toBe(Object.values(paper.omitted ?? {}).filter((count) => count > 0).length);
       expect(metrics.result.value.forecastPeriods).toBe(4);
-      expect(metrics.result.value.imagesLoaded).toBe(true);
-      if (paper.markets) {
-        expect(metrics.result.value.markets).toEqual({ cells: 6, overflow: [], rows: 1, belowColumns: true, aboveGame: true });
-      } else {
-        // La bande ne cède sa place que lorsque le jeu et tous les extras remplissent déjà la page 1.
-        expect({ pages, game: Boolean(kind), extras }).toEqual({ pages: 2, game: true, extras: "all" });
-        expect(metrics.result.value.markets).toBeNull();
-        expect(paper.sources).not.toContain("Yahoo Finance");
+      expect(metrics.result.value.weatherBesideQuote).toBe(true);
+      expect(metrics.result.value.currentAfterTime).toBe(true);
+      for (const gap of Object.values(metrics.result.value.headerRuleSpacing)) {
+        expect(gap).toBeGreaterThanOrEqual(5);
+        expect(gap).toBeLessThanOrEqual(6);
       }
+      expect(metrics.result.value.dailyFooterAtBottom).toBe(true);
+      expect(metrics.result.value.imagesLoaded).toBe(true);
+      expect(paper.markets).toEqual(candidates.markets);
+      expect(paper.sources).toContain("Yahoo Finance");
+      expect(metrics.result.value.markets).toEqual({
+        cells: seed.startsWith("watchlist-21") ? 27 : 6, overflow: [], rows: seed.startsWith("watchlist-21") ? 4 : 1,
+        separatedRows: true, belowColumns: true, closeToColumns: true, aboveGame: true,
+      });
       if (profile === "calm") expect(metrics.result.value.firstPageColumns).toBe(2);
       if (candidates.daily!.upcoming.length) expect(paper.daily!.upcoming.length).toBeGreaterThan(0);
       const text = metrics.result.value.pageOneText.replace(/\s+/g, " ");
@@ -378,7 +445,7 @@ describe.skipIf(!process.env.CHROME_PATH)("PDF Lettre dans Chrome", () => {
             if (!frontLocal!.slot) expect(frontLocal!.clamp).toBe("none/visible");
             expect(frontLocal!.bottom).toBeLessThanOrEqual(frontLocal!.limit + 1);
             expect(frontLocal!.articles).toBe(paper.newsGroups.find((group) => group.key === "local")!.items.length);
-            expect(frontLocal!.articles).toBeGreaterThanOrEqual(kind !== "sudoku" ? 2 : profile === "uneven" ? 1 : dense ? 2 : 3);
+            expect(frontLocal!.articles).toBeGreaterThanOrEqual(paper.firstPageTight && dense ? 1 : kind !== "sudoku" ? 2 : profile === "uneven" ? 1 : dense ? 2 : 3);
           } else {
             expect(frontLocal).toBeNull();
           }
