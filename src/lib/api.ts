@@ -102,7 +102,7 @@ export const queryKeys = {
 
 export const editionUrls = {
   html: (id: string) => `/api/editions/${id}/html`,
-  print: (id: string, language: Language) => `/api/editions/${id}/html?imprimer=1&lang=${language}`,
+  read: (id: string, language: Language) => `/api/editions/${id}/html?lire=1&lang=${language}`,
   pdf: (id: string) => `/api/editions/${id}/pdf`,
   download: (id: string) => `/api/editions/${id}/pdf?telecharger=1`,
 };

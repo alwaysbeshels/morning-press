@@ -72,7 +72,7 @@ describe("PDF d'une édition", () => {
     vi.mocked(authenticate).mockResolvedValue({ ok: true, email: "demo@example.com" });
   });
 
-  it("s'encadre depuis la même origine seulement, pour l'impression depuis le site", async () => {
+  it("s'encadre depuis la même origine seulement", async () => {
     const response = await pdfRequest();
     expect(response.status).toBe(200);
     expect(response.headers.get("Content-Type")).toBe("application/pdf");
@@ -86,7 +86,7 @@ describe("PDF d'une édition", () => {
   });
 });
 
-describe("HTML imprimable d'une édition", () => {
+describe("HTML de lecture d'une édition", () => {
   const storedHtml = '<!doctype html><html><head></head><body class="two-pages"><main class="page">Journal</main></body></html>';
   const findFirst = vi.fn();
   const get = vi.fn();
@@ -111,43 +111,42 @@ describe("HTML imprimable d'une édition", () => {
     expect(csp).not.toContain("allow-scripts");
   });
 
-  it.each(["fr", "en"])("autorise seulement le script d'impression avec un nonce neuf (%s)", async (language) => {
-    const response = await request(`?imprimer=1&lang=${language}`);
+  it.each(["fr", "en"])("ajoute les commandes de lecture sans script (%s)", async (language) => {
+    const response = await request(`?lire=1&lang=${language}`);
     expect(response.status).toBe(200);
     expect(response.headers.get("Cache-Control")).toBe("private, no-store");
     expect(response.headers.get("X-Frame-Options")).toBe("SAMEORIGIN");
     const html = await response.text();
-    const nonce = html.match(/<script nonce="([^"]+)">/)?.[1];
-    expect(nonce).toBeTruthy();
+    expect(html).not.toContain("<script");
     const csp = response.headers.get("Content-Security-Policy");
-    expect(csp).toContain("sandbox allow-scripts allow-modals;");
-    expect(csp).toContain(`script-src 'nonce-${nonce}'`);
+    expect(csp).toContain("sandbox allow-downloads allow-top-navigation-by-user-activation;");
+    expect(csp).not.toContain("allow-scripts");
     expect(csp).not.toContain("allow-same-origin");
     expect(html).toContain(language === "fr" ? "Retour au journal" : "Back to the paper");
+    expect(html).toContain(language === "fr" ? "Télécharger" : "Download");
     expect(html).toContain(`<a href="/editions/${ID_A}">`);
+    expect(html).toContain(`/api/editions/${ID_A}/pdf?telecharger=1" download>`);
     expect(get).toHaveBeenCalledExactlyOnceWith(`edition/${ID_A}/html`, "text");
-    const second = await request("?imprimer=1");
-    expect(second.headers.get("Content-Security-Policy")).not.toBe(csp);
   });
 
   it.each([
     undefined,
     edition(ID_A, { hasHtml: false }),
     edition(ID_A, { createdAt: new Date(Date.now() - 31 * 86_400_000) }),
-  ])("ne rend pas imprimable une édition inaccessible", async (entry) => {
+  ])("ne propose pas la lecture d'une édition inaccessible", async (entry) => {
     findFirst.mockResolvedValue(entry);
-    expect((await request("?imprimer=1")).status).toBe(404);
+    expect((await request("?lire=1")).status).toBe(404);
     expect(get).not.toHaveBeenCalled();
   });
 
-  it("ne propose pas d'imprimer un HTML manquant", async () => {
+  it("ne propose pas la lecture d'un HTML manquant", async () => {
     get.mockResolvedValue(null);
-    expect((await request("?imprimer=1")).status).toBe(404);
+    expect((await request("?lire=1")).status).toBe(404);
   });
 
-  it("refuse l'impression avant l'authentification", async () => {
+  it("refuse la lecture avant l'authentification", async () => {
     vi.mocked(authenticate).mockResolvedValueOnce({ ok: false, status: 401, reason: "missing-token" });
-    expect((await request("?imprimer=1")).status).toBe(401);
+    expect((await request("?lire=1")).status).toBe(401);
     expect(getDb).not.toHaveBeenCalled();
     expect(get).not.toHaveBeenCalled();
   });

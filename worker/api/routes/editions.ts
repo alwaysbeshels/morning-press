@@ -7,7 +7,7 @@ import { editions, type Edition } from "../../db/schema";
 import { startEdition } from "../../schedule/scheduler";
 import { editionKeys } from "../../workflow/edition-workflow";
 import { newspaperHtmlCsp } from "../../edition/html";
-import { withPrintControls } from "../../edition/print";
+import { withReaderControls } from "../../edition/reader";
 import { languageFromHeader } from "../messages";
 import { isUuid, jsonError, readJson, type AppContext, type AppEnv } from "../context";
 
@@ -105,7 +105,7 @@ export const editionRoutes = new Hono<AppEnv>()
       "Content-Type": "application/pdf",
       "Content-Disposition": `${disposition}; filename="journal-du-matin-${edition.editionDate}.pdf"`,
       "Cache-Control": "private, no-store",
-      // Le bouton Imprimer charge le PDF dans un cadre caché de la même origine ; aucun autre site ne peut l'encadrer.
+      // Le PDF peut s'afficher dans un cadre de la même origine seulement.
       "Content-Security-Policy": "frame-ancestors 'self'",
       "X-Frame-Options": "SAMEORIGIN",
     });
@@ -116,15 +116,18 @@ export const editionRoutes = new Hono<AppEnv>()
     if (!edition || !edition.hasHtml || isEditionExpired(edition)) return jsonError(c, 404, "editionExpired");
     const html = await c.env.EDITIONS.get(editionKeys.html(edition.id), "text");
     if (!html) return jsonError(c, 404, "editionExpired");
-    const printing = c.req.query("imprimer") === "1";
-    const nonce = printing ? crypto.randomUUID() : undefined;
+    const reading = c.req.query("lire") === "1";
     const language = c.req.query("lang");
-    const content = nonce
-      ? withPrintControls(html, edition.id, language === "en" || language === "fr" ? language : languageFromHeader(c.req.header("Accept-Language")), nonce)
+    const content = reading
+      ? withReaderControls(
+          html,
+          edition.id,
+          language === "en" || language === "fr" ? language : languageFromHeader(c.req.header("Accept-Language")),
+        )
       : html;
     return c.body(content, 200, {
       "Content-Type": "text/html; charset=utf-8",
-      "Content-Security-Policy": newspaperHtmlCsp(nonce, printing),
+      "Content-Security-Policy": newspaperHtmlCsp(undefined, reading),
       "Cache-Control": "private, no-store",
       "X-Frame-Options": "SAMEORIGIN",
     });

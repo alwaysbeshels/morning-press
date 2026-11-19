@@ -4,12 +4,11 @@ import { CalendarClockIcon, Loader2Icon, NewspaperIcon, SparklesIcon, UsersIcon 
 import { DownloadButton } from "@/components/download-button";
 import { EditionStatusBadge } from "@/components/edition-status";
 import { PageHeader } from "@/components/layout";
-import { PrintButton } from "@/components/print-button";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-import { api, queryKeys } from "@/lib/api";
+import { api, editionUrls, queryKeys } from "@/lib/api";
 import { formatClock, formatDateTime, formatEditionDate, formatToday } from "@/lib/format";
 import { errorMessage, useGenerateEdition } from "@/lib/hooks";
 import { describeSourceError, useI18n } from "@/lib/i18n";
@@ -123,16 +122,11 @@ export function DashboardPage() {
             <CardFooter className="flex-wrap gap-2">
               {latest.hasHtml && (
                 <Button asChild variant="outline">
-                  <Link to="/editions/$id" params={{ id: latest.id }}>
-                    {d.read}
-                  </Link>
+                  <a href={editionUrls.read(latest.id, language)}>{d.read}</a>
                 </Button>
               )}
               {latest.hasPdf && (
-                <>
-                  <DownloadButton editionId={latest.id} variant="outline">PDF</DownloadButton>
-                  <PrintButton editionId={latest.id} variant="outline" />
-                </>
+                <DownloadButton editionId={latest.id} variant="outline">PDF</DownloadButton>
               )}
             </CardFooter>
           )}

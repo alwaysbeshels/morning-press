@@ -6,13 +6,12 @@ import { DeleteEditionsDialog } from "@/components/delete-editions-dialog";
 import { DownloadButton } from "@/components/download-button";
 import { EditionStatusBadge } from "@/components/edition-status";
 import { PageHeader } from "@/components/layout";
-import { PrintButton } from "@/components/print-button";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Skeleton } from "@/components/ui/skeleton";
-import { api, queryKeys } from "@/lib/api";
+import { api, editionUrls, queryKeys } from "@/lib/api";
 import { canDeleteEdition, groupEditionsByDate, type EditionGroup } from "@/lib/editions";
 import { formatEditionDate, formatTime } from "@/lib/format";
 import { errorMessage, useGenerateEdition } from "@/lib/hooks";
@@ -155,11 +154,13 @@ function EditionActions({ edition, date }: { edition: EditionDto; date: string }
   return (
     <div className="flex shrink-0 items-center gap-2">
       <EditionStatusBadge edition={edition} />
+      {available && edition.hasHtml && (
+        <Button asChild size="sm" variant="ghost">
+          <a href={editionUrls.read(edition.id, language)}>{t.dashboard.read}</a>
+        </Button>
+      )}
       {available && edition.hasPdf && (
-        <>
-          <DownloadButton editionId={edition.id} size="sm" variant="ghost">PDF</DownloadButton>
-          <PrintButton editionId={edition.id} size="icon-sm" variant="ghost" iconOnly />
-        </>
+        <DownloadButton editionId={edition.id} size="sm" variant="ghost">PDF</DownloadButton>
       )}
       {canDeleteEdition(edition) && (
         <DeleteEditionsDialog

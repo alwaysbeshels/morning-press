@@ -6,7 +6,6 @@ import { DeleteEditionsDialog } from "@/components/delete-editions-dialog";
 import { DownloadButton } from "@/components/download-button";
 import { EditionStatusBadge } from "@/components/edition-status";
 import { PageHeader } from "@/components/layout";
-import { PrintButton } from "@/components/print-button";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -97,8 +96,13 @@ export function EditionPage() {
         title={date}
         description={e.generatedOn(formatDateTime(data.createdAt, language))}
         actions={
-          (available && data.hasPdf) || canDeleteEdition(data) ? (
+          (available && (data.hasHtml || data.hasPdf)) || canDeleteEdition(data) ? (
             <>
+              {available && data.hasHtml && (
+                <Button asChild variant="outline">
+                  <a href={editionUrls.read(data.id, language)}>{t.dashboard.read}</a>
+                </Button>
+              )}
               {available && data.hasPdf && (
                 <>
                   <Button asChild variant="outline">
@@ -106,7 +110,6 @@ export function EditionPage() {
                       <ExternalLinkIcon /> {e.openPdf}
                     </a>
                   </Button>
-                  <PrintButton editionId={data.id} variant="outline" />
                   <DownloadButton editionId={data.id} />
                 </>
               )}

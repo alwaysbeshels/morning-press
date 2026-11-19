@@ -1,52 +1,30 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { printEdition, sharePdf, usesMobileDocuments } from "./documents";
+import { sharePdf, usesMobileDocuments } from "./documents";
 
-class Frame extends EventTarget {
-  style = { cssText: "" };
-  src = "";
-  tabIndex = 0;
-  setAttribute = vi.fn();
-  remove = vi.fn();
-  contentWindow = { focus: vi.fn(), print: vi.fn() };
-}
-
-const pdfUrl = "/api/editions/example/pdf";
-const printUrl = "/api/editions/example/html?imprimer=1&lang=fr";
-let target: Frame;
 let assign: ReturnType<typeof vi.fn>;
-let append: ReturnType<typeof vi.fn>;
 
 beforeEach(() => {
-  vi.useFakeTimers();
-  target = new Frame();
   assign = vi.fn();
-  append = vi.fn(() => target.dispatchEvent(new Event("load")));
   vi.stubGlobal("navigator", { userAgent: "Chrome", platform: "MacIntel", maxTouchPoints: 0 });
   vi.stubGlobal("window", {
     matchMedia: vi.fn(() => ({ matches: false })),
     location: { assign },
-    setTimeout,
-    clearTimeout,
   });
-  vi.stubGlobal("document", { createElement: vi.fn(() => target), body: { append } });
 });
 
 afterEach(() => {
-  vi.useRealTimers();
   vi.unstubAllGlobals();
 });
 
-describe("impression selon l'appareil", () => {
+describe("détection mobile", () => {
   it.each([
     { userAgent: "iPhone", platform: "iPhone", maxTouchPoints: 1 },
     { userAgent: "iPad", platform: "iPad", maxTouchPoints: 5 },
     { userAgent: "Safari Macintosh", platform: "MacIntel", maxTouchPoints: 5 },
     { userAgent: "Android", platform: "Linux", maxTouchPoints: 5 },
-  ])("ouvre le HTML imprimable, sans lecteur PDF, sur $userAgent", async (device) => {
+  ])("reconnaît $userAgent", (device) => {
     vi.stubGlobal("navigator", device);
-    await printEdition(pdfUrl, printUrl);
-    expect(assign).toHaveBeenCalledExactlyOnceWith(printUrl);
-    expect(append).not.toHaveBeenCalled();
+    expect(usesMobileDocuments()).toBe(true);
   });
 
   it("reconnaît aussi un pointeur tactile", () => {
@@ -54,22 +32,8 @@ describe("impression selon l'appareil", () => {
     expect(usesMobileDocuments()).toBe(true);
   });
 
-  it("conserve l'impression du PDF en cadre sur ordinateur", async () => {
-    await printEdition(pdfUrl, printUrl);
-    expect(assign).not.toHaveBeenCalled();
-    expect(target.src).toBe(pdfUrl);
-    expect(target.contentWindow.focus).toHaveBeenCalledOnce();
-    expect(target.contentWindow.print).toHaveBeenCalledOnce();
-    expect(target.style.cssText).not.toContain("display:none");
-  });
-
-  it("retire le cadre et signale un délai dépassé", async () => {
-    append.mockImplementation(() => undefined);
-    const failure = expect(printEdition(pdfUrl, printUrl)).rejects.toThrow("PDF load timeout");
-    await vi.advanceTimersByTimeAsync(30_000);
-    await failure;
-    expect(target.remove).toHaveBeenCalledOnce();
-    expect(target.contentWindow.print).not.toHaveBeenCalled();
+  it("laisse l'ordinateur hors du parcours mobile", () => {
+    expect(usesMobileDocuments()).toBe(false);
   });
 });
 
