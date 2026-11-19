@@ -1,17 +1,18 @@
-# Copiez ce fichier en .dev.vars (jamais commité) pour le développement local.
-# En production, chaque valeur est un secret Cloudflare : npx wrangler secret put NOM
+# Copy this file to .dev.vars (never commit .dev.vars) for local development.
+# In production, set each value with: npx wrangler secret put NAME
+# See docs/SETUP.md for the full walkthrough.
 
-# Neon > projet morning-press > Connect > chaîne « Pooled connection »
+# Neon → your project → Connect → pooled connection string
 DATABASE_URL="postgresql://USER:PASSWORD@HOST/DATABASE?sslmode=require"
 
-# Nylas > App Settings > API Keys, et Client ID de l'application
+# Nylas → App Settings → API Keys, and the app Client ID
 NYLAS_API_KEY=""
 NYLAS_CLIENT_ID=""
 
-# Cloudflare Zero Trust (inutiles en local si DEV_AUTH_EMAIL est défini)
-ACCESS_TEAM_DOMAIN="votre-equipe.cloudflareaccess.com"
+# Cloudflare Zero Trust (not required locally when DEV_AUTH_EMAIL is set)
+ACCESS_TEAM_DOMAIN="your-team.cloudflareaccess.com"
 ACCESS_AUD=""
-ALLOWED_EMAILS="vous@example.com"
+ALLOWED_EMAILS="you@example.com"
 
-# Développement local seulement : contourne Access sur localhost avec cette adresse.
-DEV_AUTH_EMAIL="vous@example.com"
+# Local only: bypasses Access on localhost with this identity
+DEV_AUTH_EMAIL="you@example.com"
