@@ -252,7 +252,7 @@ Si l’impression échoue :
 
 ## Sécurité
 
-Le dépôt GitHub doit être **privé**.
+Le dépôt GitHub est **public** : utilisation, clone et auto-hébergement sont les bienvenus.
 
 Règles obligatoires :
 
@@ -468,7 +468,7 @@ Attention : le cron doit être converti correctement en UTC. Par exemple, 06 h 3
 
 L’agent doit :
 
-1. Créer un dépôt privé nommé `morning-newspaper` ou un nom similaire.
+1. Partir du dépôt public `morning-press` (utilisation, clone et auto-hébergement bienvenus).
 2. Mettre en place la structure de projet décrite ci-dessus.
 3. Écrire le code Python nécessaire pour :
    - Google Calendar et Gmail, deux comptes.

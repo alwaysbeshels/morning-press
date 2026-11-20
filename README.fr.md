@@ -4,7 +4,7 @@
 
 Plateforme web personnelle qui prépare chaque matin un **journal en PDF**, en français ou en anglais, à partir de vos comptes Google, Outlook et Apple (courriels et calendriers), de la météo et des actualités. En mode 2 pages, le jeu du jour (sudoku, mots croisés ou mots codés) est sur la première page. La deuxième présente les actualités résumées par section (locale, provinciale, nationale, américaine, internationale), puis la solution du jeu en bas, à l'envers. Le journal se consulte et se télécharge depuis le site ; l'envoi par courriel viendra plus tard.
 
-**Gratuit, et pour tout le monde.** Clonez le projet, déployez votre instance sur les forfaits gratuits Cloudflare + Neon, et invitez les adresses que vous voulez. Il n’y a pas de produit Morning Press payant — seulement de l’auto-hébergement. (Votre site reste privé derrière Cloudflare Access ; le *logiciel*, lui, est disponible pour quiconque veut son propre journal.)
+**Gratuit, et pour tout le monde.** Ce dépôt est public : vous êtes les bienvenus pour l’utiliser, le cloner et l’auto-héberger. Déployez votre instance sur les forfaits gratuits Cloudflare + Neon, et invitez les adresses que vous voulez. Il n’y a pas de produit Morning Press payant — seulement de l’auto-hébergement. (Votre site reste privé derrière Cloudflare Access ; le *logiciel*, lui, est disponible pour quiconque veut son propre journal.)
 
 ## Aperçu
 
@@ -376,10 +376,14 @@ drizzle/        Migrations SQL
 
 ## Sécurité
 
-- Dépôt privé ; aucun secret dans le code (`.dev.vars` est ignoré par Git).
+- Dépôt public : vous êtes les bienvenus pour l’utiliser, le cloner et l’auto-héberger. Aucun secret dans le code (`.dev.vars` est ignoré par Git).
 - Accès en lecture seule aux courriels et calendriers ; le journal n'affiche que l'expéditeur, l'objet et un court résumé.
 - Publicités, infolettres et codes de vérification exclus ; les envois en masse des commerçants ne sont gardés que pour une facture, une livraison, une réservation ou un changement.
 - Contenu du journal systématiquement échappé et affiché dans une iframe isolée (`sandbox`).
+
+## Licence
+
+`package.json` indique `"private": true` afin que le paquet ne soit pas publié sur npm. Le dépôt GitHub est public : vous êtes les bienvenus pour l’utiliser, le cloner et l’auto-héberger. Il n’y a pas encore de fichier `LICENSE` ; une licence sera ajoutée. Aucune licence précise n’est indiquée d’ici là.
 
 ## À venir
 
