@@ -1,0 +1,3 @@
+# Default owner for everything in this repository.
+# Required reviews from code owners are enforced via branch protection / rulesets on `main`.
+* @alwaysbeshels
