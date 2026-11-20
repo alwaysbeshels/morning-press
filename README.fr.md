@@ -383,7 +383,7 @@ drizzle/        Migrations SQL
 
 ## Licence
 
-`package.json` indique `"private": true` afin que le paquet ne soit pas publié sur npm. Le dépôt GitHub est public : vous êtes les bienvenus pour l’utiliser, le cloner et l’auto-héberger. Il n’y a pas encore de fichier `LICENSE` ; une licence sera ajoutée. Aucune licence précise n’est indiquée d’ici là.
+`package.json` indique `"private": true` afin que le paquet ne soit pas publié sur npm, et `"license": "MIT"`. Le dépôt GitHub est public : vous êtes les bienvenus pour l’utiliser, le cloner et l’auto-héberger. Le projet est sous [licence MIT](./LICENSE).
 
 ## À venir
 

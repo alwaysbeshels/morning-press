@@ -261,4 +261,4 @@ docs/           Setup and usage guides
 
 ## License / publishing
 
-`package.json` sets `"private": true` so the package is not published to npm. The GitHub repository is public: you are welcome to use it, clone it, and self-host. A `LICENSE` file is not included yet; one is coming and will be added. No specific license is claimed until then.
+`package.json` sets `"private": true` so the package is not published to npm, and `"license": "MIT"`. The GitHub repository is public: you are welcome to use it, clone it, and self-host. The project is under the [MIT license](./LICENSE).
