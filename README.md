@@ -8,6 +8,9 @@ French docs: [README.fr.md](./README.fr.md), [docs/SETUP.fr.md](./docs/SETUP.fr.
 
 ## Look and feel
 
+> [!CAUTION]
+> **Screenshots and the sample PDF below are in French** — easy to miss if you expect English examples. The app and the newspaper both support English: set the site language and the paper language in Preferences after you deploy.
+
 Real screenshots from a running instance:
 
 ![Dashboard](docs/assets/dashboard-desktop.png)
