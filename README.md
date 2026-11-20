@@ -2,7 +2,7 @@
 
 A personal web app that prepares a **morning newspaper PDF** in French or English from your Google, Outlook, and Apple accounts (email + calendars), plus weather, markets, and news. In 2-page mode, a daily puzzle (sudoku, crossword, or codeword) sits on page 1; page 2 carries summarized headlines by section, with the puzzle answers upside down at the bottom. Open **Read** for a full-page HTML view, or **Download** the PDF. Email delivery and automatic printing are planned later.
 
-**Free, and for everyone.** Clone it, deploy your own instance on Cloudflare + Neon free tiers, and invite the emails you choose. There is no paid Morning Press product—just self-host. (Your site stays private behind Cloudflare Access; the *software* is open to anyone who wants their own paper.)
+**Free, and for everyone.** This repository is public: you are welcome to use it, clone it, and self-host. Deploy your own instance on Cloudflare + Neon free tiers, and invite the emails you choose. There is no paid Morning Press product—just self-host. (Your site stays private behind Cloudflare Access; the *software* is open to anyone who wants their own paper.)
 
 French docs: [README.fr.md](./README.fr.md), [docs/SETUP.fr.md](./docs/SETUP.fr.md), [docs/USAGE.fr.md](./docs/USAGE.fr.md). Full self-host walkthrough: [docs/SETUP.md](./docs/SETUP.md). Day-to-day use: [docs/USAGE.md](./docs/USAGE.md).
 
@@ -244,6 +244,7 @@ docs/           Setup and usage guides
 
 ## Security and privacy
 
+- This repository is public: you are welcome to use it, clone it, and self-host.
 - Access gates the site; the Worker also verifies the Access JWT on every request.
 - Nylas scopes are read-only (`gmail.readonly`, `calendar.readonly`, `Mail.Read`, `Calendars.Read`).
 - The paper shows sender, subject, and a short snippet—not full message bodies.
@@ -260,4 +261,4 @@ docs/           Setup and usage guides
 
 ## License / publishing
 
-`package.json` sets `"private": true` so the package is not published to npm. The GitHub repository can still be public for self-hosting. Add a `LICENSE` file if you want an explicit open-source license.
+`package.json` sets `"private": true` so the package is not published to npm, and `"license": "MIT"`. The GitHub repository is public: you are welcome to use it, clone it, and self-host. The project is under the [MIT license](./LICENSE).
