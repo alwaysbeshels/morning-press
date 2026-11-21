@@ -2,7 +2,7 @@ import { z } from "zod";
 import { en, fr } from "zod/locales";
 import { COLOR_INTENSITIES, NEWSPAPER_STYLES } from "./newspaper-design";
 import { categoryNameKey } from "./stocks";
-import { DEFAULT_COOKING, EDITION_LIST_LIMIT, EMAIL_FILTERS, FOOD_RESTRICTIONS, GAME_KINDS, isProteinAllowed, LANGUAGES, MAX_NEWS_TOPICS, MAX_WATCHLIST, MEAL_TYPES, PROTEIN_CHOICES, STOCK_COLORS, type Language } from "./types";
+import { DEFAULT_COOKING, EDITION_LIST_LIMIT, EMAIL_FILTERS, EXTRA_STOCK_ROWS, FOOD_RESTRICTIONS, GAME_KINDS, isProteinAllowed, LANGUAGES, MAX_NEWS_TOPICS, MAX_WATCHLIST, maxNewsTopics, MEAL_TYPES, NEWS_SUMMARY_SIZES, PROTEIN_CHOICES, STOCK_COLORS, watchlistLimit, type Language } from "./types";
 
 const shortText = (max: number) => z.string().trim().min(1).max(max);
 
@@ -50,7 +50,9 @@ export const preferencesSchema = z
   .object({
     ...newspaperDesignSchema.shape,
     language: z.enum(LANGUAGES),
-    pages: z.union([z.literal(1), z.literal(2)]),
+    pages: z.union([z.literal(1), z.literal(2), z.literal(3), z.literal(4)]),
+    newsSummary: z.enum(NEWS_SUMMARY_SIZES).default("small"),
+    extraStockRows: z.union([z.literal(EXTRA_STOCK_ROWS[0]), z.literal(EXTRA_STOCK_ROWS[1]), z.literal(EXTRA_STOCK_ROWS[2])]).default(0),
     city: shortText(80),
     region: z.string().trim().max(80),
     latitude: z.number().min(-90).max(90),
@@ -95,6 +97,18 @@ export const preferencesSchema = z
   .refine((prefs) => prefs.pages === 1 || !prefs.gameEnabled || prefs.gameKinds.length > 0, {
     path: ["gameKinds"],
     message: "Choisissez au moins un jeu",
+  })
+  .refine((prefs) => prefs.newsTopics.length <= maxNewsTopics(prefs.pages, prefs.newsSummary), {
+    path: ["newsTopics"],
+    message: "Trop de sujets pour ce nombre de pages et cette longueur de résumé",
+  })
+  .refine((prefs) => prefs.marketWatchlist.length <= watchlistLimit(prefs.pages), {
+    path: ["marketWatchlist"],
+    message: "Trop de titres pour ce nombre de pages",
+  })
+  .refine((prefs) => prefs.marketCategories.length <= watchlistLimit(prefs.pages), {
+    path: ["marketCategories"],
+    message: "Trop de catégories pour ce nombre de pages",
   });
 
 export const settingsUpdateSchema = z.object({
@@ -134,6 +148,18 @@ const VALIDATION_MESSAGES: Record<string, Record<Language, string>> = {
   "Choisissez au moins un type de repas": { fr: "Choisissez au moins un type de repas", en: "Choose at least one meal type" },
   "Choisissez au moins une protéine compatible avec votre régime": {
     fr: "Choisissez au moins une protéine compatible avec votre régime", en: "Choose at least one protein compatible with your diet",
+  },
+  "Trop de sujets pour ce nombre de pages et cette longueur de résumé": {
+    fr: "Trop de sujets pour ce nombre de pages et cette longueur de résumé",
+    en: "Too many topics for this page count and summary length",
+  },
+  "Trop de titres pour ce nombre de pages": {
+    fr: "Trop de titres pour ce nombre de pages",
+    en: "Too many stocks for this page count",
+  },
+  "Trop de catégories pour ce nombre de pages": {
+    fr: "Trop de catégories pour ce nombre de pages",
+    en: "Too many categories for this page count",
   },
 };
 const VALIDATION_LOCALES = { fr: fr(), en: en() };

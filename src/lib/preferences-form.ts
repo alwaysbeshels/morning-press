@@ -7,6 +7,8 @@ import {
   type Preferences,
   type ScheduleSettings,
   type SettingsDto,
+  type Stock,
+  type StockCategory,
 } from "@shared/types";
 import type { Messages } from "@/lib/i18n";
 
@@ -47,14 +49,42 @@ export const SECTION_FIELDS: Record<FormSection, SectionFields> = {
   design: { prefs: ["newspaperStyle", "colorIntensity"] },
   schedule: { schedule: ["enabled", "time", "timezone", "days"] },
   place: { prefs: ["city", "region", "latitude", "longitude"] },
-  news: { prefs: ["newsEnabled", "newsSections"], text: ["topics"] },
-  markets: { prefs: ["marketsEnabled", "marketWatchlist", "marketCategories"] },
+  news: { prefs: ["newsEnabled", "newsSections", "newsSummary"], text: ["topics"] },
+  markets: { prefs: ["marketsEnabled", "marketWatchlist", "marketCategories", "extraStockRows"] },
   emails: { prefs: ["emailsEnabled"], text: ["keywords", "ignored"] },
   game: { prefs: ["gameEnabled", "gameKinds"] },
   cooking: { prefs: ["cooking"] },
   exercise: { prefs: ["exerciseEnabled"] },
   limits: { prefs: ["maxEvents", "maxPriorities", "maxEmails", "maxNews"] },
 };
+
+/** Retire `items.length - limit` éléments au hasard, en conservant l’ordre de ceux qui restent. */
+export function dropExtras<T>(items: readonly T[], limit: number, random: () => number = Math.random): T[] {
+  if (items.length <= limit) return [...items];
+  const extra = items.length - limit;
+  const order = items.map((_, index) => index);
+  for (let index = order.length - 1; index > 0; index--) {
+    const swap = Math.floor(random() * (index + 1));
+    const current = order[index] as number;
+    order[index] = order[swap] as number;
+    order[swap] = current;
+  }
+  const dropped = new Set(order.slice(0, extra));
+  return items.filter((_, index) => !dropped.has(index));
+}
+
+/** Ramène titres et catégories sous la limite. Les titres d’une catégorie retirée reviennent dans Général. */
+export function fitMarkets(
+  stocks: readonly Stock[],
+  categories: readonly StockCategory[],
+  limit: number,
+  random: () => number = Math.random,
+): { marketWatchlist: Stock[]; marketCategories: StockCategory[] } {
+  const marketCategories = dropExtras(categories, limit, random);
+  const kept = new Set(marketCategories.map((category) => category.id));
+  const watchlist = stocks.map((stock) => (stock.categoryId && !kept.has(stock.categoryId) ? { ...stock, categoryId: null } : stock));
+  return { marketWatchlist: dropExtras(watchlist, limit, random), marketCategories };
+}
 
 export const lines = (value: string) =>
   value
@@ -161,7 +191,8 @@ function sectionDefinitions(t: Messages): Record<FormSection, { title: string; f
       title: p.layoutTitle,
       fields: [
         field(p.language, (v) => v.prefs.language, (value) => t.languageNames[value]),
-        field(p.pages, (v) => v.prefs.pages, (value) => (value === 2 ? p.twoPages : p.onePage)),
+        field(p.pages, (v) => v.prefs.pages, (value) =>
+          value === 1 ? p.onePage : value === 2 ? p.twoPages : value === 3 ? p.threePages : p.fourPages),
       ],
     },
     design: {
@@ -201,6 +232,7 @@ function sectionDefinitions(t: Messages): Record<FormSection, { title: string; f
           ),
         ),
         field(c.topics, (v) => lines(v.topics), list),
+        field(p.summarySize, (v) => v.prefs.newsSummary, (value) => p.summarySizes[value]),
       ],
     },
     markets: {
@@ -210,6 +242,7 @@ function sectionDefinitions(t: Messages): Record<FormSection, { title: string; f
         field(p.watchlist, (v) => v.prefs.marketWatchlist.map((stock) =>
           `${stock.symbol} (${v.prefs.marketCategories.find((category) => category.id === stock.categoryId)?.name ?? p.stockGeneral})`), list),
         field(p.stockCategories, (v) => v.prefs.marketCategories.map((category) => `${category.name} (${p.stockColors[category.color]})`), list),
+        field(p.extraStockRows, (v) => v.prefs.extraStockRows, (value) => p.extraStockRowsOption(value)),
       ],
     },
     emails: {

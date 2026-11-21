@@ -3,7 +3,7 @@ import { DEFAULT_PREFERENCES } from "../../shared/types";
 import type { NewsItem } from "../edition/types";
 import { buildNewspaper } from "../edition/select";
 import {
-  bingNewsUrl, featuredTitles, fetchFeatured, fetchFeed, mergeNews, newsFeeds, newsSummary, parseRss,
+  bingNewsUrl, clipSummary, featuredTitles, fetchFeatured, fetchFeed, groupNews, mergeNews, newsFeeds, newsSummary, parseRss,
   type NewsFeed, type NewsPublisher,
 } from "./news";
 
@@ -220,6 +220,19 @@ describe("résumés des actualités", () => {
       </description></item></channel></rss>`;
     expect(parseRss(xml, "Montréal", 1)[0].summary)
       .toBe("L'aire de jeux sera accessible à toutes les familles. Les travaux débutent à l'automne.");
+  });
+
+  it("allonge le résumé selon le format, puis peut en garder une partie en réserve", () => {
+    const second = "Les travaux commenceront au mois de septembre.";
+    const third = "Les résidents seront consultés avant le début du chantier.";
+    const fourth = "Le stationnement du quartier sera réorganisé pendant les travaux.";
+    const text = `${SUMMARY} ${second} ${third} ${fourth}`;
+    expect(newsSummary(text, "Un parc", "", "medium")).toBe(text);
+    expect(newsSummary(text, "Un parc")).toBe(`${SUMMARY} ${second}`);
+    expect(clipSummary(newsSummary(text, "Un parc", "", "large"), "small")).toEqual({
+      summary: `${SUMMARY} ${second}`,
+      more: [third, fourth],
+    });
   });
 
   it("garde au plus deux phrases complètes, sans rallonger un extrait coupé", () => {
@@ -495,6 +508,22 @@ describe("actualités des éditeurs, classées selon leur une", () => {
     expect(error).toBeInstanceOf(AggregateError);
     expect((error as AggregateError).message).toContain("Flux RSS indisponibles");
     expect((error as AggregateError).errors.map((cause: Error) => cause.message)).toContain("lapresse RSS : HTTP 503");
+  });
+});
+
+describe("groupNews", () => {
+  it("met les sujets personnels dans une seule rubrique, plusieurs articles par sujet, sans groupe vide", () => {
+    const item = (title: string, topic: string): NewsItem => ({ title, summary: SUMMARY, source: "s", topic });
+    const groups = groupNews([
+      { group: "local", label: "Montréal", items: [item("Neige", "Montréal")] },
+      { group: "topics", label: "climat", items: [item("Canicule", "climat"), item("Inondation", "climat")] },
+      { group: "topics", label: "santé", items: [item("Vaccin", "santé")] },
+      { group: "topics", label: "rien", items: [] },
+    ], 8, Infinity);
+    expect(groups.map((group) => [group.key, group.label, group.items.map((entry) => entry.title)])).toEqual([
+      ["local", "Montréal", ["Neige"]],
+      ["topics", "", ["Canicule", "Inondation", "Vaccin"]],
+    ]);
   });
 });
 

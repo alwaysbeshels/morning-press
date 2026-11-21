@@ -7,6 +7,7 @@ import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { DEFAULT_PREFERENCES, GAME_KINDS, NEWS_SECTIONS, WEATHER_PERIODS, type GameKind, type Language } from "../../shared/types";
 import { generateGame, renderGame } from "../games";
 import { buildNewspaper, fitPageOne } from "./select";
+import { HALF_PAGE_GAMES } from "./render";
 import { layoutNewspaper } from "./layout";
 import type { Newspaper } from "./types";
 import { COLOR_INTENSITIES, NEWSPAPER_PALETTES, NEWSPAPER_STYLES } from "../../shared/newspaper-design";
@@ -437,15 +438,17 @@ describe.skipIf(!process.env.CHROME_PATH)("PDF Lettre dans Chrome", () => {
           const frontLocal = metrics.result.value.frontLocal;
           // Des articles de taille normale doivent toujours tenir à côté du jeu ; seul le texte extrême du cas « dense »
           // peut forcer le repli sur la page 2.
-          if (kind && !dense) expect(moved).toBe(false);
+          const keepsLocal = kind === "crossword" || kind === "codeword" || (kind !== null && HALF_PAGE_GAMES.includes(kind));
+          if (keepsLocal && !dense) expect(moved).toBe(false);
           if (besideGame) {
             // Articles entiers seulement : aucun plafond CSS, et rien ne dépasse la hauteur disponible à côté du jeu.
             expect(frontLocal).not.toBeNull();
-            expect(frontLocal!.slot).toBe(kind !== "sudoku");
+            const halfPage = kind !== null && HALF_PAGE_GAMES.includes(kind);
+            expect(frontLocal!.slot).toBe(!halfPage);
             if (!frontLocal!.slot) expect(frontLocal!.clamp).toBe("none/visible");
             expect(frontLocal!.bottom).toBeLessThanOrEqual(frontLocal!.limit + 1);
             expect(frontLocal!.articles).toBe(paper.newsGroups.find((group) => group.key === "local")!.items.length);
-            expect(frontLocal!.articles).toBeGreaterThanOrEqual(paper.firstPageTight && dense ? 1 : kind !== "sudoku" ? 2 : profile === "uneven" ? 1 : dense ? 2 : 3);
+            expect(frontLocal!.articles).toBeGreaterThanOrEqual(paper.firstPageTight && dense ? 1 : !halfPage ? 2 : profile === "uneven" ? 1 : dense ? 2 : 3);
           } else {
             expect(frontLocal).toBeNull();
           }

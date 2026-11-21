@@ -1,6 +1,6 @@
 import type { WordEntry } from "./types";
 
-// Mots sans accents ni signes, comme dans les grilles françaises ; définitions originales.
+// Définitions originales des mots croisés. Le dictionnaire (mots codés) est lexicon-fr.txt.
 export const WORDS_FR: readonly WordEntry[] = [
   { word: "ABEILLE", clue: "Insecte qui fait du miel" },
   { word: "ABRICOT", clue: "Fruit orangé à noyau" },

@@ -34,6 +34,35 @@ const base: Newspaper = {
 };
 
 describe("renderNewspaper", () => {
+  it("met la bourse et l'actualité locale sur la page 2, puis réserve la suite aux nouvelles", () => {
+    const html = renderNewspaper({
+      ...base,
+      pages: 3,
+      markets: { asOf: base.generatedAt, open: false, quotes: [{ key: "tsx", price: 21000, changePercent: 0.4, currency: "CAD" }] },
+      newsGroups: [{
+        key: "local", label: "Montréal", items: [{
+          title: "Neige sur la ville", summary: "La neige ralentit les déplacements depuis le matin.", source: "TVA", topic: "Montréal",
+          summaryMore: ["Les opérations de déneigement sont déjà en cours."],
+        }],
+      }],
+      game: { kind: "sudoku", html: "<div>grille</div>", solutionHtml: "<div>réponses</div>" },
+    });
+    const pageOne = html.split('<main class="page page-2"')[0];
+    const pageTwo = html.split('<main class="page page-2"')[1]?.split('<main class="page page-3"')[0] ?? "";
+    const pageThree = html.split('<main class="page page-3"')[1] ?? "";
+    expect(html).toContain('class="multi-pages"');
+    expect(pageOne).not.toContain('class="markets"');
+    expect(pageOne).not.toContain("Neige sur la ville");
+    expect(pageOne).toContain("grille");
+    expect(pageTwo.indexOf('class="markets"')).toBeGreaterThan(-1);
+    expect(pageTwo.indexOf('class="markets"')).toBeLessThan(pageTwo.indexOf("Neige sur la ville"));
+    expect(pageTwo).toContain("data-news-flow");
+    expect(pageTwo).toContain("Les opérations de déneigement");
+    expect(pageTwo).not.toContain("réponses");
+    expect(pageThree).toContain("réponses");
+    expect(html).not.toContain('class="page page-4"');
+  });
+
   it("affiche l'en-tête en français", () => {
     const html = renderNewspaper(base);
     expect(html).toContain('<html lang="fr-CA">');

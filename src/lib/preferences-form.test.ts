@@ -5,6 +5,8 @@ import { messages } from "@/lib/i18n";
 import {
   applyEdits,
   describeChanges,
+  dropExtras,
+  fitMarkets,
   FORM_SECTIONS,
   pickSection,
   SECTION_FIELDS,
@@ -64,6 +66,9 @@ describe("formulaire des préférences par section", () => {
       ["news", withPrefs({ newsEnabled: false })],
       ["news", withPrefs({ newsSections: { ...base.prefs.newsSections, local: { enabled: true, query: "Laval" } } })],
       ["news", (values) => ({ ...values, topics: "Tech\nSanté" })],
+      ["news", withPrefs({ newsSummary: "large" })],
+      ["markets", withPrefs({ extraStockRows: 1 })],
+      ["layout", withPrefs({ pages: 4 })],
       ["markets", withPrefs({ marketsEnabled: false })],
       ["markets", withPrefs({ marketWatchlist: [{ symbol: "RY.TO", name: "Royal Bank", exchange: "Toronto" }] })],
       ["markets", withPrefs({ marketCategories: [{ id: "00000000-0000-4000-8000-000000000001", name: "Techno", color: "blue" }] })],
@@ -181,5 +186,24 @@ describe("formulaire des préférences par section", () => {
     expect(payload.preferences).toMatchObject({ marketsEnabled: false, marketWatchlist: [stock], newsTopics: saved.preferences.newsTopics });
     const removed = editSection("markets", withPrefs({ marketWatchlist: [] }), edits);
     expect(settingsPayload(applyEdits(base, removed)).preferences).toMatchObject({ newsTopics: ["Science"], marketWatchlist: [] });
+  });
+
+  it("retire au hasard seulement le surplus, et renvoie les titres d'une catégorie retirée vers Général", () => {
+    expect(dropExtras(["a", "b", "c"], 3, () => 0)).toEqual(["a", "b", "c"]);
+    const trimmed = dropExtras(["a", "b", "c", "d", "e"], 2, () => 0);
+    expect(trimmed).toHaveLength(2);
+    expect(new Set(trimmed).size).toBe(2);
+    const category = { id: "00000000-0000-4000-8000-000000000001", name: "Techno", color: "blue" as const };
+    const other = { id: "00000000-0000-4000-8000-000000000002", name: "Banques", color: "green" as const };
+    const stocks = [
+      { symbol: "A", name: "A", exchange: "", categoryId: category.id },
+      { symbol: "B", name: "B", exchange: "", categoryId: other.id },
+      { symbol: "C", name: "C", exchange: "", categoryId: null },
+    ];
+    const fitted = fitMarkets(stocks, [category, other], 1, () => 0);
+    expect(fitted.marketCategories).toHaveLength(1);
+    expect(fitted.marketWatchlist).toHaveLength(1);
+    const keptId = fitted.marketCategories[0]?.id;
+    for (const stock of fitted.marketWatchlist) expect(stock.categoryId === null || stock.categoryId === keptId).toBe(true);
   });
 });

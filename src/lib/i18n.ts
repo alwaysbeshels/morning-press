@@ -61,7 +61,17 @@ const fr = {
     { value: 6, short: "Sam", long: "samedi" },
     { value: 0, short: "Dim", long: "dimanche" },
   ] as DayLabel[],
-  games: { sudoku: "Sudoku", crossword: "Mots croisés", codeword: "Mots codés" } satisfies Record<GameKind, string>,
+  games: {
+    sudoku: "Sudoku",
+    crossword: "Mots croisés",
+    codeword: "Mots codés",
+    jumble: "Mots mélangés",
+    cryptogram: "Cryptogramme",
+    wordsearch: "Mots cachés",
+    wordladder: "Échelle de mots",
+    kenken: "KenKen",
+    kakuro: "Kakuro",
+  } satisfies Record<GameKind, string>,
   sourceNames: {
     weather: "Météo",
     markets: "Bourse",
@@ -273,6 +283,10 @@ const fr = {
       stay: "Rester sur la page",
       discard: "Annuler les changements",
       saveAll: "Tout enregistrer",
+      stocksTitle: "Limite de la bourse dépassée",
+      stocksNext: "Corrigez la liste avant de quitter, ou retirez le surplus au hasard.",
+      stocksStay: "Corriger la liste",
+      stocksTrim: "Retirer les titres en trop au hasard",
     },
     scheduleTitle: "Horaire",
     nextEdition: (when: string | null) =>
@@ -287,10 +301,16 @@ const fr = {
     pages: "Nombre de pages",
     onePage: "1 page",
     twoPages: "2 pages",
+    threePages: "3 pages",
+    fourPages: "4 pages",
     pagesHelp: (pages: number): string =>
-      pages === 2
-        ? "Page 1 : agenda, priorités, courriels et jeu. Page 2 : actualités en trois colonnes, avec les réponses en bas à droite."
-        : "Une seule page, avec au plus deux brèves résumées. Pas de jeu du jour.",
+      pages === 4
+        ? "Page 1 : agenda, priorités, courriels et jeu, avec la place laissée par la bourse. Page 2 : bourse en haut, actualité locale juste dessous, puis les autres nouvelles. Pages 3 et 4 : actualités. Les réponses du jeu sont en bas de la dernière page."
+        : pages === 3
+          ? "Page 1 : agenda, priorités, courriels et jeu, avec la place laissée par la bourse. Page 2 : bourse en haut, actualité locale juste dessous, puis les autres nouvelles. Page 3 : actualités. Les réponses du jeu sont en bas de la dernière page."
+          : pages === 2
+            ? "Page 1 : agenda, priorités, courriels et jeu. Page 2 : actualités en trois colonnes, avec les réponses en bas à droite."
+            : "Une seule page, avec au plus deux brèves résumées. Pas de jeu du jour.",
     placeTitle: "Lieu et météo",
     placeDescription: "Utilisés pour l’en-tête et les prévisions (Open-Meteo).",
     city: "Ville",
@@ -299,9 +319,14 @@ const fr = {
     longitude: "Longitude",
     newsTitle: "Lecture rapide",
     newsDescription: (pages: number): string =>
-      pages === 2
-        ? "Colonnes : locale + provinciale ; pays + États-Unis ; internationale + mes sujets. Le nombre de brèves s’adapte à la place disponible. Mes sujets passent avant une deuxième brève internationale. Les articles sans résumé exploitable sont écartés."
-        : "Au plus deux brèves avec résumés fournis par les sources, sur la page 1.",
+      pages >= 3
+        ? "La bourse et l’actualité locale ouvrent la page 2. Tout le reste, jusqu’à la dernière page, est réservé aux nouvelles. La longueur du résumé fixe le nombre de sujets. Les colonnes se remplissent sans laisser de vide."
+        : pages === 2
+          ? "Colonnes : locale + provinciale ; pays + États-Unis ; internationale + mes sujets. Le nombre de brèves s’adapte à la place disponible. Mes sujets passent avant une deuxième brève internationale. Les articles sans résumé exploitable sont écartés."
+          : "Au plus deux brèves avec résumés fournis par les sources, sur la page 1.",
+    summarySize: "Longueur des résumés",
+    summarySizes: { small: "Court", medium: "Moyen", large: "Long" },
+    summaryHelp: "Court : comme maintenant. Moyen : environ le double. Long : trois à quatre fois plus de texte. Un résumé plus long laisse moins de sujets, pour que les pages restent pleines.",
     newsEnabled: "Inclure des actualités",
     sections: {
       local: "Locale",
@@ -320,14 +345,25 @@ const fr = {
     sectionsHelp:
       "Écrivez un lieu ou un sujet pour chaque section (ex. « Laval », « Ontario », « Europe »). Laissez « Canada » ou « International » vides pour les grands titres.",
     topics: "Mes sujets",
-    topicsHelp: "Ajoutez vos sujets un à un (10 maximum). Retirez un sujet avec le ×. Les articles sont sélectionnés selon la place disponible.",
+    topicsHelp: (max: number): string =>
+      `Ajoutez vos sujets un à un (${max} maximum). Retirez un sujet avec le ×. Chaque sujet a ses propres articles, selon la place disponible.`,
+    topicsOver: (count: number, max: number): string => `${count} sujets pour une limite de ${max}. Retirez-en avant d’enregistrer.`,
     topicPlaceholder: "Ex. : intelligence artificielle",
     addItem: "Ajouter",
     removeItem: (name: string): string => `Retirer ${name}`,
     duplicateTopic: "Ce sujet est déjà dans la liste.",
     marketsTitle: "Bourse",
     marketsEnabled: "Inclure la bourse dans le journal",
-    marketsDescription: "La barre des marchés reste inchangée. Ajoutez jusqu’à 21 titres : trois lignes de 7 maximum, regroupées par catégorie dans l’ordre choisi.",
+    marketsDescription: (limit: number, rows: number): string =>
+      `La barre des marchés reste inchangée. Ajoutez jusqu’à ${limit} titres : ${rows} lignes de 7, regroupées par catégorie dans l’ordre choisi. En 1 ou 2 pages, la limite est de 21 titres. En 3 ou 4 pages, elle passe à 35.`,
+    stocksPageWarning: (stocks: number, categories: number, max: number, pages: number): string => {
+      const allowance = pages === 1 ? "1 page n’autorise" : `${pages} pages n’autorisent`;
+      const bits = [stocks > max ? `${stocks} titres` : "", categories > max ? `${categories} catégories` : ""].filter(Boolean).join(" et ");
+      return `${bits} : ${allowance} que ${max} au maximum. Réduisez obligatoirement la bourse pour garder ce nombre de pages.`;
+    },
+    extraStockRows: "Rangées supplémentaires",
+    extraStockRowsOption: (rows: number): string => (rows === 0 ? "Aucune" : rows === 1 ? "1 rangée (+7)" : "2 rangées (+14)"),
+    stocksOver: (count: number, max: number): string => `${count} titres pour une limite de ${max}. Retirez-en avant d’enregistrer.`,
     watchlist: "Mes titres à surveiller",
     stockSearch: "Rechercher un symbole ou une compagnie",
     stockPlaceholder: "Ex. : AAPL, Apple, Banque Royale…",
@@ -335,7 +371,7 @@ const fr = {
     stockSearching: "Recherche en cours…",
     stockNoResults: "Aucun titre trouvé.",
     stockRetry: "Réessayer la recherche",
-    stockLimit: "21 titres sélectionnés. Retirez-en un pour en ajouter un autre.",
+    stockLimit: (limit: number): string => `${limit} titres sélectionnés. Retirez-en un pour en ajouter un autre.`,
     stockGeneral: "Général",
     stockCategories: "Catégories",
     stockSort: "A–Z",
@@ -343,7 +379,7 @@ const fr = {
     stockOrderHelp: "Glissez la poignée pour réordonner les titres ou les déposer dans une autre catégorie. Au clavier : espace, flèches, puis espace pour déposer.",
     stockCategoryPlaceholder: "Nouvelle catégorie, ex. Techno",
     stockCategoryInvalid: "Choisissez un nom unique, autre que Général (32 caractères maximum).",
-    stockCategoryLimit: "21 catégories maximum.",
+    stockCategoryLimit: (limit: number): string => `${limit} catégories maximum.`,
     stockCategoryName: "Nom de la catégorie",
     stockCategoryColor: "Couleur de la catégorie",
     stockDeleteCategory: (name: string): string => `Supprimer ${name} et remettre ses titres dans Général`,
@@ -363,9 +399,9 @@ const fr = {
     ignored: "Expéditeurs ignorés (adresse ou domaine, un par ligne)",
     ignoredPlaceholder: "promo@boutique.com\nexemple.com",
     gameTitle: "Jeu du jour",
-    gameDescription: "Un jeu choisi au hasard sur la première page. Ses réponses sont imprimées à l’envers dans un encadré au bas de la troisième colonne de la page 2.",
+    gameDescription: "Un jeu choisi au hasard sur la première page. Ses réponses sont imprimées à l’envers dans un encadré au bas de la troisième colonne de la dernière page.",
     gameEnabled: "Imprimer un jeu",
-    gameOnlyTwoPages: "Le jeu n’est imprimé qu’en mode 2 pages.",
+    gameOnlyTwoPages: "Le jeu n’est imprimé qu’à partir de 2 pages.",
     switchToTwoPages: "Passer en 2 pages",
     gameKinds: "Jeux possibles",
     chooseGame: "Choisissez au moins un jeu.",
@@ -394,7 +430,7 @@ const fr = {
     exerciseEnabled: "Inclure des idées d'exercices",
     exerciseHelp: "Adaptez à vos capacités et aux conditions extérieures. Ne forcez pas; arrêtez en cas de douleur ou de malaise.",
     limitsTitle: "Limites",
-    limitsDescription: "La première page s'adapte en deux ou trois colonnes. Selon la place, moins d'éléments personnels seront imprimés, avec un compteur d'omissions. Les recettes et les blocs du jour restent entiers; le journal ne dépasse pas le nombre de pages choisi.",
+    limitsDescription: "La première page s'adapte en deux ou trois colonnes. En 3 ou 4 pages, la bourse quitte cette page : plus d'éléments personnels peuvent tenir. Selon la place, un compteur indique les omissions. Les recettes et les blocs du jour restent entiers; le journal ne dépasse pas le nombre de pages choisi.",
     maxEvents: "Événements",
     maxPriorities: "Priorités",
     maxEmails: "Courriels",
@@ -435,7 +471,17 @@ const en: Messages = {
     { value: 6, short: "Sat", long: "Saturday" },
     { value: 0, short: "Sun", long: "Sunday" },
   ],
-  games: { sudoku: "Sudoku", crossword: "Crossword", codeword: "Codeword" },
+  games: {
+    sudoku: "Sudoku",
+    crossword: "Crossword",
+    codeword: "Codeword",
+    jumble: "Jumble",
+    cryptogram: "Cryptogram",
+    wordsearch: "Word Search",
+    wordladder: "Word Ladder",
+    kenken: "KenKen",
+    kakuro: "Kakuro",
+  },
   sourceNames: {
     weather: "Weather",
     markets: "Markets",
@@ -645,6 +691,10 @@ const en: Messages = {
       stay: "Stay on this page",
       discard: "Discard changes",
       saveAll: "Save all",
+      stocksTitle: "Markets limit exceeded",
+      stocksNext: "Fix the list before leaving, or remove the extras at random.",
+      stocksStay: "Fix the list",
+      stocksTrim: "Remove the extra stocks at random",
     },
     scheduleTitle: "Schedule",
     nextEdition: (when) => `Next edition: ${when ?? "none"}. Generation can take up to 5 minutes after the chosen time.`,
@@ -658,10 +708,16 @@ const en: Messages = {
     pages: "Number of pages",
     onePage: "1 page",
     twoPages: "2 pages",
+    threePages: "3 pages",
+    fourPages: "4 pages",
     pagesHelp: (pages) =>
-      pages === 2
-        ? "Page 1: agenda, priorities, emails and game. Page 2: three news columns, with the answers at the bottom right."
-        : "One page with up to two summarized news items. No daily game.",
+      pages === 4
+        ? "Page 1: agenda, priorities, emails and game, with the room left by the markets. Page 2: markets at the top, local news directly underneath, then the other stories. Pages 3 and 4: news. Game answers sit at the bottom of the last page."
+        : pages === 3
+          ? "Page 1: agenda, priorities, emails and game, with the room left by the markets. Page 2: markets at the top, local news directly underneath, then the other stories. Page 3: news. Game answers sit at the bottom of the last page."
+          : pages === 2
+            ? "Page 1: agenda, priorities, emails and game. Page 2: three news columns, with the answers at the bottom right."
+            : "One page with up to two summarized news items. No daily game.",
     placeTitle: "Location and weather",
     placeDescription: "Used for the header and the forecast (Open-Meteo).",
     city: "City",
@@ -670,9 +726,14 @@ const en: Messages = {
     longitude: "Longitude",
     newsTitle: "Quick read",
     newsDescription: (pages) =>
-      pages === 2
-        ? "Columns: local + provincial; country + US; international + my topics. The number of stories adapts to available space. My topics take priority over a second international story. Articles without a usable summary are skipped."
-        : "Up to two news items with source-provided summaries on page 1.",
+      pages >= 3
+        ? "Markets and local news open page 2. Everything after that, through the last page, is reserved for news. Summary length sets how many topics you can follow. Columns fill without leaving a gap."
+        : pages === 2
+          ? "Columns: local + provincial; country + US; international + my topics. The number of stories adapts to available space. My topics take priority over a second international story. Articles without a usable summary are skipped."
+          : "Up to two news items with source-provided summaries on page 1.",
+    summarySize: "Summary length",
+    summarySizes: { small: "Short", medium: "Medium", large: "Long" },
+    summaryHelp: "Short: as it is now. Medium: about twice as long. Long: three to four times more text. A longer summary allows fewer topics, so the pages stay full.",
     newsEnabled: "Include news",
     sections: {
       local: "Local",
@@ -691,14 +752,24 @@ const en: Messages = {
     sectionsHelp:
       "Type a place or topic for each section (e.g. “Laval”, “Ontario”, “Europe”). Leave “Canada” or “International” empty for the top stories.",
     topics: "My topics",
-    topicsHelp: "Add topics one at a time (up to 10). Remove a topic with ×. Articles are selected according to available space.",
+    topicsHelp: (max) => `Add topics one at a time (up to ${max}). Remove a topic with ×. Each topic gets its own stories, according to available space.`,
+    topicsOver: (count, max) => `${count} topics for a limit of ${max}. Remove some before saving.`,
     topicPlaceholder: "E.g. artificial intelligence",
     addItem: "Add",
     removeItem: (name) => `Remove ${name}`,
     duplicateTopic: "This topic is already in the list.",
     marketsTitle: "Markets",
     marketsEnabled: "Include markets in the paper",
-    marketsDescription: "The market bar stays unchanged. Add up to 21 stocks: up to three rows of 7, grouped by category in your chosen order.",
+    marketsDescription: (limit, rows) =>
+      `The market bar stays unchanged. Add up to ${limit} stocks: ${rows} rows of 7, grouped by category in your chosen order. With 1 or 2 pages the limit is 21 stocks. With 3 or 4 pages it rises to 35.`,
+    stocksPageWarning: (stocks, categories, max, pages) => {
+      const allowance = pages === 1 ? "1 page allows" : `${pages} pages allow`;
+      const bits = [stocks > max ? `${stocks} stocks` : "", categories > max ? `${categories} categories` : ""].filter(Boolean).join(" and ");
+      return `${bits}: ${allowance} only ${max}. You must shorten markets to keep this page count.`;
+    },
+    extraStockRows: "Extra rows",
+    extraStockRowsOption: (rows) => (rows === 0 ? "None" : rows === 1 ? "1 row (+7)" : "2 rows (+14)"),
+    stocksOver: (count, max) => `${count} stocks for a limit of ${max}. Remove some before saving.`,
     watchlist: "My watchlist",
     stockSearch: "Search for a symbol or company",
     stockPlaceholder: "E.g. AAPL, Apple, Royal Bank…",
@@ -706,7 +777,7 @@ const en: Messages = {
     stockSearching: "Searching…",
     stockNoResults: "No stocks found.",
     stockRetry: "Retry search",
-    stockLimit: "21 stocks selected. Remove one to add another.",
+    stockLimit: (limit) => `${limit} stocks selected. Remove one to add another.`,
     stockGeneral: "General",
     stockCategories: "Categories",
     stockSort: "A–Z",
@@ -714,7 +785,7 @@ const en: Messages = {
     stockOrderHelp: "Drag the handle to reorder stocks or drop them into another category. Keyboard: space, arrow keys, then space to drop.",
     stockCategoryPlaceholder: "New category, e.g. Tech",
     stockCategoryInvalid: "Choose a unique name other than General (up to 32 characters).",
-    stockCategoryLimit: "Up to 21 categories.",
+    stockCategoryLimit: (limit) => `Up to ${limit} categories.`,
     stockCategoryName: "Category name",
     stockCategoryColor: "Category colour",
     stockDeleteCategory: (name) => `Delete ${name} and return its stocks to General`,
@@ -734,9 +805,9 @@ const en: Messages = {
     ignored: "Ignored senders (address or domain, one per line)",
     ignoredPlaceholder: "promo@shop.com\nexample.com",
     gameTitle: "Daily game",
-    gameDescription: "A randomly selected game on page 1. Its answers are printed upside down in a box at the bottom of page 2’s third column.",
+    gameDescription: "A randomly selected game on page 1. Its answers are printed upside down in a box at the bottom of the last page’s third column.",
     gameEnabled: "Print a game",
-    gameOnlyTwoPages: "The game is only printed in 2-page mode.",
+    gameOnlyTwoPages: "The game is only printed from 2 pages onward.",
     switchToTwoPages: "Switch to 2 pages",
     gameKinds: "Possible games",
     chooseGame: "Choose at least one game.",
@@ -765,7 +836,7 @@ const en: Messages = {
     exerciseEnabled: "Include exercise ideas",
     exerciseHelp: "Adapt to your abilities and outdoor conditions. Do not strain; stop if you feel pain or unwell.",
     limitsTitle: "Limits",
-    limitsDescription: "The first page adapts to two or three columns. Space may reduce personal items, with an omission count. Recipes and daily blocks stay complete; the paper never exceeds your selected page count.",
+    limitsDescription: "The first page adapts to two or three columns. With 3 or 4 pages, markets leave that page, so more personal items can fit. An omission count shows what was left out. Recipes and daily blocks stay complete; the paper never exceeds your selected page count.",
     maxEvents: "Events",
     maxPriorities: "Priorities",
     maxEmails: "Emails",

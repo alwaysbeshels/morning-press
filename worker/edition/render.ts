@@ -141,6 +141,10 @@ function renderDailySections(paper: Newspaper, bodies: Record<string, string>, t
   }));
 }
 
+export function newsGroupId(group: NewsGroup): string {
+  return group.id ?? group.key;
+}
+
 function renderNewsGroup(group: NewsGroup, t: JournalText): string {
   const kicker = t.newsSections[group.key];
   const heading = group.label
@@ -149,10 +153,49 @@ function renderNewsGroup(group: NewsGroup, t: JournalText): string {
   const items = group.items
     .map((item, index) => {
       const meta = group.key === "topics" ? `${item.source} · ${item.topic}` : item.source;
-      return `<li data-news-item="${group.key}:${index}"><div class="title">${escapeHtml(item.title)}</div><p class="news-summary">${escapeHtml(item.summary)}</p><div class="meta">${escapeHtml(meta)}</div></li>`;
+      const more = (item.summaryMore ?? []).map((sentence) => `<span class="extra" hidden> ${escapeHtml(sentence)}</span>`).join("");
+      return `<li data-news-item="${newsGroupId(group)}:${index}"><div class="title">${escapeHtml(item.title)}</div><p class="news-summary">${escapeHtml(item.summary)}${more}</p><div class="meta">${escapeHtml(meta)}</div></li>`;
     })
     .join("");
-  return `<section class="news-group" data-news-group="${group.key}"><h3>${heading}</h3><ul class="news">${items}</ul></section>`;
+  return `<section class="news-group" data-news-group="${group.key}" data-news-group-id="${escapeHtml(newsGroupId(group))}"><h3>${heading}</h3><ul class="news">${items}</ul></section>`;
+}
+
+/** Colonnes d'actualité des pages 2 et suivantes. Sans mesure, tout est dans la première colonne pour que le script répartisse. */
+function extendedColumnGroups(paper: Newspaper, columnIndex: number): NewsGroup[] {
+  const placed = paper.newsGroups.some((group) => group.items.some((item) => item.column !== undefined));
+  if (!placed) return columnIndex === 0 ? paper.newsGroups : [];
+  const groups: NewsGroup[] = [];
+  for (const group of paper.newsGroups) {
+    const items = group.items.filter((item) => item.column === columnIndex);
+    if (items.length > 0) groups.push({ ...group, items });
+  }
+  return groups;
+}
+
+/** Pages 3 et 4 : bourse et locale en haut de la page 2, puis seulement des actualités. */
+function renderExtendedPages(paper: Newspaper, t: JournalText, longDate: string): string {
+  const placed = paper.newsGroups.some((group) => group.items.some((item) => item.column !== undefined));
+  const pages: string[] = [];
+  for (let page = 2; page <= paper.pages; page++) {
+    const columns = Array.from({ length: 3 }, (_, offset) => {
+      const index = (page - 2) * 3 + offset;
+      const groups = extendedColumnGroups(paper, index).map((group) => renderNewsGroup(group, t)).join("");
+      const solution = page === paper.pages && offset === 2 && paper.game
+        ? `<div class="solution-slot">${paper.game.solutionHtml}</div>`
+        : "";
+      return `<div class="news-column" data-news-column="${index + 1}"><div class="news-stack">${groups}</div>${solution}</div>`;
+    }).join("");
+    pages.push(`<main class="page page-${page}" data-news-page="${page}">
+  <header class="minihead">
+    <div>${escapeHtml(t.title)}</div>
+    <h2>${escapeHtml(t.sections.quickRead)}</h2>
+    <div>${escapeHtml(longDate)}</div>
+  </header>
+  ${page === 2 ? renderMarkets(paper, t) : ""}
+  <div class="news-columns"${page === 2 && !placed ? ' data-news-flow=""' : ""}>${columns}</div>
+</main>`);
+  }
+  return pages.join("\n");
 }
 
 export const NEWS_COLUMNS = [
@@ -161,9 +204,9 @@ export const NEWS_COLUMNS = [
   ["topics"],
 ] as const;
 
-// Seul le sudoku, étroit, cède la moitié droite de la page 1. Les mots croisés et les mots codés
-// exigent toute la largeur : leurs articles locaux se logent dans l'espace libre sous les définitions.
-const HALF_PAGE_GAMES: readonly GameKind[] = ["sudoku"];
+// Le sudoku et les jeux compacts cèdent la moitié droite de la page 1. Les mots croisés et les mots
+// codés exigent toute la largeur : leurs articles locaux se logent sous les définitions.
+export const HALF_PAGE_GAMES: readonly GameKind[] = ["sudoku", "kenken", "kakuro"];
 
 /** Rubrique locale imprimée à côté du jeu de la page 1, ou null quand elle n'y a pas sa place. */
 export function frontLocalGroup(paper: Newspaper): NewsGroup | null {
@@ -206,6 +249,7 @@ export function renderNewspaper(paper: Newspaper): string {
   const time = formatTime(generated, tz, lang);
   const weather = paper.weather;
   const twoPages = paper.pages === 2;
+  const extended = paper.pages >= 3;
   const frontLocal = frontLocalGroup(paper);
 
   const weatherHtml = weather
@@ -303,8 +347,8 @@ export function renderNewspaper(paper: Newspaper): string {
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=Source+Serif+4:opsz,wght@8..60,400;8..60,600&display=swap" rel="stylesheet">
 <style>${STYLES}${paper.game ? GAME_STYLES : ""}${newspaperDesignCss(paper.design)}</style>
 </head>
-<body class="${twoPages ? "two-pages" : "one-page"}">
-<main class="page page-1${paper.daily ? " daily" : ""}${compact ? " compact" : ""}${paper.firstPageTight ? " tight" : ""}${(paper.markets?.watchlist?.length ?? 0) > 14 ? " many-stocks" : ""}"${paper.firstPageColumns ? ' data-page-layout="ready"' : ""}>
+<body class="${twoPages ? "two-pages" : extended ? "multi-pages" : "one-page"}">
+<main class="page page-1${paper.daily ? " daily" : ""}${compact ? " compact" : ""}${paper.firstPageTight ? " tight" : ""}${!extended && (paper.markets?.watchlist?.length ?? 0) > 14 ? " many-stocks" : ""}"${paper.firstPageColumns ? ' data-page-layout="ready"' : ""}>
   <header class="masthead">
     <div class="dateline">
       <div class="dateline-time">${escapeHtml(longDate)} · <span class="gen-time">${escapeHtml(time)}</span>${weatherHtml}</div>
@@ -319,7 +363,7 @@ export function renderNewspaper(paper: Newspaper): string {
   <div class="columns">
     ${columns.map((column) => `<div class="col">${column}</div>`).join("\n")}
   </div>
-  ${renderMarkets(paper, t)}
+  ${extended ? "" : renderMarkets(paper, t)}
   ${paper.game
     ? frontLocal && HALF_PAGE_GAMES.includes(paper.game.kind)
       ? `<div class="front-feature"><div class="game-slot">${paper.game.html}</div><div class="front-local-news">${renderNewsGroup(frontLocal, t)}</div></div>`
@@ -329,7 +373,7 @@ export function renderNewspaper(paper: Newspaper): string {
     ${escapeHtml(t.footer(time, paper.sources, paper.unavailableSources))}
   </footer>
 </main>
-${twoPages ? renderPageTwo(paper, t, longDate) : ""}
+${twoPages ? renderPageTwo(paper, t, longDate) : ""}${extended ? renderExtendedPages(paper, t, longDate) : ""}
 </body>
 </html>`;
 }
@@ -353,11 +397,12 @@ body {
   .page { max-width: 8.5in; padding: 0.4in; background: #fff; box-shadow: 0 1px 4px rgba(0, 0, 0, 0.12); }
   .page + .page { margin-top: 0.25in; }
 }
-/* Mode 2 pages : chaque page a une hauteur fixe pour ne jamais déborder sur une 3e feuille. */
-.two-pages .page { display: flex; flex-direction: column; height: 10.2in; overflow: hidden; }
-@media screen { .two-pages .page { height: 11in; } }
-.two-pages .columns { flex: 1; min-height: 0; }
-.page-2 { break-before: page; }
+/* Chaque page a une hauteur fixe pour ne jamais déborder sur une feuille de plus. */
+.two-pages .page, .multi-pages .page { display: flex; flex-direction: column; height: 10.2in; overflow: hidden; }
+@media screen { .two-pages .page, .multi-pages .page { height: 11in; } }
+.two-pages .columns, .multi-pages .columns, .two-pages .news-columns, .multi-pages .news-columns { flex: 1; min-height: 0; }
+.page-2, .page-3, .page-4 { break-before: page; }
+.multi-pages .page-2 .markets { flex: none; margin: 0 0 8pt; padding-bottom: 4pt; border-bottom: 3px double #1a1a1a; }
 .masthead { border-bottom: 3px double #1a1a1a; padding-bottom: 4pt; margin-bottom: 4pt; }
 .dateline { display: flex; justify-content: space-between; font-size: 8.5pt; text-transform: uppercase; letter-spacing: 0.06em; border-bottom: 1px solid #1a1a1a; padding-bottom: 3pt; }
 /* « 6 h 30 » garde ses minuscules : en capitales, l'abréviation de l'heure deviendrait « 6 H 30 ». */
@@ -499,9 +544,24 @@ footer { margin-top: 6pt; padding-top: 4pt; border-top: 1px solid #1a1a1a; text-
 .daily.tight .columns p { margin: 2pt 0; }
 .daily.tight .recipe-steps li { padding: 1pt 0; }
 .daily.tight .g-sudoku td { width: 0.30in; height: 0.30in; }
+.daily.tight .g-kenken td { width: 0.4in; height: 0.4in; }
+.daily.tight .g-kakuro td { width: 0.4in; height: 0.4in; }
+.daily.tight .g-search td { width: 0.18in; height: 0.18in; font-size: 7.5pt; }
+.daily.tight .g-jumbles { gap: 2pt 8pt; }
+.daily.tight .g-jumble-boxes .g-box { width: 0.2in; height: 0.2in; }
+.daily.tight .g-jumble-final .g-box { width: 0.26in; height: 0.26in; }
+.daily.tight .g-jumble-final { margin-top: 3pt; }
+.daily.tight .g-jumble-mix { font-size: 9pt; }
+.daily.tight .g-crypto-cell { width: 0.26in; }
+.daily.tight .g-crypto-cell b { height: 0.24in; line-height: 0.24in; }
+.daily.tight .g-rung { padding: 2pt 0; }
+.daily.tight .g-rung .g-box { width: 0.3in; height: 0.3in; }
+.daily.tight .g-rung .g-filled { font-size: 12pt; line-height: 0.3in; }
 .daily.tight .g-cross td, .daily.tight .g-code td { width: 0.22in; height: 0.22in; }
 .daily.tight .g-instr { margin-bottom: 4pt; }
 .daily.tight.many-stocks .g-sudoku td { width: 0.27in; height: 0.27in; }
+.daily.tight.many-stocks .g-kenken td { width: 0.36in; height: 0.36in; }
+.daily.tight.many-stocks .g-kakuro td { width: 0.36in; height: 0.36in; }
 .daily.tight.many-stocks .g-cross td, .daily.tight.many-stocks .g-code td { width: 0.21in; height: 0.21in; }
 .daily.tight.many-stocks .game-slot, .daily.tight.many-stocks .front-feature { margin-top: 2pt; padding-top: 4pt; }
 .daily.tight.many-stocks .front-feature .game-slot { margin-top: 0; padding-top: 0; }

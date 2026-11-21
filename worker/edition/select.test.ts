@@ -369,6 +369,24 @@ describe("buildNewspaper — options", () => {
     expect(paper.daily!.fact.source).toBeTruthy();
   });
 
+  it("passe la bourse et les sujets sur les pages suivantes, dans une seule rubrique", () => {
+    const paper = build({ pages: 3, newsSummary: "medium", extraStockRows: 1, newsTopics: ["climat", "santé"] }, {
+      news: [
+        ...feeds,
+        { group: "topics", label: "climat", items: [{ title: "Climat", summary: "Les températures dépassent les normales dans plusieurs régions.", source: "AFP", topic: "climat" }] },
+        { group: "topics", label: "santé", items: [{ title: "Santé", summary: "Une campagne de vaccination s'ouvre dans les cliniques locales.", source: "RC", topic: "santé" }] },
+      ],
+    });
+    expect(paper.pages).toBe(3);
+    expect(paper.news).toEqual([]);
+    expect(paper.newsGroups.filter((group) => group.key === "topics").map((group) => group.label)).toEqual([""]);
+    expect(paper.newsGroups.find((group) => group.key === "topics")?.items.map((item) => item.title)).toEqual(["Climat", "Santé"]);
+    expect(paper.newsGroups[0]?.key).toBe("local");
+    expect(paper.game).toEqual(game);
+    expect(build({ pages: 4, newsEnabled: false }).pages).toBe(2);
+    expect(build({ pages: 4, newsEnabled: false, gameEnabled: false }).pages).toBe(1);
+  });
+
   it("revient à une page quand la page 2 serait vide", () => {
     const paper = build({ pages: 2, newsEnabled: false, gameEnabled: false });
     expect(paper.pages).toBe(1);

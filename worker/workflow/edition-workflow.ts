@@ -6,6 +6,7 @@ import {
   type EditionStatus,
   type EditionStats,
   type GameKind,
+  type NewsSummarySize,
   type SourceError,
   type SourceErrorCode,
 } from "../../shared/types";
@@ -15,7 +16,7 @@ import { journalText } from "../edition/i18n";
 import { buildNewspaper } from "../edition/select";
 import { layoutNewspaper } from "../edition/layout";
 import type { AccountData, GameBlock, Markets, Weather } from "../edition/types";
-import { generateGame, renderGame } from "../games";
+import { generateEditionGame, renderGame } from "../games";
 import { createNylas, NylasError } from "../nylas/client";
 import { localDateString, startOfLocalDay } from "../schedule/time";
 import { fetchAccountData, type AccountSource } from "../sources/accounts";
@@ -166,6 +167,7 @@ export class EditionWorkflow extends WorkflowEntrypoint<Env, EditionParams> {
     }
 
     const feeds = newsEnabled ? newsFeeds(context.preferences) : [];
+    const summarySize: NewsSummarySize = pages >= 3 ? "large" : "small";
     // Une reprise libère deux requêtes : sujets 9/10, puis second lot boursier au-delà de 14 titres.
     const newsRetries = Math.max(0, MAX_NEWS_RETRIES
       - Math.max(0, feeds.filter((feed) => feed.group === "topics").length - 8)
@@ -185,7 +187,7 @@ export class EditionWorkflow extends WorkflowEntrypoint<Env, EditionParams> {
         const result = await step.do(
           `actualités ${index + 1}`,
           { retries: { limit: 0, delay: "5 seconds" }, timeout: "60 seconds", sensitive: "output" },
-          () => fetchFeed(feed, newsProvider, featured),
+          () => fetchFeed(feed, newsProvider, featured, summarySize),
         );
         news.push(result);
         // Une fois Google indisponible, ne pas gaspiller le quota en le réessayant pour chaque sujet.
@@ -212,10 +214,12 @@ export class EditionWorkflow extends WorkflowEntrypoint<Env, EditionParams> {
           await step.do(
             `actualités ${index + 1} (reprise)`,
             { retries: { limit: 0, delay: "5 seconds" }, timeout: "60 seconds", sensitive: "output" },
-            () => fetchFeed(feed, "google", featured),
+            () => fetchFeed(feed, "google", featured, summarySize),
           ),
         );
       } catch {
+        // Un sujet personnel sans article ce jour-là n'est pas une édition incomplète.
+        if (feed.group === "topics") continue;
         const detail = feed.label || t.newsSections[feed.group];
         errors.push({ ...sourceError(`${t.sourceNames.news} (${detail})`, "news"), detail });
       }
@@ -223,11 +227,11 @@ export class EditionWorkflow extends WorkflowEntrypoint<Env, EditionParams> {
 
     // Étape séparée : la génération des grilles a son propre budget CPU.
     const game =
-      pages === 2 && gameEnabled
+      pages >= 2 && gameEnabled
         ? await step
             .do("jeu du jour", { retries: { limit: 1, delay: "1 second" }, timeout: "30 seconds" }, async (): Promise<GameBlock | null> => {
               // Graine propre à l'édition : chaque génération, même le même jour, a sa propre grille.
-              const generated = generateGame({ seed: editionId, language, kinds: gameKinds, avoid: previousGame });
+              const generated = await generateEditionGame({ seed: editionId, language, kinds: gameKinds, avoid: previousGame });
               return generated ? { kind: generated.kind, ...renderGame(generated, language) } : null;
             })
             .catch(() => {

@@ -1,7 +1,7 @@
-import { prepareBank } from "./crossword";
-import { buildLayout, type LayoutOptions } from "./layout";
+import { sampleByLength } from "./lexicon";
+import { buildLayout, prepareWords, type Layout, type LayoutOptions } from "./layout";
 import type { Rng } from "./rng";
-import type { CodewordGame, WordEntry } from "./types";
+import type { CodewordGame } from "./types";
 
 export const CODEWORD_OPTIONS: LayoutOptions = {
   minWords: 14,
@@ -16,8 +16,7 @@ export const CODEWORD_OPTIONS: LayoutOptions = {
 
 const ALPHABET = "ABCDEFGHIJKLMNOPQRSTUVWXYZ".split("");
 
-export function generateCodeword(rng: Rng, bank: readonly WordEntry[]): CodewordGame {
-  const layout = buildLayout(prepareBank(bank), rng, CODEWORD_OPTIONS);
+function codewordFromLayout(layout: Layout, rng: Rng): CodewordGame {
   const letters: (string | null)[][] = [];
   for (let r = 0; r < layout.height; r++) letters.push(new Array<string | null>(layout.width).fill(null));
   for (const placed of layout.words) {
@@ -57,4 +56,20 @@ export function generateCodeword(rng: Rng, bank: readonly WordEntry[]): Codeword
     .sort((a, b) => a - b);
 
   return { kind: "codeword", width: layout.width, height: layout.height, grid, key, revealed };
+}
+
+/** Chaque édition pioche dans le dictionnaire, pas dans les 300 définitions des mots croisés. */
+export function generateCodeword(rng: Rng, lexicon: readonly string[]): CodewordGame {
+  let best: CodewordGame | null = null;
+  let bestCount = -1;
+  for (const perLength of [80, 160, 280]) {
+    const layout = buildLayout(prepareWords(sampleByLength(lexicon, rng, perLength)), rng, CODEWORD_OPTIONS);
+    const game = codewordFromLayout(layout, rng);
+    if (layout.words.length > bestCount) {
+      best = game;
+      bestCount = layout.words.length;
+    }
+    if (layout.words.length >= CODEWORD_OPTIONS.minWords) return game;
+  }
+  return best as CodewordGame;
 }

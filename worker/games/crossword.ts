@@ -41,7 +41,28 @@ export function numberGrid(solution: (string | null)[][]): (number | null)[][] {
   );
 }
 
-export function generateCrossword(rng: Rng, bank: readonly WordEntry[]): CrosswordGame {
+function sampleEntries(bank: readonly WordEntry[], rng: Rng, count: number): WordEntry[] {
+  const groups = new Map<number, WordEntry[]>();
+  for (const entry of bank) {
+    const list = groups.get(entry.word.length);
+    if (list) list.push(entry);
+    else groups.set(entry.word.length, [entry]);
+  }
+  const per = Math.ceil(count / groups.size);
+  const out: WordEntry[] = [];
+  for (const bucket of groups.values()) {
+    if (bucket.length <= per) {
+      out.push(...bucket);
+      continue;
+    }
+    const chosen = new Set<number>();
+    while (chosen.size < per) chosen.add(rng.int(bucket.length));
+    for (const index of chosen) out.push(bucket[index] as WordEntry);
+  }
+  return out;
+}
+
+function crosswordFrom(rng: Rng, bank: readonly WordEntry[]): CrosswordGame {
   const layout = buildLayout(prepareBank(bank), rng, CROSSWORD_OPTIONS);
   const solution: (string | null)[][] = [];
   for (let r = 0; r < layout.height; r++) solution.push(new Array<string | null>(layout.width).fill(null));
@@ -68,4 +89,25 @@ export function generateCrossword(rng: Rng, bank: readonly WordEntry[]): Crosswo
   across.sort((a, b) => a.number - b.number);
   down.sort((a, b) => a.number - b.number);
   return { kind: "crossword", width: layout.width, height: layout.height, solution, numbers, across, down };
+}
+
+/**
+ * Les mots croisés ont besoin d’une définition par mot. Le recueil peut être local
+ * ou venir de Wiktionary. Un sous-ensemble différent à chaque graine évite de rejouer
+ * toujours les mêmes mots faciles à croiser.
+ */
+export function generateCrossword(rng: Rng, bank: readonly WordEntry[]): CrosswordGame {
+  let best: CrosswordGame | null = null;
+  let bestCount = -1;
+  for (const size of [120, bank.length]) {
+    const subset = size >= bank.length ? bank : sampleEntries(bank, rng, size);
+    const game = crosswordFrom(rng, subset);
+    const count = game.across.length + game.down.length;
+    if (count > bestCount) {
+      best = game;
+      bestCount = count;
+    }
+    if (count >= CROSSWORD_OPTIONS.minWords) return game;
+  }
+  return best as CrosswordGame;
 }

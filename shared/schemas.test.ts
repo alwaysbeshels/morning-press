@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { accountUpdateSchema, preferencesSchema, validationMessage } from "./schemas";
-import { DEFAULT_COOKING, DEFAULT_PREFERENCES, EMAIL_FILTERS, withDefaultPreferences } from "./types";
+import { DEFAULT_COOKING, DEFAULT_PREFERENCES, EMAIL_FILTERS, maxNewsTopics, watchlistLimit, withDefaultPreferences } from "./types";
 import { COLOR_INTENSITIES, NEWSPAPER_STYLES } from "./newspaper-design";
 
 describe("préférences du journal", () => {
@@ -11,6 +11,32 @@ describe("préférences du journal", () => {
     expect(preferencesSchema.parse(preferences)).toMatchObject({ newsTopics, marketWatchlist, marketsEnabled: false });
     expect(preferencesSchema.safeParse({ ...preferences, newsTopics: [...newsTopics, "Autre"] }).success).toBe(false);
     expect(preferencesSchema.safeParse({ ...preferences, marketWatchlist: [...marketWatchlist, { symbol: "EXTRA", name: "Extra", exchange: "" }] }).success).toBe(false);
+  });
+
+  it("ouvre 3 et 4 pages, avec plus de sujets quand les résumés sont courts et plus de titres sur la page 2", () => {
+    expect(maxNewsTopics(3, "small")).toBe(20);
+    expect(maxNewsTopics(3, "medium")).toBe(15);
+    expect(maxNewsTopics(3, "large")).toBe(10);
+    expect(maxNewsTopics(4, "small")).toBe(30);
+    expect(maxNewsTopics(4, "medium")).toBe(25);
+    expect(maxNewsTopics(4, "large")).toBe(20);
+    expect(maxNewsTopics(2, "small")).toBe(10);
+    expect(watchlistLimit(2)).toBe(21);
+    expect(watchlistLimit(3)).toBe(35);
+    expect(watchlistLimit(4)).toBe(35);
+    const topics = (count: number) => Array.from({ length: count }, (_, index) => `Sujet ${index}`);
+    const stocks = (count: number) => Array.from({ length: count }, (_, index) => ({ symbol: `S${index}`, name: `Société ${index}`, exchange: "Toronto" }));
+    expect(preferencesSchema.parse({ ...DEFAULT_PREFERENCES, pages: 3, newsSummary: "small", newsTopics: topics(20) }).newsTopics).toHaveLength(20);
+    expect(preferencesSchema.safeParse({ ...DEFAULT_PREFERENCES, pages: 3, newsSummary: "large", newsTopics: topics(11) }).success).toBe(false);
+    expect(preferencesSchema.parse({ ...DEFAULT_PREFERENCES, pages: 4, marketWatchlist: stocks(35) }).marketWatchlist).toHaveLength(35);
+    expect(preferencesSchema.parse({ ...DEFAULT_PREFERENCES, pages: 3, extraStockRows: 0, marketWatchlist: stocks(29) }).marketWatchlist).toHaveLength(29);
+    expect(preferencesSchema.safeParse({ ...DEFAULT_PREFERENCES, pages: 2, marketWatchlist: stocks(22) }).success).toBe(false);
+    const overTopics = preferencesSchema.safeParse({ ...DEFAULT_PREFERENCES, pages: 4, newsSummary: "medium", newsTopics: topics(26) });
+    expect(overTopics.success).toBe(false);
+    if (!overTopics.success) {
+      expect(validationMessage(overTopics.error.issues[0], "fr")).toMatch(/sujets/);
+      expect(validationMessage(overTopics.error.issues[0], "en")).toMatch(/topics/i);
+    }
   });
 
   it("normalise les doublons et conserve la bourse par défaut pour les anciens réglages", () => {

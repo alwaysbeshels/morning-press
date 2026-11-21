@@ -1,7 +1,7 @@
 import type { EmailFilter, Language, Preferences } from "../../shared/types";
 import { localDateString, startOfLocalDay } from "../schedule/time";
 import { formatTime, summarize, truncate } from "./format";
-import { groupNews, ITEMS_PER_FEED, pickNews, type FeedResult } from "../sources/news";
+import { clipSummary, groupNews, ITEMS_PER_FEED, newsBudgets, pickNews, type FeedResult } from "../sources/news";
 import { journalText, newsProviderName, type JournalText } from "./i18n";
 import { quoteOfTheDay } from "./quotes";
 import { exerciseOfTheDay, factOfTheDay } from "../daily/content";
@@ -327,7 +327,7 @@ export const PAGE_ONE_GAME_LIMITS = { events: 9, emails: 4, priorities: 4, remin
 
 export function fitPageOne(paper: Newspaper): Newspaper {
   if (paper.daily) return paper;
-  if (!(paper.pages === 2 && paper.game) && !(paper.pages === 1 && paper.news.length > 0)) return paper;
+  if (!(paper.pages >= 2 && paper.game) && !(paper.pages === 1 && paper.news.length > 0)) return paper;
   const limits = paper.game ? PAGE_ONE_GAME_LIMITS : { events: Infinity, emails: Infinity, priorities: 4, reminders: 3 };
   const omitted = (key: keyof typeof PAGE_ONE_GAME_LIMITS) =>
     (paper.omitted?.[key] ?? 0) + Math.max(0, paper[key].length - limits[key]);
@@ -378,14 +378,27 @@ export function buildNewspaper(input: BuildInput): Newspaper {
   const priorities = buildPriorities(emails, events, upcoming, preferences.maxPriorities, tz, { today, tomorrowStart }, language);
   const reminders = buildReminders(emails, priorities, tomorrowEvents, tz, 6, language);
 
-  const wantsTwoPages = preferences.pages === 2;
-  const game = wantsTwoPages && preferences.gameEnabled ? (input.game ?? null) : null;
-  // Sans actualités ni jeu, une page 2 serait vide : on reste sur une seule page.
-  const twoPages = wantsTwoPages && (preferences.newsEnabled || game !== null);
+  const requested = preferences.pages;
+  const game = requested >= 2 && preferences.gameEnabled ? (input.game ?? null) : null;
+  // Sans actualités, les pages 3 et 4 seraient vides : on garde au plus la page du jeu.
+  const pages = preferences.newsEnabled && requested >= 2 ? requested : game ? 2 : 1;
+  const extended = pages >= 3;
   const feeds = preferences.newsEnabled ? input.news : [];
-  const news = twoPages ? [] : pickNews(feeds.map((feed) => feed.items), Math.min(2, preferences.maxNews));
+  const news = pages === 1 ? pickNews(feeds.map((feed) => feed.items), Math.min(2, preferences.maxNews)) : [];
+  const budgets = pages >= 3 ? newsBudgets(pages, preferences.newsSummary) : null;
   // Le navigateur choisira parmi ces candidats selon la place réellement disponible.
-  const newsGroups = twoPages ? groupNews(feeds, ITEMS_PER_FEED) : [];
+  const grouped = pages >= 2
+    ? groupNews(feeds, budgets?.perSection ?? ITEMS_PER_FEED, Infinity)
+    : [];
+  const newsGroups = extended
+    ? grouped.map((group) => ({
+        ...group,
+        items: group.items.map((item) => {
+          const clipped = clipSummary(item.summary, preferences.newsSummary);
+          return { ...item, summary: clipped.summary, ...(clipped.more.length > 0 ? { summaryMore: clipped.more } : {}) };
+        }),
+      }))
+    : grouped;
 
   const sources = input.accounts.map((account) => account.label);
   const markets = preferences.marketsEnabled && input.markets
@@ -400,7 +413,8 @@ export function buildNewspaper(input: BuildInput): Newspaper {
     generatedAt: input.generatedAt,
     timezone: tz,
     language,
-    pages: twoPages ? 2 : 1,
+    pages,
+    newsSummary: preferences.newsSummary,
     emailsEnabled: preferences.emailsEnabled,
     newsEnabled: preferences.newsEnabled,
     city: preferences.city,

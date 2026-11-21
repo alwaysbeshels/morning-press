@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import type { Language } from "../../shared/types";
 import { generateCodeword } from "./codeword";
 import { generateCrossword, numberGrid } from "./crossword";
+import { LEXICON } from "./lexicon";
 import { createRng } from "./rng";
 import type { WordEntry } from "./types";
 import { WORDS_EN } from "./words-en";
@@ -59,7 +60,7 @@ function expectConnected(grid: (string | null)[][]): void {
 }
 
 /** Vérifications communes : taille, mots de la banque, adjacence, connexité. */
-function expectValidLayout(grid: (string | null)[][], width: number, height: number, bank: readonly WordEntry[]): Run[] {
+function expectValidLayout(grid: (string | null)[][], width: number, height: number, allowed: ReadonlySet<string>): Run[] {
   expect(width).toBeLessThanOrEqual(13);
   expect(height).toBeLessThanOrEqual(13);
   expect(grid.length).toBe(height);
@@ -72,8 +73,7 @@ function expectValidLayout(grid: (string | null)[][], width: number, height: num
 
   const { across, down } = readRuns(grid);
   const runs = [...across, ...down];
-  const words = new Set(bank.map((entry) => entry.word));
-  for (const run of runs) expect(words.has(run.word), run.word).toBe(true);
+  for (const run of runs) expect(allowed.has(run.word), run.word).toBe(true);
   expect(new Set(runs.map((run) => run.word)).size).toBe(runs.length);
 
   // Chaque lettre appartient à au moins un mot (aucune lettre isolée).
@@ -92,11 +92,12 @@ function expectValidLayout(grid: (string | null)[][], width: number, height: num
 describe.each(["fr", "en"] as Language[])("mots croisés (%s)", (language) => {
   const bank = BANKS[language];
   const clues = new Map(bank.map((entry) => [entry.word, entry.clue]));
+  const allowed = new Set(bank.map((entry) => entry.word));
 
   it(`produit ${SEEDS} grilles valides`, () => {
     for (let i = 0; i < SEEDS; i++) {
       const game = generateCrossword(createRng(`croisés-${language}-${i}`), bank);
-      const runs = expectValidLayout(game.solution, game.width, game.height, bank);
+      const runs = expectValidLayout(game.solution, game.width, game.height, allowed);
       const entries = [...game.across, ...game.down];
       expect(entries.length).toBeGreaterThanOrEqual(10);
       expect(entries.length).toBeLessThanOrEqual(14);
@@ -140,11 +141,12 @@ describe.each(["fr", "en"] as Language[])("mots croisés (%s)", (language) => {
 });
 
 describe.each(["fr", "en"] as Language[])("mots codés (%s)", (language) => {
-  const bank = BANKS[language];
+  const lexicon = LEXICON[language];
+  const allowed = new Set(lexicon);
 
   it(`produit ${SEEDS} grilles valides`, () => {
     for (let i = 0; i < SEEDS; i++) {
-      const game = generateCodeword(createRng(`codés-${language}-${i}`), bank);
+      const game = generateCodeword(createRng(`codés-${language}-${i}`), lexicon);
       expect(game.key).toHaveLength(26);
 
       const usedCodes = new Set<number>();
@@ -167,7 +169,7 @@ describe.each(["fr", "en"] as Language[])("mots codés (%s)", (language) => {
       });
 
       const decoded = game.grid.map((row) => row.map((code) => (code === null ? null : (game.key[code - 1] as string))));
-      const runs = expectValidLayout(decoded, game.width, game.height, bank);
+      const runs = expectValidLayout(decoded, game.width, game.height, allowed);
       expect(runs.length).toBeGreaterThanOrEqual(14);
       expect(runs.length).toBeLessThanOrEqual(20);
 

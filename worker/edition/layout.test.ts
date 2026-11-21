@@ -43,7 +43,7 @@ describe("mise en page mesurée", () => {
     const result = await layoutNewspaper(fixture(), { quickAction });
     expect(quickAction).toHaveBeenCalledWith("content", expect.objectContaining({
       emulateMediaType: "print", addScriptTag: [{ content: NEWS_LAYOUT_SCRIPT }],
-      waitForSelector: { selector: '[data-layout="ready"]', timeout: 15_000 },
+      waitForSelector: { selector: '[data-layout]', timeout: 15_000 },
     }));
     expect(result.paper.newsGroups[0].items).toHaveLength(1);
     expect(result.html).toContain("Un transport");

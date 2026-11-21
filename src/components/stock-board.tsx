@@ -5,7 +5,7 @@ import {
 } from "@dnd-kit/core";
 import { SortableContext, sortableKeyboardCoordinates, useSortable, rectSortingStrategy } from "@dnd-kit/sortable";
 import { GripVerticalIcon, XIcon } from "lucide-react";
-import { MAX_WATCHLIST, STOCK_COLORS, type Stock, type StockCategory } from "@shared/types";
+import { STOCK_COLORS, type Stock, type StockCategory } from "@shared/types";
 import { categoryNameKey, groupStocks, moveStock, sortStocks, STOCK_PALETTES } from "@shared/stocks";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -85,8 +85,8 @@ function StockGroup({ category, stocks, disabled, invalid, onCategory, onDelete,
   </section>;
 }
 
-export function StockBoard({ stocks, categories, enabled, onChange, search }: {
-  stocks: Stock[]; categories: StockCategory[]; enabled: boolean;
+export function StockBoard({ stocks, categories, enabled, limit, onChange, search }: {
+  stocks: Stock[]; categories: StockCategory[]; enabled: boolean; limit: number;
   onChange: (stocks: Stock[], categories: StockCategory[]) => void;
   search: ReactNode;
 }) {
@@ -103,7 +103,7 @@ export function StockBoard({ stocks, categories, enabled, onChange, search }: {
     return !key || key === "general" || categories.some((category) => category.id !== id && categoryNameKey(category.name) === key);
   };
   const add = () => {
-    if (!enabled || invalidName(name) || categories.length >= MAX_WATCHLIST) return;
+    if (!enabled || invalidName(name) || categories.length >= limit) return;
     const color = STOCK_COLORS.find((value) => !categories.some((category) => category.color === value)) ?? STOCK_COLORS[categories.length % STOCK_COLORS.length];
     onChange(stocks, [...categories, { id: crypto.randomUUID(), name: name.trim(), color }]);
     setName("");
@@ -140,14 +140,14 @@ export function StockBoard({ stocks, categories, enabled, onChange, search }: {
         </div>
         <div className="flex gap-2">
           <Input value={name} maxLength={32} placeholder={p.stockCategoryPlaceholder} aria-label={p.stockCategoryPlaceholder}
-            aria-invalid={!!name.trim() && invalidName(name)} disabled={categories.length >= MAX_WATCHLIST}
+            aria-invalid={!!name.trim() && invalidName(name)} disabled={categories.length >= limit}
             onChange={(event) => setName(event.target.value)}
             onKeyDown={(event) => { if (event.key === "Enter" && !event.nativeEvent.isComposing) { event.preventDefault(); add(); } }} />
-          <Button type="button" disabled={invalidName(name) || categories.length >= MAX_WATCHLIST} onClick={add}>{p.addItem}</Button>
+          <Button type="button" disabled={invalidName(name) || categories.length >= limit} onClick={add}>{p.addItem}</Button>
         </div>
         <p className="text-xs text-muted-foreground">{p.stockOrderHelp}</p>
         {name.trim() && invalidName(name) && <p role="status" className="text-sm text-destructive">{p.stockCategoryInvalid}</p>}
-        {categories.length >= MAX_WATCHLIST && <p role="status" className="text-sm text-muted-foreground">{p.stockCategoryLimit}</p>}
+        {categories.length >= limit && <p role="status" className="text-sm text-muted-foreground">{p.stockCategoryLimit(limit)}</p>}
       </div>
     </div>
     <DndContext sensors={sensors} collisionDetection={collisionDetection} onDragStart={({ active: dragged }) => setActive(String(dragged.id).slice(6))}

@@ -1,10 +1,11 @@
 import { z } from "zod";
 import { newsProviderName } from "./i18n";
-import { PAGE_ONE_SECTIONS, newsColumns, pageOneSectionKeys, renderNewspaper } from "./render";
+import { PAGE_ONE_SECTIONS, newsColumns, newsGroupId, pageOneSectionKeys, renderNewspaper } from "./render";
 import type { Newspaper } from "./types";
 
 // Script autonome : Browser Run ou iframe de démonstration, jamais une édition publiée.
 export const NEWS_LAYOUT_SCRIPT = String.raw`(async () => {
+  try {
   await Promise.all([...document.querySelectorAll('link[rel="stylesheet"]')].map(link => link.sheet ? Promise.resolve() :
     new Promise((resolve, reject) => {
       link.addEventListener('load', resolve, { once: true });
@@ -140,6 +141,124 @@ export const NEWS_LAYOUT_SCRIPT = String.raw`(async () => {
     page.dataset.pageColumns = encodeURIComponent(JSON.stringify(best.keys));
     page.dataset.pageLayout = 'ready';
   }
+  const flow = document.querySelector('[data-news-flow]');
+  if (!document.querySelector('.front-feature, .page-1 .g-extra') && document.querySelector('.news-column [data-news-group="local"]')) {
+    document.body.dataset.localPlacement = 'page-two';
+  }
+  if (flow) {
+    const columns = [...document.querySelectorAll('.news-column')].map(column => ({
+      column,
+      stack: column.querySelector('.news-stack'),
+      page: Number(column.closest('main')?.dataset.newsPage || 0),
+    }));
+    const pool = flow.querySelector('.news-stack');
+    const groups = [...pool.querySelectorAll(':scope > .news-group')].map((section, order) => {
+      const items = [...section.querySelectorAll('[data-news-item]')];
+      items.forEach(item => item.remove());
+      section.remove();
+      return { section, order, items };
+    });
+    const shell = (column, group) => {
+      const id = group.section.dataset.newsGroupId;
+      let section = [...column.stack.children].find(node => node.dataset.newsGroupId === id);
+      if (!section) {
+        section = group.section.cloneNode(true);
+        section.hidden = false;
+        section.querySelector('ul').replaceChildren();
+        column.stack.append(section);
+      }
+      return section;
+    };
+    const fits = column => {
+      const sections = [...column.stack.querySelectorAll('.news-group')].filter(section => section.querySelector('[data-news-item]'));
+      if (!sections.length) return true;
+      const bottom = Math.max(...sections.map(section => section.getBoundingClientRect().bottom));
+      return bottom <= column.stack.getBoundingClientRect().bottom - 1;
+    };
+    const place = (column, group, item) => {
+      const section = shell(column, group);
+      section.hidden = false;
+      section.querySelector('ul').append(item);
+      if (fits(column)) return true;
+      item.remove();
+      if (!section.querySelector('[data-news-item]')) section.remove();
+      return false;
+    };
+    const pageTwo = columns.filter(column => column.page === 2);
+    const later = columns.filter(column => column.page !== 2);
+    // Mes sujets garde sa place : 1 colonne à 2 pages, jusqu'à 1,5 à 3 pages, 2 colonnes à 4 pages.
+    const count = columns.length;
+    const topicFrom = count >= 9 ? count - 2 : count >= 6 ? count - 2 : Math.max(0, count - 1);
+    const halfShare = count >= 6 && count < 9;
+    const halfFilled = column => {
+      const stack = column.stack.getBoundingClientRect();
+      const sections = [...column.stack.querySelectorAll('.news-group')].filter(section => section.querySelector('[data-news-item]'));
+      if (!sections.length) return false;
+      const bottom = Math.max(...sections.map(section => section.getBoundingClientRect().bottom));
+      return bottom - stack.top >= stack.height * 0.48;
+    };
+    const placeFrom = (group, start, allowed) => {
+      let cursor = start;
+      for (const item of group.items) {
+        let placed = false;
+        for (let attempt = 0; attempt < columns.length && !placed; attempt++) {
+          const index = (cursor + attempt) % columns.length;
+          if (!allowed(index, columns[index])) continue;
+          if (place(columns[index], group, item)) {
+            cursor = index;
+            placed = true;
+          }
+        }
+      }
+    };
+    const othersOk = (index, column) => {
+      if (index > topicFrom) return false;
+      if (index === topicFrom && !halfShare) return false;
+      if (index === topicFrom && halfShare && halfFilled(column)) return false;
+      return true;
+    };
+    const local = groups.find(group => group.section.dataset.newsGroup === 'local');
+    if (local) placeFrom(local, 0, othersOk);
+    const topic = groups.find(group => group.section.dataset.newsGroup === 'topics');
+    const others = groups.filter(group => group !== local && group !== topic);
+    for (const group of others) placeFrom(group, 0, othersOk);
+    if (topic) placeFrom(topic, topicFrom, index => index >= topicFrom);
+    // Les phrases en réserve comblent le bas de chaque colonne, sans dépasser le format long.
+    for (const column of columns) {
+      let guard = 0;
+      while (guard++ < 500) {
+        const room = column.stack.getBoundingClientRect().bottom - 1;
+        const sections = [...column.stack.querySelectorAll('.news-group')].filter(section => section.querySelector('[data-news-item]'));
+        if (!sections.length) break;
+        const bottom = Math.max(...sections.map(section => section.getBoundingClientRect().bottom));
+        if (room - bottom < 14) break;
+        const hidden = [...column.stack.querySelectorAll('.news-summary .extra[hidden]')];
+        if (!hidden.length) break;
+        hidden.sort((a, b) => (a.parentElement?.innerText.length ?? 0) - (b.parentElement?.innerText.length ?? 0));
+        const extra = hidden[0];
+        extra.hidden = false;
+        const sectionsNow = [...column.stack.querySelectorAll('.news-group')];
+        const bottomNow = Math.max(...sectionsNow.map(section => section.getBoundingClientRect().bottom));
+        if (bottomNow > room) {
+          extra.hidden = true;
+          extra.remove();
+        }
+      }
+    }
+    const placement = {};
+    for (const [index, column] of columns.entries()) {
+      for (const section of [...column.stack.querySelectorAll('.news-group')]) {
+        if (!section.querySelector('[data-news-item]')) section.remove();
+      }
+      for (const item of column.stack.querySelectorAll('[data-news-item]')) {
+        placement[item.dataset.newsItem] = index;
+        const text = item.querySelector('.news-summary')?.innerText.replace(/\s+/g, ' ').trim() ?? '';
+        item.dataset.summary = encodeURIComponent(text);
+      }
+    }
+    flow.dataset.newsPlacement = encodeURIComponent(JSON.stringify(placement));
+    flow.dataset.newsLayout = 'ready';
+  } else {
   const columns = document.querySelector('.news-columns');
   for (const column of columns?.querySelectorAll('.news-column') ?? []) {
     const stack = column.querySelector('.news-stack');
@@ -174,7 +293,12 @@ export const NEWS_LAYOUT_SCRIPT = String.raw`(async () => {
     for (const group of groups) if (!group.count) group.section.remove();
   }
   if (columns) columns.dataset.newsLayout = 'ready';
+  }
   document.body.dataset.layout = 'ready';
+  } catch (error) {
+    document.body.dataset.layout = 'error';
+    document.body.dataset.layoutError = encodeURIComponent(error instanceof Error ? error.message : String(error));
+  }
 })()`;
 
 const contentResponse = z.object({ success: z.literal(true), result: z.string() });
@@ -211,20 +335,65 @@ export function applyPageOneLayout(paper: Newspaper, measuredHtml: string): News
   };
 }
 
+function readNewsSummaries(measuredHtml: string): Map<string, string> {
+  const summaries = new Map<string, string>();
+  for (const match of measuredHtml.matchAll(/<li\b([^>]*)>/g)) {
+    const id = match[1].match(/data-news-item="([^"]+)"/);
+    const summary = match[1].match(/data-summary="([^"]*)"/);
+    if (!id || !summary) continue;
+    try {
+      summaries.set(id[1], decodeURIComponent(summary[1]));
+    } catch {
+      throw new Error("Résumé mesuré illisible");
+    }
+  }
+  return summaries;
+}
+
+function readNewsPlacement(measuredHtml: string): Record<string, number> | null {
+  const encoded = measuredHtml.match(/data-news-placement="([^"]+)"/)?.[1];
+  if (!encoded) return null;
+  const parsed = z.record(z.string(), z.number().int().nonnegative()).safeParse(JSON.parse(decodeURIComponent(encoded)));
+  if (!parsed.success) throw new Error("La répartition des colonnes d'actualités est illisible");
+  return parsed.data;
+}
+
 /** Reconstruit le modèle avec les seuls articles qui tiennent, plutôt que de masquer le surplus en CSS. */
 export function applyNewsLayout(paper: Newspaper, measuredHtml: string): Newspaper {
   if (!measuredHtml.includes('data-news-layout="ready"')) throw new Error("La mesure des colonnes n'a pas abouti");
   const ids = [...measuredHtml.matchAll(/data-news-item="([^"]+)"/g)].map((match) => match[1]);
   const selected = new Set(ids);
-  const candidates = new Set(paper.newsGroups.flatMap((group) => group.items.map((_, index) => `${group.key}:${index}`)));
+  const candidates = new Set(paper.newsGroups.flatMap((group) => group.items.map((_, index) => `${newsGroupId(group)}:${index}`)));
   if (selected.size !== ids.length || ids.some((id) => !candidates.has(id))) {
     throw new Error("La mesure des colonnes a retourné une sélection invalide");
   }
+  const summaries = readNewsSummaries(measuredHtml);
+  const placement = paper.pages >= 3 ? readNewsPlacement(measuredHtml) : null;
+  if (paper.pages >= 3 && paper.newsGroups.length > 0 && !placement) throw new Error("La répartition des pages d'actualités n'a pas abouti");
+  const columnCount = Math.max(0, paper.pages - 1) * 3;
   const placed: Newspaper = measuredHtml.includes('data-local-placement="page-two"') ? { ...paper, localPlacement: "page-two" } : paper;
   const newsGroups = paper.newsGroups
-    .map((group) => ({ ...group, items: group.items.filter((_, index) => selected.has(`${group.key}:${index}`)) }))
+    .map((group) => ({
+      ...group,
+      items: group.items.flatMap((item, index) => {
+        const id = `${newsGroupId(group)}:${index}`;
+        if (!selected.has(id)) return [];
+        const column = placement?.[id];
+        if (placement && (column === undefined || column >= columnCount)) throw new Error("Un article d'actualité n'a pas de colonne");
+        const summary = summaries.get(id);
+        return [{
+          ...item,
+          ...(summary !== undefined ? { summary, summaryMore: undefined } : {}),
+          ...(column !== undefined ? { column } : {}),
+        }];
+      }),
+    }))
     .filter((group) => group.items.length > 0);
-  for (const keys of newsColumns(placed)) {
+  if (paper.pages >= 3) {
+    if (paper.newsGroups.some((group) => group.items.length > 0) && newsGroups.every((group) => group.items.length === 0)) {
+      throw new Error("Aucun article ne tient dans les pages d'actualités");
+    }
+  } else for (const keys of newsColumns(placed)) {
     const belongs = (key: string) => keys.some((value) => value === key);
     if (paper.newsGroups.some((group) => belongs(group.key)) && !newsGroups.some((group) => belongs(group.key))) {
       throw new Error("Aucun article ne tient dans une colonne d'actualités");
@@ -245,20 +414,28 @@ export async function layoutNewspaper(
   browser: { quickAction(action: "content", options: BrowserRunContentOptions): Promise<Response> },
 ): Promise<{ paper: Newspaper; html: string }> {
   let printed = paper;
-  if (paper.daily || (paper.pages === 2 && paper.newsGroups.length > 0)) {
+  if (paper.daily || (paper.pages >= 2 && paper.newsGroups.length > 0)) {
     const response = await browser.quickAction("content", {
       html: renderNewspaper(paper),
       emulateMediaType: "print",
       viewport: { width: 816, height: 1056 },
       gotoOptions: { waitUntil: "networkidle0", timeout: 30_000 },
       addScriptTag: [{ content: NEWS_LAYOUT_SCRIPT }],
-      waitForSelector: { selector: '[data-layout="ready"]', timeout: 15_000 },
+      waitForSelector: { selector: '[data-layout]', timeout: 15_000 },
       cacheTTL: 0,
     });
-    if (!response.ok) throw new Error(`Browser Run (colonnes) a répondu ${response.status}`);
+    if (!response.ok) {
+      const detail = await response.text().catch(() => "");
+      throw new Error(`Browser Run (colonnes) a répondu ${response.status}${detail ? ` : ${detail.slice(0, 700)}` : ""}`);
+    }
     const measured = contentResponse.parse(await response.json()).result;
+    const layoutState = measured.match(/[\s]data-layout="([^"]+)"/)?.[1];
+    if (layoutState === "error") {
+      const detail = measured.match(/[\s]data-layout-error="([^"]*)"/)?.[1] ?? "";
+      throw new Error(decodeURIComponent(detail) || "La mise en page a échoué");
+    }
     printed = applyPageOneLayout(paper, measured);
-    if (paper.pages === 2 && paper.newsGroups.length > 0) printed = applyNewsLayout(printed, measured);
+    if (paper.pages >= 2 && paper.newsGroups.length > 0) printed = applyNewsLayout(printed, measured);
   }
   return { paper: printed, html: renderNewspaper(printed) };
 }

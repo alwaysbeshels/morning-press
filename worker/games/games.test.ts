@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { GAME_KINDS, type GameKind, type Language } from "../../shared/types";
 import { GAME_LABELS, GAME_STYLES, generateGame, renderGame, type CodewordGame, type CrosswordGame, type Game } from "./index";
+import type { CryptogramGame, JumbleGame, KakuroGame, KenKenGame, WordLadderGame, WordSearchGame } from "./types";
 
 const LANGS: Language[] = ["fr", "en"];
 
@@ -32,7 +33,7 @@ describe("generateGame", () => {
     for (const kind of GAME_KINDS) {
       const seen = new Set<string>();
       for (let i = 0; i < 50; i++) seen.add(JSON.stringify(generate(`2026-01-${i}`, kind)));
-      expect(seen.size).toBeGreaterThanOrEqual(49);
+      expect(seen.size, kind).toBeGreaterThanOrEqual(49);
     }
   });
 
@@ -75,7 +76,10 @@ describe("generateGame", () => {
   });
 
   it.each(GAME_KINDS.map((kind) => [kind]))("génère un %s en moins de 3 ms en moyenne", (kind) => {
-    for (let i = 0; i < 10; i++) generate(`échauffement-${i}`, kind);
+    for (let i = 0; i < 8; i++) {
+      generate(`échauffement-${i}`, kind, "fr");
+      generate(`échauffement-${i}`, kind, "en");
+    }
     let total = 0;
     for (let i = 0; i < 100; i++) {
       const language = LANGS[i % 2] as Language;
@@ -84,6 +88,110 @@ describe("generateGame", () => {
       total += performance.now() - start;
     }
     expect(total / 100).toBeLessThan(3);
+  });
+});
+
+function asKind<T extends Game>(game: Game, kind: T["kind"]): T {
+  if (game.kind !== kind) throw new Error(game.kind);
+  return game as T;
+}
+
+describe("jeux ajoutés", () => {
+  const hamming = (left: string, right: string) => [...left].filter((letter, index) => letter !== right[index]).length;
+
+  function containsWord(grid: string[][], word: string): boolean {
+    const dirs = [[1, 0], [-1, 0], [0, 1], [0, -1], [1, 1], [1, -1], [-1, 1], [-1, -1]];
+    for (let row = 0; row < grid.length; row++) {
+      for (let col = 0; col < (grid[0]?.length ?? 0); col++) {
+        for (const [down, right] of dirs) {
+          let found = true;
+          for (let index = 0; index < word.length; index++) {
+            if (grid[row + down * index]?.[col + (right as number) * index] !== word[index]) {
+              found = false;
+              break;
+            }
+          }
+          if (found) return true;
+        }
+      }
+    }
+    return false;
+  }
+
+  it("produit des grilles jouables dans les deux langues", () => {
+    for (const language of LANGS) {
+      for (let index = 0; index < 6; index++) {
+        const jumble = asKind<JumbleGame>(generate(`jumble-${index}`, "jumble", language), "jumble");
+        expect(jumble.clues.length).toBeGreaterThanOrEqual(15);
+        expect(jumble.clues.map((clue) => clue.answer[clue.circled]).join("")).toBe(jumble.answer.replace(/ /g, ""));
+        expect(jumble.answer.split(" ").length).toBeGreaterThanOrEqual(2);
+        for (const clue of jumble.clues) {
+          expect([...clue.scrambled].sort().join("")).toBe([...clue.answer].sort().join(""));
+          expect(clue.scrambled).not.toBe(clue.answer);
+        }
+        const { html, solutionHtml } = renderGame(jumble, language);
+        expect(html).toContain('class="g-jumble-final"');
+        expect(solutionHtml).toContain(jumble.answer);
+        expect(solutionHtml).not.toContain("min-height");
+
+        const cryptogram = asKind<CryptogramGame>(generate(`crypto-${index}`, "cryptogram", language), "cryptogram");
+        expect(cryptogram.puzzle).not.toBe(cryptogram.solution);
+        expect(cryptogram.solution.toUpperCase()).toContain(cryptogram.revealed);
+        expect(cryptogram.puzzle).toContain(cryptogram.revealed);
+        expect(cryptogram.cipher).toHaveLength(26);
+        expect(renderGame(cryptogram, language).html).toContain("g-crypto-cell");
+
+        const search = asKind<WordSearchGame>(generate(`search-${index}`, "wordsearch", language), "wordsearch");
+        expect(search.grid.length).toBeGreaterThanOrEqual(12);
+        expect(search.words.length).toBeGreaterThanOrEqual(10);
+        for (const word of search.words) expect(containsWord(search.grid, word)).toBe(true);
+        expect(renderGame(search, language).html).toContain("g-search-wrap");
+
+        const ladder = asKind<WordLadderGame>(generate(`ladder-${index}`, "wordladder", language), "wordladder");
+        expect(ladder.steps[0]).toBe(ladder.start);
+        expect(ladder.steps.at(-1)).toBe(ladder.end);
+        expect(ladder.steps.length).toBeGreaterThanOrEqual(8);
+        expect(new Set(ladder.steps.map((step) => step.length)).size).toBe(1);
+        for (let step = 1; step < ladder.steps.length; step++) expect(hamming(ladder.steps[step - 1] as string, ladder.steps[step] as string)).toBe(1);
+        const letters = ladder.start.length;
+        if (letters <= 5) expect(ladder).toMatchObject({ flow: "columns", columns: 3 });
+        else if (letters <= 9) expect(ladder).toMatchObject({ flow: "columns", columns: 2 });
+        else expect(ladder.flow).toBe("across");
+        const ladderHtml = renderGame(ladder, language).html;
+        expect(ladderHtml).toContain("g-rung");
+        expect(ladderHtml).toContain(ladder.flow === "across" ? "g-across" : `g-cols-${ladder.columns}`);
+
+        const kenken = asKind<KenKenGame>(generate(`kenken-${index}`, "kenken", language), "kenken");
+        expect(kenken.size).toBeGreaterThanOrEqual(7);
+        const givenCells = kenken.cages.filter((cage) => cage.op === "").reduce((total, cage) => total + cage.cells.length, 0);
+        expect(givenCells).toBeLessThan(kenken.size * 2);
+        for (const row of kenken.solution) expect(new Set(row).size).toBe(kenken.size);
+        for (let col = 0; col < kenken.size; col++) expect(new Set(kenken.solution.map((row) => row[col])).size).toBe(kenken.size);
+        for (const cage of kenken.cages) {
+          const values = cage.cells.map(([row, col]) => kenken.solution[row]?.[col] as number);
+          if (cage.op === "") expect(values).toEqual([cage.target]);
+          if (cage.op === "+") expect(values.reduce((sum, value) => sum + value, 0)).toBe(cage.target);
+          if (cage.op === "×") expect(values.reduce((product, value) => product * value, 1)).toBe(cage.target);
+          if (cage.op === "-") expect(Math.abs((values[0] as number) - (values[1] as number))).toBe(cage.target);
+          if (cage.op === "÷") expect(Math.max(...values) / Math.min(...values)).toBe(cage.target);
+        }
+
+        const kakuro = asKind<KakuroGame>(generate(`kakuro-${index}`, "kakuro", language), "kakuro");
+        expect(kakuro.width).toBeGreaterThanOrEqual(6);
+        expect(kakuro.height).toBeGreaterThanOrEqual(6);
+        expect(kakuro.solution.flat().filter((value) => value !== null).length).toBeGreaterThanOrEqual(24);
+        expect(kakuro.runs.length).toBeGreaterThanOrEqual(8);
+        for (const run of kakuro.runs) {
+          expect(run.cells.length).toBeGreaterThanOrEqual(2);
+          const values = run.cells.map(([row, col]) => kakuro.solution[row]?.[col] as number);
+          expect(values.every((value) => value >= 1 && value <= 9)).toBe(true);
+          expect(new Set(values).size).toBe(values.length);
+          expect(values.reduce((sum, value) => sum + value, 0)).toBe(run.sum);
+        }
+        expect(kakuro.givens.length).toBeLessThanOrEqual(10);
+        for (const [row, col, digit] of kakuro.givens) expect(kakuro.solution[row]?.[col]).toBe(digit);
+      }
+    }
   });
 });
 
@@ -136,8 +244,14 @@ describe("renderGame", () => {
   });
 
   it("a des libellés localisés", () => {
-    expect(GAME_LABELS.fr).toEqual({ sudoku: "Sudoku", crossword: "Mots croisés", codeword: "Mots codés" });
-    expect(GAME_LABELS.en).toEqual({ sudoku: "Sudoku", crossword: "Crossword", codeword: "Codeword" });
+    expect(GAME_LABELS.fr).toEqual({
+      sudoku: "Sudoku", crossword: "Mots croisés", codeword: "Mots codés", jumble: "Mots mélangés",
+      cryptogram: "Cryptogramme", wordsearch: "Mots cachés", wordladder: "Échelle de mots", kenken: "KenKen", kakuro: "Kakuro",
+    });
+    expect(GAME_LABELS.en).toEqual({
+      sudoku: "Sudoku", crossword: "Crossword", codeword: "Codeword", jumble: "Jumble",
+      cryptogram: "Cryptogram", wordsearch: "Word Search", wordladder: "Word Ladder", kenken: "KenKen", kakuro: "Kakuro",
+    });
   });
 
   it("échappe le texte dynamique", () => {

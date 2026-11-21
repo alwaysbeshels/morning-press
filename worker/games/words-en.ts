@@ -1,6 +1,6 @@
 import type { WordEntry } from "./types";
 
-// Original definitions written for this project.
+// Original crossword clues. The dictionary used by codewords is lexicon-en.txt.
 export const WORDS_EN: readonly WordEntry[] = [
   { word: "ACTOR", clue: "Stage performer" },
   { word: "ALARM", clue: "Wake-up signal" },

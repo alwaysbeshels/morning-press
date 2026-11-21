@@ -1,4 +1,4 @@
-import type { EmailFilter, GameKind, Language, NewsSectionKey, PageCount, Stock, StockCategory, WeatherPeriodKey } from "../../shared/types";
+import type { EmailFilter, GameKind, Language, NewsSectionKey, NewsSummarySize, PageCount, Stock, StockCategory, WeatherPeriodKey } from "../../shared/types";
 import type { DailyExercise, DailyFact } from "../daily/content";
 import type { DailyRecipe } from "../daily/recipes";
 import type { NewspaperDesign } from "../../shared/newspaper-design";
@@ -92,6 +92,10 @@ export interface NewsItem {
   publishedAt?: number;
   /** Court descriptif fourni par la source, jamais déduit du seul titre. */
   summary: string;
+  /** Phrases au-delà de la longueur choisie, jusqu'au format long, pour combler un vide. */
+  summaryMore?: string[];
+  /** Colonne d'actualité (0 = première de la page 2), posée par la mesure en 3 ou 4 pages. */
+  column?: number;
   source: string;
   /** Lieu ou sujet du flux d'origine. */
   topic: string;
@@ -101,6 +105,8 @@ export interface NewsItem {
 /** Brèves d'une section de la page 2 (« topics » = sujets personnels). */
 export interface NewsGroup {
   key: NewsSectionKey | "topics";
+  /** Distingue plusieurs groupes du même type (un sujet personnel par groupe). Absent = key. */
+  id?: string;
   /** Lieu ou sujet saisi (vide pour les rubriques par défaut). */
   label: string;
   items: NewsItem[];
@@ -150,6 +156,8 @@ export interface Newspaper {
   timezone: string;
   language: Language;
   pages: PageCount;
+  /** Longueur de résumé demandée. Les articles des pages étendues peuvent avoir été allongés pour remplir la colonne. */
+  newsSummary?: NewsSummarySize;
   emailsEnabled: boolean;
   newsEnabled: boolean;
   city: string;

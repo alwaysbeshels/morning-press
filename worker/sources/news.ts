@@ -1,4 +1,4 @@
-import type { Language, NewsSectionKey, Preferences } from "../../shared/types";
+import type { Language, NewsSectionKey, NewsSummarySize, Preferences } from "../../shared/types";
 import { NEWS_SECTIONS } from "../../shared/types";
 import { normalizeText } from "../edition/text";
 import type { NewsGroup, NewsItem, NewsProvider } from "../edition/types";
@@ -6,6 +6,28 @@ import { cleanNewsText, isReferralSentence, newsQualityIssue, sameStory, titleTo
 
 /** Brèves conservées par flux (assez pour remplir la page 2). */
 export const ITEMS_PER_FEED = 16;
+
+/** Court = le journal actuel. Moyen = le double. Long = environ quatre fois plus de texte. */
+export const SUMMARY_LIMITS: Record<NewsSummarySize, { sentences: number; chars: number }> = {
+  small: { sentences: 2, chars: 320 },
+  medium: { sentences: 4, chars: 640 },
+  large: { sentences: 8, chars: 1280 },
+};
+
+/**
+ * Candidats gardés avant la mesure. Le navigateur n'imprime que ce qui remplit les colonnes,
+ * puis allonge les résumés s'il reste un vide.
+ */
+export function newsBudgets(pages: 3 | 4, size: NewsSummarySize): { perSection: number; perTopic: number } {
+  if (pages === 4) {
+    if (size === "large") return { perSection: 5, perTopic: 2 };
+    if (size === "medium") return { perSection: 8, perTopic: 3 };
+    return { perSection: 12, perTopic: 4 };
+  }
+  if (size === "large") return { perSection: 4, perTopic: 2 };
+  if (size === "medium") return { perSection: 6, perTopic: 2 };
+  return { perSection: 8, perTopic: 3 };
+}
 
 /** Un journal du matin reprend la veille et la nuit : au-delà, un article d'éditeur n'est plus d'actualité. */
 const PUBLISHER_MAX_AGE_MS = 36 * 3_600_000;
@@ -25,7 +47,7 @@ const LOCALES: Record<Language, { hl: string; gl: string; ceid: string }> = {
 const NATIONAL_DEFAULTS = new Set(["", "canada"]);
 const WORLD_DEFAULTS = new Set(["", "international", "internationale", "monde", "world", "worldwide"]);
 const SENTENCES = new Intl.Segmenter("fr", { granularity: "sentence" });
-export const NEWS_SUMMARY_MAX_LENGTH = 320;
+export const NEWS_SUMMARY_MAX_LENGTH = SUMMARY_LIMITS.small.chars;
 
 export type NewsGroupKey = NewsSectionKey | "topics";
 
@@ -206,7 +228,7 @@ export interface FeedResult {
 }
 
 /** Recherche Google Actualités, puis Bing en secours. */
-async function searchFeed(feed: NewsFeed, preferredProvider: "google" | "bing"): Promise<FeedResult> {
+async function searchFeed(feed: NewsFeed, preferredProvider: "google" | "bing", size: NewsSummarySize = "small"): Promise<FeedResult> {
   const result = (items: NewsItem[], provider: NewsProvider): FeedResult => ({
     group: feed.group, label: feed.label, provider, items: items.map((item) => ({ ...item, provider })),
   });
@@ -214,14 +236,14 @@ async function searchFeed(feed: NewsFeed, preferredProvider: "google" | "bing"):
   const alternate = async () => {
     if (!alternateUrl) throw new Error("Flux Bing RSS non configuré");
     const xml = await fetchRss(alternateUrl, "bing");
-    return result(parseRss(xml, feed.label, ITEMS_PER_FEED, Date.now() - SEARCH_MAX_AGE_MS), "bing");
+    return result(parseRss(xml, feed.label, ITEMS_PER_FEED, Date.now() - SEARCH_MAX_AGE_MS, size), "bing");
   };
   if (preferredProvider === "bing") return alternate();
   let primaryError: unknown;
   try {
-    let items = parseRss(await fetchRss(feed.url, "google"), feed.label, ITEMS_PER_FEED);
+    let items = parseRss(await fetchRss(feed.url, "google"), feed.label, ITEMS_PER_FEED, -Infinity, size);
     if (items.length === 0 && feed.fallbackUrl) {
-      items = parseRss(await fetchRss(feed.fallbackUrl, "google"), feed.label, ITEMS_PER_FEED);
+      items = parseRss(await fetchRss(feed.fallbackUrl, "google"), feed.label, ITEMS_PER_FEED, -Infinity, size);
     }
     if (items.length > 0 || !feed.alternateUrl) return result(items, "google");
   } catch (error) {
@@ -243,9 +265,9 @@ async function searchFeed(feed: NewsFeed, preferredProvider: "google" | "bing"):
 }
 
 /** Articles du flux d'un éditeur, ceux de sa une d'abord ; échoue seulement si le flux de la rubrique échoue. */
-async function fetchPublisher(publisher: NewsPublisher, label: string, notBefore: number, featured: FeaturedTitles): Promise<NewsItem[]> {
+async function fetchPublisher(publisher: NewsPublisher, label: string, notBefore: number, featured: FeaturedTitles, size: NewsSummarySize = "small"): Promise<NewsItem[]> {
   const xml = await fetchRss(publisher.url, publisher.provider);
-  const items = parseRss(xml, label, PUBLISHER_SCAN, notBefore)
+  const items = parseRss(xml, label, PUBLISHER_SCAN, notBefore, size)
     .map((item) => ({ ...item, source: item.source || publisher.source, provider: publisher.provider }));
   const titles = new Set(publisher.featuredUrl ? featured[publisher.featuredUrl] : []);
   if (titles.size > 0) {
@@ -301,12 +323,13 @@ export async function fetchFeed(
   feed: NewsFeed,
   preferredProvider: "google" | "bing" = "google",
   featured: FeaturedTitles = {},
+  summarySize: NewsSummarySize = "small",
 ): Promise<FeedResult> {
   const publishers = feed.publishers ?? [];
-  if (publishers.length === 0) return searchFeed(feed, preferredProvider);
+  if (publishers.length === 0) return searchFeed(feed, preferredProvider, summarySize);
 
   const notBefore = Date.now() - PUBLISHER_MAX_AGE_MS;
-  const settled = await Promise.allSettled(publishers.map((publisher) => fetchPublisher(publisher, feed.label, notBefore, featured)));
+  const settled = await Promise.allSettled(publishers.map((publisher) => fetchPublisher(publisher, feed.label, notBefore, featured, summarySize)));
   const errors: unknown[] = [];
   const lists: NewsItem[][] = [];
   for (const [index, entry] of settled.entries()) {
@@ -326,7 +349,7 @@ export async function fetchFeed(
 
   console.warn("[news] articles d'éditeurs insuffisants, recherche complémentaire", { group: feed.group, count: items.length });
   try {
-    const search = await searchFeed(feed, preferredProvider);
+    const search = await searchFeed(feed, preferredProvider, summarySize);
     return { ...search, items: pickNews([[...items, ...search.items]], ITEMS_PER_FEED) };
   } catch (error) {
     if (items.length === 0) {
@@ -341,7 +364,7 @@ export async function fetchFeed(
 }
 
 /** Analyse légère (sans dépendance XML) pour rester sous la limite CPU du forfait gratuit. */
-export function parseRss(xml: string, topic: string, limit: number, notBefore = -Infinity): NewsItem[] {
+export function parseRss(xml: string, topic: string, limit: number, notBefore = -Infinity, size: NewsSummarySize = "small"): NewsItem[] {
   const items: NewsItem[] = [];
   let cursor = 0;
   let withoutSummary = 0;
@@ -366,7 +389,7 @@ export function parseRss(xml: string, topic: string, limit: number, notBefore = 
     const suffix = source ? ` - ${source}` : "";
     const title = cleanNewsText(suffix && rawTitle.endsWith(suffix) ? rawTitle.slice(0, -suffix.length) : rawTitle);
     if (!title) continue;
-    const summary = newsSummary(tagContent(block, "description"), title, source);
+    const summary = newsSummary(tagContent(block, "description"), title, source, size);
     if (!summary) {
       withoutSummary++;
       continue;
@@ -391,8 +414,8 @@ function comparableText(value: string): string {
   return normalizeText(value).replace(/[^\p{L}\p{N}]+/gu, "");
 }
 
-/** Une ou deux phrases du descriptif RSS ; les listes de titres Google ne sont pas des résumés. */
-export function newsSummary(description: string, title: string, source = ""): string {
+/** Phrases complètes du descriptif RSS, dans la limite de la longueur demandée. Les listes de titres Google ne sont pas des résumés. */
+export function newsSummary(description: string, title: string, source = "", size: NewsSummarySize = "small"): string {
   const html = decodeXml(decodeXml(description));
   if (/<(?:ol|ul)\b/i.test(html)) return "";
   const plain = cleanNewsText(html
@@ -402,6 +425,7 @@ export function newsSummary(description: string, title: string, source = ""): st
   const normalized = comparableText(plain);
   if (plain.length < 45 || normalized === comparableText(title) || normalized === comparableText(`${title} ${source}`)) return "";
 
+  const limit = SUMMARY_LIMITS[size];
   const sentences: string[] = [];
   for (const { segment } of SENTENCES.segment(plain)) {
     const sentence = segment.trim();
@@ -409,12 +433,35 @@ export function newsSummary(description: string, title: string, source = ""): st
     if (!/[.!?]["»”']?$/.test(sentence) || /(?:\.{2,}|…)\s*["»”']?$/.test(sentence)) break;
     // « Voici… », « Lisez la suite » : un renvoi à l'article n'est pas un résumé.
     if (isReferralSentence(sentence)) continue;
-    if ([...sentences, sentence].join(" ").length > NEWS_SUMMARY_MAX_LENGTH) break;
+    if ([...sentences, sentence].join(" ").length > limit.chars) break;
     sentences.push(sentence);
-    if (sentences.length === 2) break;
+    if (sentences.length === limit.sentences) break;
   }
   const summary = sentences.join(" ");
   return summary.length >= 45 ? summary : "";
+}
+
+/** Coupe un résumé déjà nettoyé : la partie visible, puis les phrases gardées en réserve pour remplir la colonne. */
+export function clipSummary(summary: string, size: NewsSummarySize): { summary: string; more: string[] } {
+  const limit = SUMMARY_LIMITS[size];
+  const kept: string[] = [];
+  const more: string[] = [];
+  let overflow = false;
+  for (const { segment } of SENTENCES.segment(summary)) {
+    const sentence = segment.trim();
+    if (!sentence) continue;
+    const next = [...kept, sentence].join(" ");
+    if (!overflow && kept.length < limit.sentences && next.length <= limit.chars) kept.push(sentence);
+    else {
+      overflow = true;
+      more.push(sentence);
+    }
+  }
+  if (kept.length === 0) {
+    const first = more.shift();
+    return { summary: first ?? summary, more };
+  }
+  return { summary: kept.join(" "), more };
 }
 
 /** Mémorise les sujets déjà retenus pour écarter un même sujet repris par un autre titre ou un autre éditeur. */
@@ -473,8 +520,16 @@ export function mergeNews(lists: NewsItem[][], limit: number): NewsItem[] {
     .map(({ entry }) => entry.item);
 }
 
-/** Regroupe les brèves par section pour la page 2 (les sujets personnels forment un seul groupe). */
-export function groupNews(results: FeedResult[], perGroup: number, total = Infinity): NewsGroup[] {
+/**
+ * Regroupe les brèves par rubrique, dans l'ordre du journal.
+ * Les sujets personnels forment une seule rubrique : un sujet peut en donner plusieurs,
+ * un autre aucun. On ne crée pas de groupe vide.
+ */
+export function groupNews(
+  results: FeedResult[],
+  perGroup: number,
+  total = Infinity,
+): NewsGroup[] {
   const displayOrder: NewsGroupKey[] = [...NEWS_SECTIONS, "topics"];
   const order: NewsGroupKey[] = [...NEWS_SECTIONS.filter((key) => key !== "international"), "topics", "international"];
   const seen = storyRegistry();
@@ -482,14 +537,14 @@ export function groupNews(results: FeedResult[], perGroup: number, total = Infin
   for (const key of order) {
     const lists = results.filter((result) => result.group === key);
     if (lists.length === 0) continue;
+    // Les sujets sont un réservoir pour remplir la page, pas un quota d'un article par sujet.
+    const cap = key === "topics" ? Math.max(perGroup, 24) : perGroup;
     const items: NewsItem[] = [];
-    for (const item of pickNews(
-      lists.map((list) => list.items),
-      perGroup * 2,
-    )) {
-      if (items.length >= perGroup || !seen.claim(item)) continue;
+    for (const item of pickNews(lists.map((list) => list.items), cap * 2)) {
+      if (items.length >= cap || !seen.claim(item)) continue;
       items.push(item);
     }
+    if (key === "topics") items.sort((a, b) => a.topic.localeCompare(b.topic, "fr") || 0);
     if (items.length > 0) groups.push({ key, label: key === "topics" ? "" : lists[0].label, items });
   }
   groups.sort((a, b) => displayOrder.indexOf(a.key) - displayOrder.indexOf(b.key));

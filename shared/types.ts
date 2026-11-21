@@ -3,7 +3,7 @@ import type { NewspaperDesign } from "./newspaper-design";
 export const LANGUAGES = ["fr", "en"] as const;
 export type Language = (typeof LANGUAGES)[number];
 
-export const GAME_KINDS = ["sudoku", "crossword", "codeword"] as const;
+export const GAME_KINDS = ["sudoku", "crossword", "codeword", "jumble", "cryptogram", "wordsearch", "wordladder", "kenken", "kakuro"] as const;
 export type GameKind = (typeof GAME_KINDS)[number];
 
 export const PROVIDERS = ["google", "microsoft", "icloud"] as const;
@@ -27,10 +27,41 @@ export interface NewsSection {
   query: string;
 }
 
-export type PageCount = 1 | 2;
+export type PageCount = 1 | 2 | 3 | 4;
 
-export const MAX_WATCHLIST = 21;
-export const MAX_NEWS_TOPICS = 10;
+export const NEWS_SUMMARY_SIZES = ["small", "medium", "large"] as const;
+export type NewsSummarySize = (typeof NEWS_SUMMARY_SIZES)[number];
+
+/** Titres par rangée de la bourse. */
+export const STOCKS_PER_ROW = 7;
+/** Rangées disponibles en 1 ou 2 pages. */
+export const BASE_STOCK_ROWS = 3;
+/** Rangées ajoutées d’office en 3 ou 4 pages. Le formulaire ne demande plus de les choisir. */
+export const MAX_EXTRA_STOCK_ROWS = 2;
+export const EXTRA_STOCK_ROWS = [0, 1, 2] as const;
+export type ExtraStockRows = (typeof EXTRA_STOCK_ROWS)[number];
+
+export const MAX_WATCHLIST = STOCKS_PER_ROW * (BASE_STOCK_ROWS + MAX_EXTRA_STOCK_ROWS);
+/** Plafond historique, conservé en 1 et 2 pages. */
+export const BASE_NEWS_TOPICS = 10;
+/** Plafond absolu (4 pages, résumés courts). */
+export const MAX_NEWS_TOPICS = 30;
+
+/** Titres autorisés : 21 en 1 ou 2 pages, 35 en 3 ou 4 pages. */
+export function watchlistLimit(pages: PageCount): number {
+  const rows = pages >= 3 ? BASE_STOCK_ROWS + MAX_EXTRA_STOCK_ROWS : BASE_STOCK_ROWS;
+  return STOCKS_PER_ROW * rows;
+}
+
+/**
+ * Sujets personnels autorisés.
+ * 3 pages : court 20, moyen 15, long 10. 4 pages : court 30, moyen 25, long 20.
+ */
+export function maxNewsTopics(pages: PageCount, summary: NewsSummarySize): number {
+  if (pages === 4) return summary === "small" ? 30 : summary === "medium" ? 25 : 20;
+  if (pages === 3) return summary === "small" ? 20 : summary === "medium" ? 15 : 10;
+  return BASE_NEWS_TOPICS;
+}
 
 export interface Stock {
   symbol: string;
@@ -79,8 +110,12 @@ export function isProteinAllowed(diet: Pick<CookingPreferences, "vegetarian" | "
 export interface Preferences extends NewspaperDesign {
   /** Langue du journal et de l'interface. */
   language: Language;
-  /** 2 = page 2 consacrée aux actualités et aux réponses du jeu. */
+  /** 2 = page 2 d'actualités. 3 ou 4 = bourse et locale en page 2, le reste en actualités. */
   pages: PageCount;
+  /** Longueur des résumés quand le journal a 3 ou 4 pages. */
+  newsSummary: NewsSummarySize;
+  /** Rangées de titres ajoutées sur la page 2, seulement en 3 ou 4 pages. */
+  extraStockRows: ExtraStockRows;
   city: string;
   region: string;
   latitude: number;
@@ -99,7 +134,7 @@ export interface Preferences extends NewspaperDesign {
   maxEmails: number;
   /** Nombre de brèves en mode 1 page. */
   maxNews: number;
-  /** Le jeu n'est imprimé qu'en mode 2 pages. */
+  /** Le jeu est imprimé à partir de 2 pages. */
   gameEnabled: boolean;
   gameKinds: GameKind[];
   cooking: CookingPreferences;
@@ -236,6 +271,8 @@ export const DEFAULT_PREFERENCES: Preferences = {
   colorIntensity: "subtle",
   language: "fr",
   pages: 1,
+  newsSummary: "small",
+  extraStockRows: 0,
   city: "Montréal",
   region: "Québec",
   latitude: 45.5017,

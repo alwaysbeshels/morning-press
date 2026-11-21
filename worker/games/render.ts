@@ -1,7 +1,7 @@
 import type { Language } from "../../shared/types";
 import { escapeHtml } from "../edition/html";
 import { GAME_LABELS, GAME_STRINGS } from "./labels";
-import type { CodewordGame, CrosswordEntry, CrosswordGame, Game, SudokuGame } from "./types";
+import type { CodewordGame, CrosswordEntry, CrosswordGame, CryptogramGame, Game, JumbleGame, KakuroGame, KenKenGame, SudokuGame, WordLadderGame, WordSearchGame } from "./types";
 
 interface Parts {
   board: string;
@@ -53,7 +53,7 @@ function renderCrossword(game: CrosswordGame, language: Language): Parts {
   const strings = GAME_STRINGS[language];
   return {
     board: crosswordTable(game, false),
-    side: `<div class="g-clues">${clueList(strings.across, game.across)}${clueList(strings.down, game.down)}</div>`,
+    side: `<div class="g-clues">${clueList(strings.across, game.across)}${clueList(strings.down, game.down)}</div>${game.source ? `<p class="g-credit">${text(game.source)}</p>` : ""}`,
     solution: crosswordTable(game, true),
   };
 }
@@ -114,6 +114,172 @@ function renderCodeword(game: CodewordGame, language: Language): Parts {
   };
 }
 
+function jumbleBoxes(length: number, circled: number): string {
+  let boxes = "";
+  for (let index = 0; index < length; index++) {
+    boxes += `<span class="g-box${index === circled ? " g-box-o" : ""}"></span>`;
+  }
+  return boxes;
+}
+
+function renderJumble(game: JumbleGame): Parts {
+  const items = game.clues.map((clue) =>
+    `<div class="g-jumble-item"><p class="g-jumble-mix">${text(clue.scrambled)}</p><p class="g-jumble-boxes">${jumbleBoxes(clue.answer.length, clue.circled)}</p></div>`,
+  ).join("");
+  const phrase = game.answer.split(" ").map((word) => `<span class="g-jumble-word">${jumbleBoxes(word.length, -1).replaceAll('class="g-box"', 'class="g-box g-box-o"')}</span>`).join("");
+  const solved = game.clues.map((clue) => clue.answer.split("").map((letter, index) =>
+    index === clue.circled ? `<span class="g-circle">${text(letter)}</span>` : text(letter)).join("")).join(" · ");
+  return {
+    board: `<div class="g-jumbles">${items}</div><div class="g-jumble-final">${phrase}</div>`,
+    side: "",
+    solution: `<p class="g-sol-line">${solved}</p><p class="g-sol-line"><b>${text(game.answer)}</b></p>`,
+  };
+}
+
+function cryptoCell(top: string, bottom: string): string {
+  return `<span class="g-crypto-cell"><i>${text(top)}</i><b>${text(bottom)}</b></span>`;
+}
+
+function renderCryptogram(game: CryptogramGame): Parts {
+  const alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+  const fold = (char: string) => char.normalize("NFD").replace(/\p{M}/gu, "").toUpperCase();
+  const words = game.solution.split(/\s+/).map((word) => {
+    let cells = "";
+    for (const char of word) {
+      const letter = fold(char);
+      if (letter.length !== 1 || !alphabet.includes(letter)) {
+        cells += `<span class="g-crypto-punct">${text(char)}</span>`;
+        continue;
+      }
+      const cipher = game.cipher[letter.charCodeAt(0) - 65] ?? letter;
+      cells += cryptoCell(cipher, letter === game.revealed ? letter : "");
+    }
+    return `<span class="g-crypto-word">${cells}</span>`;
+  }).join("");
+  const key = alphabet.split("").map((letter) => cryptoCell(letter, letter === game.revealed ? (game.cipher[letter.charCodeAt(0) - 65] ?? "") : "")).join("");
+  return {
+    board: `<div class="g-crypto">${words}</div><div class="g-crypto-key">${key}</div>`,
+    side: "",
+    solution: `<p class="g-plain">${text(game.solution)}</p>`,
+  };
+}
+
+function letterTable(rows: string[][], className: string, mask?: (string | null)[][]): string {
+  const body = rows.map((row, r) => `<tr>${row.map((letter, c) => {
+    const hidden = mask && !mask[r]?.[c];
+    return `<td${hidden ? "" : ` class="g-cell"`}>${hidden ? "" : text(letter)}</td>`;
+  }).join("")}</tr>`).join("");
+  return `<table class="g-grid ${className}">${body}</table>`;
+}
+
+function renderWordSearch(game: WordSearchGame): Parts {
+  const list = `<ul class="g-wordlist">${game.words.map((word) => `<li>${text(word)}</li>`).join("")}</ul>`;
+  return {
+    board: `<div class="g-search-wrap">${letterTable(game.grid, "g-search")}${list}</div>`,
+    side: "",
+    solution: letterTable(game.grid, "g-search g-mini", game.mask),
+  };
+}
+
+function ladderRung(word: string, filled: boolean): string {
+  const boxes = word.split("").map((letter) => `<span class="g-box${filled ? " g-filled" : ""}">${filled ? text(letter) : ""}</span>`).join("");
+  return `<div class="g-rung">${boxes}</div>`;
+}
+
+function ladderBox(letters: number, flow: WordLadderGame["flow"], columns: number): string {
+  const room = flow === "across"
+    ? 2.2 / letters
+    : (7.2 - (columns - 1) * 0.3) / columns / letters;
+  return `${Math.max(0.28, Math.min(0.32, room)).toFixed(2)}in`;
+}
+
+function renderWordLadder(game: WordLadderGame): Parts {
+  const letters = game.start.length;
+  const box = ladderBox(letters, game.flow, game.columns);
+  const rung = (word: string, index: number) => ladderRung(word, index === 0 || index === game.steps.length - 1);
+  if (game.flow === "across") {
+    const rungs = game.steps.map((word, index) => rung(word, index)).join("");
+    const board = `<div class="g-ladders g-across" style="--g-box: ${box}"><p class="g-ladder-label">${text(game.start)} → ${text(game.end)}</p><div class="g-across-rails">${rungs}</div></div>`;
+    return { board, side: "", solution: `<p class="g-sol-line">${game.steps.map((step) => text(step)).join(" · ")}</p>` };
+  }
+  const size = Math.ceil(game.steps.length / game.columns);
+  const columns = Array.from({ length: game.columns }, (_, index) => game.steps.slice(index * size, (index + 1) * size)).filter((column) => column.length > 0);
+  const board = columns.map((column, index) => {
+    const rungs = column.map((word) => rung(word, game.steps.indexOf(word))).join("");
+    const next = index < columns.length - 1 ? `<p class="g-ladder-next">→</p>` : "";
+    return `<div class="g-ladder"><div class="g-ladder-rails">${rungs}</div>${next}</div>`;
+  }).join("");
+  return {
+    board: `<div class="g-ladders g-cols-${game.columns}" style="--g-box: ${box}"><p class="g-ladder-label">${text(game.start)} → ${text(game.end)}</p>${board}</div>`,
+    side: "",
+    solution: `<p class="g-sol-line">${game.steps.map((step) => text(step)).join(" · ")}</p>`,
+  };
+}
+
+function renderKenKen(game: KenKenGame): Parts {
+  const anchor = new Map<string, string>();
+  const given = new Set<string>();
+  const cageOf = new Map<string, number>();
+  game.cages.forEach((cage, index) => {
+    const key = (row: number, col: number) => `${row},${col}`;
+    const first = [...cage.cells].sort((a, b) => a[0] - b[0] || a[1] - b[1])[0];
+    if (first && cage.op) anchor.set(key(first[0], first[1]), `${cage.target}${cage.op}`);
+    if (!cage.op && cage.cells[0]) given.add(key(cage.cells[0][0], cage.cells[0][1]));
+    for (const [row, col] of cage.cells) cageOf.set(key(row, col), index);
+  });
+  const table = (digits: boolean) => {
+    let rows = "";
+    for (let row = 0; row < game.size; row++) {
+      let cells = "";
+      for (let col = 0; col < game.size; col++) {
+        const key = `${row},${col}`;
+        const right = cageOf.get(key) !== cageOf.get(`${row},${col + 1}`);
+        const below = cageOf.get(key) !== cageOf.get(`${row + 1},${col}`);
+        const cls = [right ? "g-edge-r" : "", below ? "g-edge-b" : ""].filter(Boolean).join(" ");
+        const label = anchor.get(key);
+        const digit = game.solution[row]?.[col] ?? "";
+        const content = `${label && !digits ? `<span class="g-n">${text(label)}</span>` : ""}${digits || given.has(key) ? text(digit) : ""}`;
+        cells += `<td${cls ? ` class="${cls}"` : ""}>${content}</td>`;
+      }
+      rows += `<tr>${cells}</tr>`;
+    }
+    return `<table class="g-grid g-kenken${digits ? " g-mini" : ""}">${rows}</table>`;
+  };
+  return { board: table(false), side: "", solution: table(true) };
+}
+
+function renderKakuro(game: KakuroGame): Parts {
+  const clue = new Map<string, { across?: number; down?: number }>();
+  for (const run of game.runs) {
+    const [row, col] = run.cells[0] ?? [0, 0];
+    const key = run.dir === "across" ? `${row},${col - 1}` : `${row - 1},${col}`;
+    const entry = clue.get(key) ?? {};
+    if (run.dir === "across") entry.across = run.sum;
+    else entry.down = run.sum;
+    clue.set(key, entry);
+  }
+  const white = new Set(game.runs.flatMap((run) => run.cells.map(([row, col]) => `${row},${col}`)));
+  const table = (solved: boolean) => {
+    let rows = "";
+    for (let row = 0; row < game.height; row++) {
+      let cells = "";
+      for (let col = 0; col < game.width; col++) {
+        const key = `${row},${col}`;
+        if (white.has(key)) {
+          const digit = solved ? game.solution[row]?.[col] : game.givens.find(([r, c]) => r === row && c === col)?.[2];
+          cells += `<td class="g-cell">${digit ? text(digit) : ""}</td>`;
+        } else if (clue.has(key)) {
+          const entry = clue.get(key);
+          cells += `<td class="g-clue">${entry?.down ? `<span class="g-kdown">${text(entry.down)}</span>` : ""}${entry?.across ? `<span class="g-kacross">${text(entry.across)}</span>` : ""}</td>`;
+        } else cells += `<td class="g-black"></td>`;
+      }
+      rows += `<tr>${cells}</tr>`;
+    }
+    return `<table class="g-grid g-kakuro${solved ? " g-mini" : ""}">${rows}</table>`;
+  };
+  return { board: table(false), side: "", solution: table(true) };
+}
+
 function renderParts(game: Game, language: Language): Parts {
   switch (game.kind) {
     case "sudoku":
@@ -122,6 +288,18 @@ function renderParts(game: Game, language: Language): Parts {
       return renderCrossword(game, language);
     case "codeword":
       return renderCodeword(game, language);
+    case "jumble":
+      return renderJumble(game);
+    case "cryptogram":
+      return renderCryptogram(game);
+    case "wordsearch":
+      return renderWordSearch(game);
+    case "wordladder":
+      return renderWordLadder(game);
+    case "kenken":
+      return renderKenKen(game);
+    case "kakuro":
+      return renderKakuro(game);
   }
 }
 

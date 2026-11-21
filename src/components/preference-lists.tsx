@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { XIcon } from "lucide-react";
-import { MAX_NEWS_TOPICS, MAX_WATCHLIST, type Stock, type StockCategory } from "@shared/types";
+import type { Stock, StockCategory } from "@shared/types";
 import { StockBoard } from "@/components/stock-board";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -10,13 +10,13 @@ import { api, queryKeys } from "@/lib/api";
 import { errorMessage } from "@/lib/hooks";
 import { useI18n } from "@/lib/i18n";
 
-export function TopicList({ topics, onChange }: { topics: string[]; onChange: (topics: string[]) => void }) {
+export function TopicList({ topics, limit, onChange }: { topics: string[]; limit: number; onChange: (topics: string[]) => void }) {
   const { t } = useI18n();
   const p = t.preferences;
   const [draft, setDraft] = useState("");
   const topic = draft.trim();
   const duplicate = topics.some((item) => item.toLowerCase() === topic.toLowerCase());
-  const full = topics.length >= MAX_NEWS_TOPICS;
+  const full = topics.length >= limit;
   const add = () => {
     if (!topic || duplicate || full) return;
     onChange([...topics, topic]);
@@ -24,8 +24,8 @@ export function TopicList({ topics, onChange }: { topics: string[]; onChange: (t
   };
   return (
     <div className="space-y-2 pt-2">
-      <Label htmlFor="topic-input">{p.topics} ({topics.length}/{MAX_NEWS_TOPICS})</Label>
-      <p id="topics-help" className="text-sm text-muted-foreground">{p.topicsHelp}</p>
+      <Label htmlFor="topic-input">{p.topics} ({topics.length}/{limit})</Label>
+      <p id="topics-help" className="text-sm text-muted-foreground">{p.topicsHelp(limit)}</p>
       <div className="flex gap-2">
         <Input id="topic-input" value={draft} maxLength={80} disabled={full}
           aria-describedby="topics-help" aria-invalid={duplicate}
@@ -51,8 +51,9 @@ export function TopicList({ topics, onChange }: { topics: string[]; onChange: (t
   );
 }
 
-export function StockList({ stocks, categories, enabled, onChange }: {
-  stocks: Stock[]; categories: StockCategory[]; enabled: boolean; onChange: (stocks: Stock[], categories: StockCategory[]) => void;
+export function StockList({ stocks, categories, enabled, limit, onChange }: {
+  stocks: Stock[]; categories: StockCategory[]; enabled: boolean; limit: number;
+  onChange: (stocks: Stock[], categories: StockCategory[]) => void;
 }) {
   const { t } = useI18n();
   const p = t.preferences;
@@ -63,7 +64,7 @@ export function StockList({ stocks, categories, enabled, onChange }: {
     const timer = setTimeout(() => setDebounced(trimmed), 350);
     return () => clearTimeout(timer);
   }, [trimmed]);
-  const full = stocks.length >= MAX_WATCHLIST;
+  const full = stocks.length >= limit;
   const searching = enabled && !full && trimmed.length >= 2;
   const results = useQuery({
     queryKey: queryKeys.stocks(debounced),
@@ -74,15 +75,15 @@ export function StockList({ stocks, categories, enabled, onChange }: {
   });
   return (
     <fieldset disabled={!enabled} className="space-y-3 disabled:opacity-60">
-      <legend className="mb-2 text-sm font-medium">{p.watchlist} ({stocks.length}/{MAX_WATCHLIST})</legend>
-      <StockBoard stocks={stocks} categories={categories} enabled={enabled} onChange={onChange} search={
+      <legend className="mb-2 text-sm font-medium">{p.watchlist} ({stocks.length}/{limit})</legend>
+      <StockBoard stocks={stocks} categories={categories} enabled={enabled} limit={limit} onChange={onChange} search={
         <div className="min-w-0 space-y-2">
           <Label htmlFor="stock-search" className="min-h-8">{p.stockSearch}</Label>
           <Input id="stock-search" value={query} disabled={full} maxLength={80}
             placeholder={p.stockPlaceholder} aria-describedby="stock-help" autoComplete="off"
             onChange={(event) => setQuery(event.target.value)}
             onKeyDown={(event) => { if (event.key === "Enter") event.preventDefault(); }} />
-          <p id="stock-help" className="text-sm text-muted-foreground">{full ? p.stockLimit : p.stockSearchHint}</p>
+          <p id="stock-help" className="text-sm text-muted-foreground">{full ? p.stockLimit(limit) : p.stockSearchHint}</p>
           {searching && (
             <div aria-live="polite">
               {debounced !== trimmed || results.isPending ? <p className="text-sm">{p.stockSearching}</p> :

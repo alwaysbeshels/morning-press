@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 import { Link, useBlocker, type ShouldBlockFn } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { FOOD_RESTRICTIONS, GAME_KINDS, isProteinAllowed, LANGUAGES, MEAL_TYPES, NEWS_SECTIONS, PROTEIN_CHOICES, type CookingPreferences, type GameKind, type MeDto, type PageCount, type Preferences, type ScheduleSettings, type SettingsDto } from "@shared/types";
+import { FOOD_RESTRICTIONS, GAME_KINDS, isProteinAllowed, LANGUAGES, maxNewsTopics, MEAL_TYPES, NEWS_SECTIONS, NEWS_SUMMARY_SIZES, PROTEIN_CHOICES, STOCKS_PER_ROW, watchlistLimit, type CookingPreferences, type GameKind, type MeDto, type NewsSummarySize, type PageCount, type Preferences, type ScheduleSettings, type SettingsDto } from "@shared/types";
 import { settingsUpdateSchema, validationMessage, type SettingsUpdate } from "@shared/schemas";
 import { CircleDotIcon, Loader2Icon, SaveIcon } from "lucide-react";
 import { toast } from "sonner";
@@ -25,6 +25,7 @@ import { messages, useI18n } from "@/lib/i18n";
 import {
   applyEdits,
   describeChanges,
+  fitMarkets,
   FORM_SECTIONS,
   lines,
   pickSection,
@@ -76,7 +77,7 @@ function Segmented<T extends string | number>({ name, legend, value, options, on
   return (
     <fieldset className="space-y-2" aria-describedby={describedBy}>
       <legend className="text-sm font-medium">{legend}</legend>
-      <div className="inline-flex rounded-lg border border-input p-0.5">
+      <div className="inline-flex max-w-full flex-wrap rounded-lg border border-input p-0.5">
         {options.map((option) => {
           const id = `${name}-${option.value}`;
           const checked = option.value === value;
@@ -113,7 +114,7 @@ interface SaveRequest {
   scope: FormSection | "all";
 }
 
-function SectionFooter({ title, dirty, busy, saving, onSave }: { title: string; dirty: boolean; busy: boolean; saving: boolean; onSave: () => void }) {
+function SectionFooter({ title, dirty, busy, saving, blocked, onSave }: { title: string; dirty: boolean; busy: boolean; saving: boolean; blocked?: boolean; onSave: () => void }) {
   const { t } = useI18n();
   const p = t.preferences;
   return (
@@ -126,7 +127,7 @@ function SectionFooter({ title, dirty, busy, saving, onSave }: { title: string; 
           </p>
         )}
       </div>
-      <Button type="button" size="sm" variant={dirty ? "default" : "outline"} disabled={!dirty || busy} onClick={onSave}
+      <Button type="button" size="sm" variant={dirty ? "default" : "outline"} disabled={!dirty || busy || blocked} onClick={onSave}
         aria-label={p.saveSection(title)}>
         {saving ? <Loader2Icon className="animate-spin" /> : <SaveIcon />}
         {t.common.save}
@@ -182,10 +183,10 @@ function PreferencesForm({ saved }: { saved: SettingsDto }) {
   });
 
   /** Enregistre une section (ou tout) par-dessus les valeurs déjà enregistrées. */
-  const saveSections = async (scope: FormSection | "all"): Promise<boolean> => {
+  const saveSections = async (scope: FormSection | "all", source: FormEdits = edits): Promise<boolean> => {
     const sections: readonly FormSection[] = scope === "all" ? FORM_SECTIONS : [scope];
     const sent: FormEdits = {};
-    for (const section of sections) if (edits[section]) sent[section] = edits[section];
+    for (const section of sections) if (source[section]) sent[section] = source[section];
     const parsed = settingsUpdateSchema.safeParse(settingsPayload(applyEdits(base, sent)));
     if (!parsed.success) {
       const issue = parsed.error.issues[0];
@@ -202,20 +203,35 @@ function PreferencesForm({ saved }: { saved: SettingsDto }) {
     }
   };
 
+  const stockLimit = watchlistLimit(prefs.pages);
+  const marketsOver = prefs.marketWatchlist.length > stockLimit || prefs.marketCategories.length > stockLimit;
+  const fittedMarkets = () => fitMarkets(prefs.marketWatchlist, prefs.marketCategories, stockLimit);
+  const trimStocks = () => setPrefs("markets", fittedMarkets());
+
   const blocker = useBlocker({ shouldBlockFn: leavesPage, disabled: dirty.size === 0, withResolver: true });
   const discardAndLeave = () => {
     const proceed = blocker.proceed;
     setEdits({});
     proceed?.();
   };
+  const trimAndLeave = async () => {
+    const proceed = blocker.proceed;
+    const source: FormEdits = {
+      ...edits,
+      markets: pickSection({ ...values, prefs: { ...prefs, ...fittedMarkets() } }, "markets"),
+    };
+    setEdits(source);
+    if (await saveSections("all", source)) proceed?.();
+  };
   const saveAndLeave = async () => {
     const proceed = blocker.proceed;
+    if (marketsOver) return;
     if (await saveSections("all")) proceed?.();
   };
 
   const submit = (event: React.FormEvent) => {
     event.preventDefault();
-    if (dirty.size > 0 && !save.isPending) void saveSections("all");
+    if (dirty.size > 0 && !save.isPending && !marketsOver) void saveSections("all");
   };
 
   const footer = (section: FormSection, title: string) => (
@@ -224,6 +240,7 @@ function PreferencesForm({ saved }: { saved: SettingsDto }) {
       dirty={dirty.has(section)}
       busy={save.isPending}
       saving={save.isPending && save.variables?.scope === section}
+      blocked={marketsOver}
       onSave={() => void saveSections(section)}
     />
   );
@@ -252,12 +269,15 @@ function PreferencesForm({ saved }: { saved: SettingsDto }) {
     </div>
   );
 
-  const twoPages = prefs.pages === 2;
+  const multiPage = prefs.pages >= 2;
+  const extended = prefs.pages >= 3;
+  const topicLimit = maxNewsTopics(prefs.pages, prefs.newsSummary);
+  const topicCount = lines(topics).length;
 
   return (
     <>
       <form onSubmit={submit} className="grid gap-4">
-        <Card>
+        <Card className={cn(marketsOver && "border-4 border-destructive ring-4 ring-destructive")}>
           <CardHeader>
             <CardTitle>{p.layoutTitle}</CardTitle>
             <CardDescription>{p.layoutDescription}</CardDescription>
@@ -271,6 +291,14 @@ function PreferencesForm({ saved }: { saved: SettingsDto }) {
               onChange={(value) => setPrefs("layout", { language: value })}
             />
             <div className="space-y-2">
+              {marketsOver && (
+                <div role="alert" id="pages-stock-warning" className="max-w-md space-y-2">
+                  <p className="text-sm font-medium text-destructive">
+                    {p.stocksPageWarning(prefs.marketWatchlist.length, prefs.marketCategories.length, stockLimit, prefs.pages)}
+                  </p>
+                  <Button type="button" size="sm" variant="destructive" onClick={trimStocks}>{p.leave.stocksTrim}</Button>
+                </div>
+              )}
               <Segmented<PageCount>
                 name="pages"
                 legend={p.pages}
@@ -278,9 +306,11 @@ function PreferencesForm({ saved }: { saved: SettingsDto }) {
                 options={[
                   { value: 1, label: p.onePage },
                   { value: 2, label: p.twoPages },
+                  { value: 3, label: p.threePages },
+                  { value: 4, label: p.fourPages },
                 ]}
                 onChange={(value) => setPrefs("layout", { pages: value })}
-                describedBy="pages-help"
+                describedBy={marketsOver ? "pages-stock-warning pages-help" : "pages-help"}
               />
               <p id="pages-help" className="max-w-md text-sm text-muted-foreground">
                 {p.pagesHelp(prefs.pages)}
@@ -437,16 +467,30 @@ function PreferencesForm({ saved }: { saved: SettingsDto }) {
               <p id="sections-help" className="text-sm text-muted-foreground">
                 {p.sectionsHelp}
               </p>
-              <TopicList topics={lines(topics)} onChange={(items) => setText("news", "topics", items.join("\n"))} />
+              {extended && (
+                <div className="space-y-2 pt-2">
+                  <Segmented<NewsSummarySize>
+                    name="summary-size"
+                    legend={p.summarySize}
+                    value={prefs.newsSummary}
+                    options={NEWS_SUMMARY_SIZES.map((value) => ({ value, label: p.summarySizes[value] }))}
+                    onChange={(newsSummary) => setPrefs("news", { newsSummary })}
+                    describedBy="summary-help"
+                  />
+                  <p id="summary-help" className="max-w-xl text-sm text-muted-foreground">{p.summaryHelp}</p>
+                </div>
+              )}
+              {topicCount > topicLimit && <p className="text-sm text-destructive">{p.topicsOver(topicCount, topicLimit)}</p>}
+              <TopicList topics={lines(topics)} limit={topicLimit} onChange={(items) => setText("news", "topics", items.join("\n"))} />
             </fieldset>
           </CardContent>
           {footer("news", p.newsTitle)}
         </Card>
 
-        <Card>
+        <Card className={cn(marketsOver && "border-4 border-destructive ring-4 ring-destructive")}>
           <CardHeader>
             <CardTitle>{p.marketsTitle}</CardTitle>
-            <CardDescription>{p.marketsDescription}</CardDescription>
+            <CardDescription>{p.marketsDescription(stockLimit, stockLimit / STOCKS_PER_ROW)}</CardDescription>
           </CardHeader>
           <CardContent className="space-y-5">
             <div className="flex items-center gap-3">
@@ -454,7 +498,10 @@ function PreferencesForm({ saved }: { saved: SettingsDto }) {
                 onCheckedChange={(marketsEnabled) => setPrefs("markets", { marketsEnabled })} />
               <Label htmlFor="markets">{p.marketsEnabled}</Label>
             </div>
-            <StockList stocks={prefs.marketWatchlist} categories={prefs.marketCategories} enabled={prefs.marketsEnabled}
+            {prefs.marketWatchlist.length > stockLimit && (
+              <p className="text-sm text-destructive">{p.stocksOver(prefs.marketWatchlist.length, stockLimit)}</p>
+            )}
+            <StockList stocks={prefs.marketWatchlist} categories={prefs.marketCategories} enabled={prefs.marketsEnabled} limit={stockLimit}
               onChange={(marketWatchlist, marketCategories) => setPrefs("markets", { marketWatchlist, marketCategories })} />
           </CardContent>
           {footer("markets", p.marketsTitle)}
@@ -515,7 +562,7 @@ function PreferencesForm({ saved }: { saved: SettingsDto }) {
             <CardDescription>{p.gameDescription}</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            {!twoPages && (
+            {!multiPage && (
               <Alert>
                 <AlertDescription>
                   <p>
@@ -552,7 +599,7 @@ function PreferencesForm({ saved }: { saved: SettingsDto }) {
                   </div>
                 ))}
               </div>
-              {twoPages && prefs.gameEnabled && prefs.gameKinds.length === 0 && (
+              {multiPage && prefs.gameEnabled && prefs.gameKinds.length === 0 && (
                 <p className="mt-2 text-sm text-destructive">{p.chooseGame}</p>
               )}
             </fieldset>
@@ -678,7 +725,7 @@ function PreferencesForm({ saved }: { saved: SettingsDto }) {
           <p role="status" className="text-sm text-muted-foreground">
             {dirty.size > 0 && p.unsavedSections(dirty.size)}
           </p>
-          <Button type="submit" disabled={dirty.size === 0 || save.isPending}>
+          <Button type="submit" disabled={dirty.size === 0 || save.isPending || marketsOver}>
             {save.isPending && save.variables?.scope === "all" ? <Loader2Icon className="animate-spin" /> : <SaveIcon />}
             {p.saveAll}
           </Button>
@@ -688,6 +735,13 @@ function PreferencesForm({ saved }: { saved: SettingsDto }) {
         open={blocker.status === "blocked"}
         changes={changes}
         saving={save.isPending}
+        stockOverflow={marketsOver ? {
+          stocks: prefs.marketWatchlist.length,
+          categories: prefs.marketCategories.length,
+          limit: stockLimit,
+          pages: prefs.pages,
+          onTrim: () => void trimAndLeave(),
+        } : null}
         onStay={() => blocker.reset?.()}
         onDiscard={discardAndLeave}
         onSave={() => void saveAndLeave()}

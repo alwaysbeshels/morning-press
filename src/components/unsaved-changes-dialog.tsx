@@ -12,26 +12,42 @@ import { Button } from "@/components/ui/button";
 import { useI18n } from "@/lib/i18n";
 import type { SectionChanges } from "@/lib/preferences-form";
 
+interface StockOverflow {
+  stocks: number;
+  categories: number;
+  limit: number;
+  pages: number;
+  onTrim: () => void;
+}
+
 interface UnsavedChangesDialogProps {
   open: boolean;
   changes: SectionChanges[];
   saving: boolean;
+  stockOverflow?: StockOverflow | null;
   onStay: () => void;
   onDiscard: () => void;
   onSave: () => void;
 }
 
 /** Demande quoi faire des préférences non enregistrées avant de quitter la page. */
-export function UnsavedChangesDialog({ open, changes, saving, onStay, onDiscard, onSave }: UnsavedChangesDialogProps) {
+export function UnsavedChangesDialog({ open, changes, saving, stockOverflow, onStay, onDiscard, onSave }: UnsavedChangesDialogProps) {
   const { t } = useI18n();
   const leave = t.preferences.leave;
   const labels = t.preferences.changes;
+  const overflow = stockOverflow && (stockOverflow.stocks > stockOverflow.limit || stockOverflow.categories > stockOverflow.limit)
+    ? stockOverflow
+    : null;
   return (
     <AlertDialog open={open} onOpenChange={(next) => !next && !saving && onStay()}>
       <AlertDialogContent className="data-[size=default]:sm:max-w-xl">
         <AlertDialogHeader>
-          <AlertDialogTitle>{leave.title}</AlertDialogTitle>
-          <AlertDialogDescription>{leave.description(changes.length)}</AlertDialogDescription>
+          <AlertDialogTitle>{overflow ? leave.stocksTitle : leave.title}</AlertDialogTitle>
+          <AlertDialogDescription className={overflow ? "font-medium text-destructive" : undefined}>
+            {overflow
+              ? `${t.preferences.stocksPageWarning(overflow.stocks, overflow.categories, overflow.limit, overflow.pages)} ${leave.stocksNext}`
+              : leave.description(changes.length)}
+          </AlertDialogDescription>
         </AlertDialogHeader>
         <div className="max-h-[min(50svh,26rem)] space-y-4 overflow-y-auto rounded-lg border bg-muted/30 p-3">
           {changes.map((section) => (
@@ -63,15 +79,22 @@ export function UnsavedChangesDialog({ open, changes, saving, onStay, onDiscard,
           ))}
         </div>
         <AlertDialogFooter>
-          <AlertDialogCancel disabled={saving}>{leave.stay}</AlertDialogCancel>
+          <AlertDialogCancel disabled={saving}>{overflow ? leave.stocksStay : leave.stay}</AlertDialogCancel>
           <Button type="button" variant="destructive" disabled={saving} onClick={onDiscard}>
             <Undo2Icon />
             {leave.discard}
           </Button>
-          <Button type="button" disabled={saving} onClick={onSave}>
-            {saving ? <Loader2Icon className="animate-spin" /> : <SaveIcon />}
-            {leave.saveAll}
-          </Button>
+          {overflow ? (
+            <Button type="button" disabled={saving} onClick={overflow.onTrim}>
+              {saving ? <Loader2Icon className="animate-spin" /> : <SaveIcon />}
+              {leave.stocksTrim}
+            </Button>
+          ) : (
+            <Button type="button" disabled={saving} onClick={onSave}>
+              {saving ? <Loader2Icon className="animate-spin" /> : <SaveIcon />}
+              {leave.saveAll}
+            </Button>
+          )}
         </AlertDialogFooter>
       </AlertDialogContent>
     </AlertDialog>
