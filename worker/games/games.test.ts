@@ -120,6 +120,7 @@ describe("jeux ajoutés", () => {
 
   it("produit des grilles jouables dans les deux langues", () => {
     for (const language of LANGS) {
+      const ladderLengths = new Set<number>();
       for (let index = 0; index < 6; index++) {
         const jumble = asKind<JumbleGame>(generate(`jumble-${index}`, "jumble", language), "jumble");
         expect(jumble.clues.length).toBeGreaterThanOrEqual(15);
@@ -154,6 +155,7 @@ describe("jeux ajoutés", () => {
         expect(new Set(ladder.steps.map((step) => step.length)).size).toBe(1);
         for (let step = 1; step < ladder.steps.length; step++) expect(hamming(ladder.steps[step - 1] as string, ladder.steps[step] as string)).toBe(1);
         const letters = ladder.start.length;
+        ladderLengths.add(letters);
         if (letters <= 5) expect(ladder).toMatchObject({ flow: "columns", columns: 3 });
         else if (letters <= 9) expect(ladder).toMatchObject({ flow: "columns", columns: 2 });
         else expect(ladder.flow).toBe("across");
@@ -191,6 +193,7 @@ describe("jeux ajoutés", () => {
         expect(kakuro.givens.length).toBeLessThanOrEqual(10);
         for (const [row, col, digit] of kakuro.givens) expect(kakuro.solution[row]?.[col]).toBe(digit);
       }
+      expect(ladderLengths.size).toBeGreaterThan(1);
     }
   });
 });

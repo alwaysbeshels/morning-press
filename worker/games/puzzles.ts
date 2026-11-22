@@ -250,6 +250,28 @@ function ladderGraph(language: Language, length: number): Map<string, readonly s
       graph.set(word, neighbors);
     }
   }
+  const visited = new Set<string>();
+  let largest: string[] = [];
+  for (const start of graph.keys()) {
+    if (visited.has(start)) continue;
+    const component: string[] = [];
+    const queue = [start];
+    visited.add(start);
+    while (queue.length) {
+      const word = queue.pop() as string;
+      component.push(word);
+      for (const next of graph.get(word) ?? []) {
+        if (visited.has(next)) continue;
+        visited.add(next);
+        queue.push(next);
+      }
+    }
+    if (component.length > largest.length) largest = component;
+  }
+  const keep = new Set(largest);
+  for (const word of graph.keys()) {
+    if (!keep.has(word)) graph.delete(word);
+  }
   ladderGraphs.set(key, graph);
   return graph;
 }
@@ -285,13 +307,11 @@ function walkLadder(rng: Rng, graph: Map<string, readonly string[]>, count: numb
   return best;
 }
 
-const LADDER_LENGTHS = [4, 5, 6, 7, 10];
+const LADDER_LENGTHS = [4, 5, 6, 7, 8];
 
 export function generateWordLadder(rng: Rng, language: Language): WordLadderGame {
   for (const length of LADDER_LENGTHS) ladderGraph(language, length);
-  const roll = rng.int(12);
-  const preferred = roll < 5 ? 5 : roll < 8 ? 6 : roll < 10 ? 4 : roll < 11 ? 7 : 10;
-  for (const length of [preferred, 5, 4]) {
+  for (const length of rng.shuffle(LADDER_LENGTHS)) {
     const shape = ladderShape(length);
     const steps = walkLadder(rng, ladderGraph(language, length), shape.words);
     const chain = steps ?? [];
