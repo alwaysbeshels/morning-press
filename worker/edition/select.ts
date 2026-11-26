@@ -385,7 +385,7 @@ export function buildNewspaper(input: BuildInput): Newspaper {
   const extended = pages >= 3;
   const feeds = preferences.newsEnabled ? input.news : [];
   const news = pages === 1 ? pickNews(feeds.map((feed) => feed.items), Math.min(2, preferences.maxNews)) : [];
-  const budgets = pages >= 3 ? newsBudgets(pages, preferences.newsSummary) : null;
+  const budgets = pages === 3 || pages === 4 ? newsBudgets(pages, preferences.newsSummary) : null;
   // Le navigateur choisira parmi ces candidats selon la place réellement disponible.
   const grouped = pages >= 2
     ? groupNews(feeds, budgets?.perSection ?? ITEMS_PER_FEED, Infinity)

@@ -49,6 +49,20 @@ const fr = {
     save: "Enregistrer",
     saving: "Enregistrement…",
   },
+  demo: {
+    locked: "Cette action n’est pas disponible dans la démo.",
+    generateHint: "Ces éditions sont déjà prêtes, à partir de données fictives. La génération n’est pas possible dans la démo. Chaque style d’article est en exemple dans l’onglet Éditions.",
+    preferencesTitle: "Site de démonstration",
+    preferencesBody: "Comme il s’agit d’une démo, les préférences ne peuvent pas être modifiées. Vous pourrez le faire sur le site que vous hébergez après avoir fait un fork de ce code.",
+    accountsTitle: "Site de démonstration",
+    accountsBody: "Les comptes affichés sont fictifs. Les connexions et les réglages ne peuvent pas être modifiés ici. Ce sera possible sur le site issu d’un fork de ce code.",
+    editionsDescription: "Quatre journaux déjà prêts, un pour chaque nombre de pages. Les actualités sont de longueur normale sur 2 pages, moyenne sur 3 pages et longue sur 4 pages. Choisissez Français ou English, puis ouvrez une édition.",
+    editionNote: (pages: number, summary: "small" | "medium" | "large"): string =>
+      pages <= 1 ? "Brèves sur une seule page"
+        : summary === "large" ? "Actualités longues"
+          : summary === "medium" ? "Actualités de longueur moyenne"
+            : "Actualités de longueur normale",
+  },
   status: { running: "En cours", ready: "Prête", partial: "Partielle", failed: "Échec" } satisfies Record<EditionStatus, string>,
   expired: "Expirée",
   trigger: { schedule: "Planifiée", manual: "Manuelle" } satisfies Record<EditionTrigger, string>,
@@ -117,7 +131,7 @@ const fr = {
         count(stats.news, "brève", "brèves", "fr"),
         stats.recipe ? "Recette du jour" : null,
         stats.exercise ? "Exercices" : null,
-        stats.pages === 2 ? "2 pages" : null,
+        stats.pages ? `${stats.pages} ${stats.pages === 1 ? "page" : "pages"}` : null,
         gameLabel ? `Jeu : ${gameLabel}` : null,
       ]
         .filter(Boolean)
@@ -460,6 +474,20 @@ const en: Messages = {
     save: "Save",
     saving: "Saving…",
   },
+  demo: {
+    locked: "This action is not available in the demo.",
+    generateHint: "These editions are already prepared from fictional data. Generation is not available in the demo. Every article style is shown as an example under Editions.",
+    preferencesTitle: "Demo site",
+    preferencesBody: "Because this is a demo, preferences cannot be changed. You will be able to change them on the site you host after you fork this code.",
+    accountsTitle: "Demo site",
+    accountsBody: "The accounts shown here are fictional. Connections and settings cannot be changed. That will be possible on the site you get by forking this code.",
+    editionsDescription: "Four papers are ready, one for each page count. News is normal length on 2 pages, medium on 3 pages and long on 4 pages. Choose Français or English, then open an edition.",
+    editionNote: (pages: number, summary: "small" | "medium" | "large") =>
+      pages <= 1 ? "Briefs on a single page"
+        : summary === "large" ? "Long news items"
+          : summary === "medium" ? "Medium-length news"
+            : "Normal-length news",
+  },
   status: { running: "In progress", ready: "Ready", partial: "Partial", failed: "Failed" },
   expired: "Expired",
   trigger: { schedule: "Scheduled", manual: "Manual" },
@@ -527,7 +555,7 @@ const en: Messages = {
         count(stats.news, "headline", "headlines"),
         stats.recipe ? "Daily recipe" : null,
         stats.exercise ? "Exercise ideas" : null,
-        stats.pages === 2 ? "2 pages" : null,
+        stats.pages ? `${stats.pages} ${stats.pages === 1 ? "page" : "pages"}` : null,
         gameLabel ? `Game: ${gameLabel}` : null,
       ]
         .filter(Boolean)

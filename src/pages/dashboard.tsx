@@ -1,6 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
-import { CalendarClockIcon, Loader2Icon, NewspaperIcon, SparklesIcon, UsersIcon } from "lucide-react";
+import { CalendarClockIcon, NewspaperIcon, UsersIcon } from "lucide-react";
+import { GenerateButton } from "@/components/generate-button";
 import { DownloadButton } from "@/components/download-button";
 import { EditionStatusBadge } from "@/components/edition-status";
 import { PageHeader } from "@/components/layout";
@@ -10,7 +11,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Skeleton } from "@/components/ui/skeleton";
 import { api, editionUrls, queryKeys } from "@/lib/api";
 import { formatClock, formatDateTime, formatEditionDate, formatToday } from "@/lib/format";
-import { errorMessage, useGenerateEdition } from "@/lib/hooks";
+import { errorMessage } from "@/lib/hooks";
 import { describeSourceError, useI18n } from "@/lib/i18n";
 
 export function DashboardPage() {
@@ -19,16 +20,8 @@ export function DashboardPage() {
     queryFn: api.dashboard,
     refetchInterval: (query) => (query.state.data?.latestEdition?.status === "running" ? 4000 : false),
   });
-  const generate = useGenerateEdition();
   const { t, language } = useI18n();
   const d = t.dashboard;
-
-  const generateButton = (
-    <Button onClick={() => generate.mutate()} disabled={generate.isPending}>
-      {generate.isPending ? <Loader2Icon className="animate-spin" /> : <SparklesIcon />}
-      {t.common.generateNow}
-    </Button>
-  );
 
   if (dashboard.isPending) {
     return (
@@ -55,7 +48,7 @@ export function DashboardPage() {
 
   return (
     <>
-      <PageHeader title={d.hello} description={formatToday(language)} actions={generateButton} />
+      <PageHeader title={d.hello} description={formatToday(language)} actions={<GenerateButton />} />
 
       {accounts.total === 0 && (
         <Alert className="mb-4">

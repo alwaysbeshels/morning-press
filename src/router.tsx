@@ -33,7 +33,14 @@ const routeTree = rootRoute.addChildren([
   createRoute({ getParentRoute: () => rootRoute, path: "/preferences", component: PreferencesPage }),
 ]);
 
-export const router = createRouter({ routeTree, defaultPreload: "intent", scrollRestoration: true });
+const basepath = import.meta.env.BASE_URL.replace(/\/$/, "");
+
+export const router = createRouter({
+  routeTree,
+  ...(basepath ? { basepath } : {}),
+  defaultPreload: "intent",
+  scrollRestoration: true,
+});
 
 declare module "@tanstack/react-router" {
   interface Register {

@@ -6,6 +6,8 @@ Plateforme web personnelle qui prépare chaque matin un **journal en PDF**, en f
 
 **Gratuit, et pour tout le monde.** Ce dépôt est public : vous êtes les bienvenus pour l’utiliser, le cloner et l’auto-héberger. Déployez votre instance sur les forfaits gratuits Cloudflare + Neon, et invitez les adresses que vous voulez. Il n’y a pas de produit Morning Press payant — seulement de l’auto-hébergement. (Votre site reste privé derrière Cloudflare Access ; le *logiciel*, lui, est disponible pour quiconque veut son propre journal.)
 
+**Démo en ligne :** [alwaysbeshels.github.io/morning-press](https://alwaysbeshels.github.io/morning-press/). C’est le même site, avec quatre journaux déjà prêts (1 à 4 pages, en français et en anglais) et des données fictives. La génération et les préférences y sont verrouillées ; un fork de ce dépôt les débloque. La branche `gh-pages` part de `main` et contient ce mode. En local : `npm run demo:dev`, puis [http://127.0.0.1:5174/morning-press/](http://127.0.0.1:5174/morning-press/). GitHub Pages publie le dossier `/docs` de cette branche (Settings → Pages → Deploy from a branch → `gh-pages`, dossier `/docs`).
+
 ## Aperçu
 
 Vraies captures d’une instance en ligne :
@@ -325,6 +327,9 @@ Browser Run n'existe pas en local, et la base Neon est partagée avec la product
 | `npm test` | Tests unitaires (Vitest) |
 | `npm run lint` | Lint (oxlint) |
 | `npm run build` | Build de production |
+| `npm run demo:dev` | Démo en local, avec le code du projet (`http://127.0.0.1:5174/morning-press/`) |
+| `npm run demo:build` | Reconstruit en local le site statique de la démo (Chrome requis) |
+| `npm run demo:preview` | Sert cette démo sur `http://127.0.0.1:4173/morning-press/` |
 | `npm run deploy` | Build et déploiement sur Cloudflare |
 | `npx wrangler types` | Régénère `worker-configuration.d.ts` après un changement de `wrangler.jsonc` |
 

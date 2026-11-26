@@ -9,12 +9,12 @@ import { PageHeader } from "@/components/layout";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
+import { isDemo } from "@/demo/mode";
 import { api, editionUrls, queryKeys } from "@/lib/api";
 import { canDeleteEdition } from "@/lib/editions";
 import { formatDateTime, formatEditionDate, formatTime } from "@/lib/format";
 import { errorMessage } from "@/lib/hooks";
 import { describeSourceError, useI18n } from "@/lib/i18n";
-import { cn } from "@/lib/utils";
 
 const route = getRouteApi("/editions/$id");
 
@@ -39,7 +39,8 @@ function EditionFrame({ src, title, pages }: { src: string; title: string; pages
   return (
     <div
       ref={container}
-      className={cn("relative box-content overflow-hidden rounded-xl border bg-white shadow-sm", pages === 2 ? "aspect-[8.5/22.75]" : "aspect-[8.5/11.5]")}
+      className="relative box-content overflow-hidden rounded-xl border bg-white shadow-sm"
+      style={{ aspectRatio: pages <= 1 ? "8.5 / 11.5" : `8.5 / ${11.25 * pages + 0.25 * (pages - 1)}` }}
     >
       <iframe
         title={title}
@@ -113,7 +114,7 @@ export function EditionPage() {
                   <DownloadButton editionId={data.id} />
                 </>
               )}
-              {canDeleteEdition(data) && (
+              {!isDemo && canDeleteEdition(data) && (
                 <DeleteEditionsDialog
                   ids={[data.id]}
                   title={t.editions.deleteTitle}

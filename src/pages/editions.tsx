@@ -1,8 +1,9 @@
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
 import type { EditionDto } from "@shared/types";
-import { ChevronRightIcon, Loader2Icon, SparklesIcon, Trash2Icon } from "lucide-react";
+import { ChevronRightIcon, Loader2Icon, Trash2Icon } from "lucide-react";
 import { DeleteEditionsDialog } from "@/components/delete-editions-dialog";
+import { GenerateButton } from "@/components/generate-button";
 import { DownloadButton } from "@/components/download-button";
 import { EditionStatusBadge } from "@/components/edition-status";
 import { PageHeader } from "@/components/layout";
@@ -11,10 +12,12 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Skeleton } from "@/components/ui/skeleton";
+import { demoNewsSummary } from "@/demo/api";
+import { isDemo } from "@/demo/mode";
 import { api, editionUrls, queryKeys } from "@/lib/api";
 import { canDeleteEdition, groupEditionsByDate, type EditionGroup } from "@/lib/editions";
 import { formatEditionDate, formatTime } from "@/lib/format";
-import { errorMessage, useGenerateEdition } from "@/lib/hooks";
+import { errorMessage } from "@/lib/hooks";
 import { sourceErrorLabel, useI18n } from "@/lib/i18n";
 
 /** Les deux dates d'édition les plus récentes de la liste sont ouvertes, même si elles sont anciennes. */
@@ -26,20 +29,14 @@ export function EditionsPage() {
     queryFn: api.editions,
     refetchInterval: (query) => (query.state.data?.some((edition) => edition.status === "running") ? 4000 : false),
   });
-  const generate = useGenerateEdition();
   const { t } = useI18n();
 
   return (
     <>
       <PageHeader
         title={t.nav.editions}
-        description={t.editions.description}
-        actions={
-          <Button onClick={() => generate.mutate()} disabled={generate.isPending}>
-            {generate.isPending ? <Loader2Icon className="animate-spin" /> : <SparklesIcon />}
-            {t.common.generateNow}
-          </Button>
-        }
+        description={isDemo ? t.demo.editionsDescription : t.editions.description}
+        actions={<GenerateButton />}
       />
 
       {editions.isPending && <Skeleton className="h-64" />}
@@ -117,7 +114,7 @@ function EditionDay({ group, defaultOpen }: { group: EditionGroup; defaultOpen: 
                 </li>
               ))}
             </ul>
-            {groupDeletable && (
+            {!isDemo && groupDeletable && (
               <div className="border-t py-2 pr-4 pl-6 sm:pl-8">
                 <DeleteEditionsDialog
                   ids={all.map((edition) => edition.id)}
@@ -150,6 +147,8 @@ function EditionDetails({ edition, prefix, withTime = true }: { edition: Edition
   if (edition.errors.length > 0) {
     parts.push(t.editions.unavailable([...new Set(edition.errors.map((error) => sourceErrorLabel(error, t)))].join(", ")));
   }
+  const summary = isDemo ? demoNewsSummary(edition.id) : null;
+  if (summary && edition.stats?.pages) parts.push(t.demo.editionNote(edition.stats.pages, summary));
   return <p className="text-sm text-muted-foreground">{parts.filter(Boolean).join(" · ")}</p>;
 }
 
@@ -170,7 +169,7 @@ function EditionActions({ edition, date }: { edition: EditionDto; date: string }
       {available && edition.hasPdf && (
         <DownloadButton editionId={edition.id} size="sm" variant="ghost">PDF</DownloadButton>
       )}
-      {canDeleteEdition(edition) && (
+      {!isDemo && canDeleteEdition(edition) && (
         <DeleteEditionsDialog
           ids={[edition.id]}
           title={ed.deleteTitle}

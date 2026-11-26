@@ -64,7 +64,7 @@ export function Layout() {
       <header ref={header} className="sticky top-0 z-40 border-b bg-card/95 backdrop-blur supports-backdrop-filter:bg-card/85">
         <div className="mx-auto flex max-w-5xl flex-wrap items-center gap-x-3 gap-y-2 px-4 py-2.5 sm:flex-nowrap sm:gap-x-4 sm:py-3">
           <Link to="/" className="mr-auto flex items-center gap-2">
-            <img src="/favicon.svg" alt="" width={24} height={24} className="size-6 shrink-0 object-contain" />
+            <img src={`${import.meta.env.BASE_URL}favicon.svg`} alt="" width={24} height={24} className="size-6 shrink-0 object-contain" />
             <span className="font-heading text-xl font-bold tracking-tight">{t.appName}</span>
           </Link>
           {/* Sur mobile, la navigation passe sous le logo et le sélecteur de langue reste en haut à droite. */}

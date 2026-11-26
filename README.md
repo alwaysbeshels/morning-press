@@ -4,6 +4,8 @@ A personal web app that prepares a **morning newspaper PDF** in French or Englis
 
 **Free, and for everyone.** This repository is public: you are welcome to use it, clone it, and self-host. Deploy your own instance on Cloudflare + Neon free tiers, and invite the emails you choose. There is no paid Morning Press product—just self-host. (Your site stays private behind Cloudflare Access; the *software* is open to anyone who wants their own paper.)
 
+**Live demo:** [alwaysbeshels.github.io/morning-press](https://alwaysbeshels.github.io/morning-press/). It is the same site, with four papers already prepared (1 to 4 pages, in French and English) and fictional data. Generation and preferences are locked there; a fork of this repository unlocks them. The `gh-pages` branch starts from `main` and includes this mode. Locally: `npm run demo:dev`, then [http://127.0.0.1:5174/morning-press/](http://127.0.0.1:5174/morning-press/). GitHub Pages publishes the `/docs` folder of that branch (Settings → Pages → Deploy from a branch → `gh-pages`, folder `/docs`).
+
 French docs: [README.fr.md](./README.fr.md), [docs/SETUP.fr.md](./docs/SETUP.fr.md), [docs/USAGE.fr.md](./docs/USAGE.fr.md). Full self-host walkthrough: [docs/SETUP.md](./docs/SETUP.md). Day-to-day use: [docs/USAGE.md](./docs/USAGE.md).
 
 ## Look and feel
@@ -207,6 +209,9 @@ After deploy, open `https://<your-worker>.<subdomain>.workers.dev`, sign in thro
 | `npm test` | Unit tests (Vitest) |
 | `npm run lint` | Lint (oxlint) |
 | `npm run build` | Production build |
+| `npm run demo:dev` | Run the demo locally from the project source (`http://127.0.0.1:5174/morning-press/`) |
+| `npm run demo:build` | Rebuild the static demo site locally (needs Chrome) |
+| `npm run demo:preview` | Serve that demo at `http://127.0.0.1:4173/morning-press/` |
 | `npm run deploy` | Build and deploy to Cloudflare |
 | `npm run db:generate` | Create a Drizzle SQL migration |
 | `npm run db:migrate` | Apply migrations to Neon (`DATABASE_URL` from `.dev.vars`) |

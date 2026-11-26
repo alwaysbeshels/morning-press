@@ -28,7 +28,7 @@ const queryClient = new QueryClient({
 });
 
 // Le service worker sert seulement une page hors ligne. Absent en développement, où Vite gère le rechargement.
-if (import.meta.env.PROD && "serviceWorker" in navigator) {
+if (import.meta.env.PROD && import.meta.env.VITE_DEMO !== "true" && "serviceWorker" in navigator) {
   window.addEventListener("load", () => {
     navigator.serviceWorker.register("/sw.js").catch(() => {
       // Facultatif : sans service worker, le site fonctionne, sans page hors ligne.

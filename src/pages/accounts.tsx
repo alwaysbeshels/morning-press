@@ -4,6 +4,8 @@ import { getRouteApi, Link, useNavigate } from "@tanstack/react-router";
 import { EMAIL_FILTERS, PROVIDER_LABELS, PROVIDERS, type AccountDto, type EmailFilter } from "@shared/types";
 import { Loader2Icon, MailXIcon, PlugIcon, RefreshCwIcon, Trash2Icon } from "lucide-react";
 import { toast } from "sonner";
+import { DemoBanner, DemoLock } from "@/components/demo-lock";
+import { isDemo } from "@/demo/mode";
 import { PageHeader } from "@/components/layout";
 import {
   AlertDialog,
@@ -51,6 +53,8 @@ export function AccountsPage() {
   return (
     <>
       <PageHeader title={a.title} description={a.description} />
+      {isDemo && <DemoBanner title={t.demo.accountsTitle}>{t.demo.accountsBody}</DemoBanner>}
+      <DemoLock>
 
       {settings.data && !settings.data.preferences.emailsEnabled && (
         <Alert className="mb-4">
@@ -95,6 +99,7 @@ export function AccountsPage() {
       <div className="grid gap-4">
         {accounts.data?.map((account) => <AccountCard key={account.id} account={account} />)}
       </div>
+      </DemoLock>
     </>
   );
 }
