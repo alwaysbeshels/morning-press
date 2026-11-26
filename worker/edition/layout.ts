@@ -223,6 +223,31 @@ export const NEWS_LAYOUT_SCRIPT = String.raw`(async () => {
     const others = groups.filter(group => group !== local && group !== topic);
     for (const group of others) placeFrom(group, 0, othersOk);
     if (topic) placeFrom(topic, topicFrom, index => index >= topicFrom);
+    // Une colonne réservée ne reste pas vide : les articles encore en attente comblent le plus grand trou.
+    let fillGuard = 0;
+    while (fillGuard++ < 400) {
+      const pending = groups.flatMap(group => group.items
+        .filter(item => !item.isConnected && !item.dataset.skip)
+        .map(item => ({ group, item })));
+      if (!pending.length) break;
+      const openings = columns.map(column => {
+        const stack = column.stack.getBoundingClientRect();
+        const sections = [...column.stack.querySelectorAll('.news-group')].filter(section => section.querySelector('[data-news-item]'));
+        const bottom = sections.length ? Math.max(...sections.map(section => section.getBoundingClientRect().bottom)) : stack.top;
+        return { column, room: stack.bottom - 1 - bottom };
+      }).filter(entry => entry.room > 48).sort((a, b) => b.room - a.room);
+      if (!openings.length) break;
+      let placedAny = false;
+      for (const { group, item } of pending) {
+        let fitted = false;
+        for (const opening of openings) {
+          if (place(opening.column, group, item)) { fitted = true; placedAny = true; break; }
+        }
+        if (fitted) break;
+        item.dataset.skip = '1';
+      }
+      if (!placedAny) break;
+    }
     // Les phrases en réserve comblent le bas de chaque colonne, sans dépasser le format long.
     for (const column of columns) {
       let guard = 0;
