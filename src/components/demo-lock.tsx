@@ -13,11 +13,12 @@ function block(event: SyntheticEvent) {
   event.stopPropagation();
 }
 
-/** Empêche toute modification sans griser la page : l'aperçu et les infobulles restent utilisables. */
-export function DemoLock({ children }: { children: ReactNode }) {
+/** Empêche toute modification. `muted` pâlit les contrôles ; l'aperçu dans `[data-demo-allow]` reste net. */
+export function DemoLock({ children, muted = false }: { children: ReactNode; muted?: boolean }) {
   if (!isDemo) return children;
   return (
     <div
+      className={muted ? "demo-lock" : undefined}
       onPointerDownCapture={(event) => {
         if (!allowed(event.target)) event.stopPropagation();
       }}

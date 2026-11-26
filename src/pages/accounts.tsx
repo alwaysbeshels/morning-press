@@ -54,7 +54,7 @@ export function AccountsPage() {
     <>
       <PageHeader title={a.title} description={a.description} />
       {isDemo && <DemoBanner title={t.demo.accountsTitle}>{t.demo.accountsBody}</DemoBanner>}
-      <DemoLock>
+      <DemoLock muted>
 
       {settings.data && !settings.data.preferences.emailsEnabled && (
         <Alert className="mb-4">

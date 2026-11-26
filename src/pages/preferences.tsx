@@ -64,7 +64,7 @@ export function PreferencesPage() {
         </Alert>
       )}
       {settings.data && (
-        <DemoLock>
+        <DemoLock muted>
           <PreferencesForm saved={settings.data} />
         </DemoLock>
       )}
