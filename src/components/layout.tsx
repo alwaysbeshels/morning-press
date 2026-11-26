@@ -2,6 +2,7 @@ import { useEffect, useRef } from "react";
 import { Link, Outlet } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { LANGUAGES } from "@shared/types";
+import { isDemo } from "@/demo/mode";
 import { api, queryKeys } from "@/lib/api";
 import { hasRememberedLanguage, useI18n } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
@@ -64,8 +65,11 @@ export function Layout() {
       <header ref={header} className="sticky top-0 z-40 border-b bg-card/95 backdrop-blur supports-backdrop-filter:bg-card/85">
         <div className="mx-auto flex max-w-5xl flex-wrap items-center gap-x-3 gap-y-2 px-4 py-2.5 sm:flex-nowrap sm:gap-x-4 sm:py-3">
           <Link to="/" className="mr-auto flex items-center gap-2">
-            <img src="/favicon.svg" alt="" width={24} height={24} className="size-6 shrink-0 object-contain" />
-            <span className="font-heading text-xl font-bold tracking-tight">{t.appName}</span>
+            <img src={`${import.meta.env.BASE_URL}favicon.svg`} alt="" width={24} height={24} className="size-6 shrink-0 object-contain" />
+            <span className="flex items-baseline gap-1.5">
+              <span className="font-heading text-xl font-bold tracking-tight whitespace-nowrap">{t.appName}</span>
+              {isDemo && <span className="shrink-0 text-sm font-bold text-amber-700 dark:text-amber-300">{t.demo.badge}</span>}
+            </span>
           </Link>
           {/* Sur mobile, la navigation passe sous le logo et le sélecteur de langue reste en haut à droite. */}
           <div className="order-last flex w-full min-w-0 items-center gap-4 sm:order-none sm:w-auto">

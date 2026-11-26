@@ -6,6 +6,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { InfoTooltip } from "@/components/info-tooltip";
+import { isDemo } from "@/demo/mode";
 import { newspaperPreviewUrl } from "@/lib/api";
 import { useI18n } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
@@ -222,6 +223,7 @@ export function NewspaperDesignPicker({ design, language, onChange, footer }: {
               </div>)}
             </div>
           </fieldset>
+          <div {...(isDemo ? { "data-demo-allow": "" } : {})}>
           {!wide && <Button type="button" variant="outline" className="self-start" onClick={() => setShowPreview((value) => !value)}
             aria-expanded={showPreview} aria-controls="newspaper-style-preview">
             {showPreview ? <XIcon /> : <EyeIcon />}{showPreview ? d.previewClose : d.previewOpen}
@@ -229,6 +231,7 @@ export function NewspaperDesignPicker({ design, language, onChange, footer }: {
           {(wide || showPreview) && <DesignPreview key={attempt} id="newspaper-style-preview" url={url}
             caption={`${d.styleNames[design.newspaperStyle]} · ${d.intensities[design.colorIntensity]}`}
             onRetry={() => setAttempt((value) => value + 1)} />}
+          </div>
         </div>
         <p className="max-w-lg text-xs text-muted-foreground lg:col-start-1 lg:row-start-2">{d.saveHint}</p>
       </CardContent>

@@ -208,7 +208,7 @@ async function frenchEntries(words: readonly string[], titleOf: (word: string) =
   url.searchParams.set("rvslots", "main");
   url.searchParams.set("redirects", "1");
   url.searchParams.set("titles", words.map(titleOf).join("|"));
-  return cluesFromRevisions(words, await fetchJson(url));
+  return cluesFromRevisions(words, await fetchJson(url.toString()));
 }
 
 async function englishEntries(words: readonly string[]): Promise<WordEntry[]> {

@@ -133,3 +133,12 @@
     scroll-padding-top: calc(var(--app-header-height, 0px) + 1rem);
     }
 }
+
+/* Contrôles de la démo : pâles, pour montrer qu'ils ne se modifient pas. L'aperçu reste net. */
+.demo-lock :is(button, input:not(.sr-only), select, textarea, label, a):not([data-demo-allow], [data-demo-allow] *) {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+.demo-lock label :is(button, input, select, textarea) {
+  opacity: 1;
+}

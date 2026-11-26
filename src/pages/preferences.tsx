@@ -5,6 +5,8 @@ import { FOOD_RESTRICTIONS, GAME_KINDS, isProteinAllowed, LANGUAGES, maxNewsTopi
 import { settingsUpdateSchema, validationMessage, type SettingsUpdate } from "@shared/schemas";
 import { CircleDotIcon, Loader2Icon, SaveIcon } from "lucide-react";
 import { toast } from "sonner";
+import { DemoBanner, DemoLock } from "@/components/demo-lock";
+import { isDemo } from "@/demo/mode";
 import { PageHeader } from "@/components/layout";
 import { NewspaperDesignPicker } from "@/components/newspaper-design";
 import { StockList, TopicList } from "@/components/preference-lists";
@@ -51,6 +53,9 @@ export function PreferencesPage() {
   return (
     <>
       <PageHeader title={p.title} description={p.description} />
+      {isDemo && (
+        <DemoBanner title={t.demo.preferencesTitle}>{t.demo.preferencesBody}</DemoBanner>
+      )}
       {settings.isPending && <Skeleton className="h-96" />}
       {settings.isError && (
         <Alert variant="destructive">
@@ -58,7 +63,11 @@ export function PreferencesPage() {
           <AlertDescription>{errorMessage(settings.error)}</AlertDescription>
         </Alert>
       )}
-      {settings.data && <PreferencesForm saved={settings.data} />}
+      {settings.data && (
+        <DemoLock muted>
+          <PreferencesForm saved={settings.data} />
+        </DemoLock>
+      )}
     </>
   );
 }

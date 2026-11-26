@@ -23,11 +23,18 @@ const READER_STYLES = `
 `;
 
 /** Plein écran pour lire le journal ; les commandes ne font jamais partie des pages imprimées. */
-export function withReaderControls(html: string, editionId: string, language: Language): string {
+export function withReaderControls(
+  html: string,
+  editionId: string,
+  language: Language,
+  links?: { back: string; download: string },
+): string {
   const t = journalText(language).readerControls;
+  const back = links?.back ?? `/editions/${editionId}`;
+  const download = links?.download ?? `/api/editions/${editionId}/pdf?telecharger=1`;
   const toolbar = `<nav class="reader-controls" lang="${language}">
-<a href="/editions/${escapeHtml(editionId)}">${escapeHtml(t.back)}</a>
-<a class="download" href="/api/editions/${escapeHtml(editionId)}/pdf?telecharger=1" download>${escapeHtml(t.download)}</a>
+<a href="${escapeHtml(back)}">${escapeHtml(t.back)}</a>
+<a class="download" href="${escapeHtml(download)}" download>${escapeHtml(t.download)}</a>
 </nav>`;
   return html
     .replace("</head>", () => `<style>${READER_STYLES}</style></head>`)

@@ -1,0 +1,447 @@
+<!doctype html>
+<html lang="en-CA">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>My Morning Paper — Tuesday, November 24, 2026</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=Source+Serif+4:opsz,wght@8..60,400;8..60,600&display=swap" rel="stylesheet">
+<style>
+@page { size: Letter; margin: 0.4in; }
+* { box-sizing: border-box; }
+html, body { margin: 0; padding: 0; }
+body {
+  font-family: "Source Serif 4", Georgia, "Times New Roman", serif;
+  font-size: 9.5pt;
+  line-height: 1.3;
+  color: #1a1a1a;
+  background: #fff;
+  -webkit-print-color-adjust: exact;
+  print-color-adjust: exact;
+}
+.page { width: 100%; max-width: 7.7in; margin: 0 auto; }
+@media screen {
+  body { background: #f4f1ea; padding: 0.25in 0; }
+  .page { max-width: 8.5in; padding: 0.4in; background: #fff; box-shadow: 0 1px 4px rgba(0, 0, 0, 0.12); }
+  .page + .page { margin-top: 0.25in; }
+}
+/* Chaque page a une hauteur fixe pour ne jamais déborder sur une feuille de plus. */
+.two-pages .page, .multi-pages .page { display: flex; flex-direction: column; height: 10.2in; overflow: hidden; }
+@media screen { .two-pages .page, .multi-pages .page { height: 11in; } }
+.two-pages .columns, .multi-pages .columns, .two-pages .news-columns, .multi-pages .news-columns { flex: 1; min-height: 0; }
+.page-2, .page-3, .page-4 { break-before: page; }
+.multi-pages .page-2 .markets { flex: none; margin: 0 0 8pt; padding-bottom: 4pt; border-bottom: 3px double #1a1a1a; }
+.masthead { border-bottom: 3px double #1a1a1a; padding-bottom: 4pt; margin-bottom: 4pt; }
+.dateline { display: flex; justify-content: space-between; font-size: 8.5pt; text-transform: uppercase; letter-spacing: 0.06em; border-bottom: 1px solid #1a1a1a; padding-bottom: 3pt; }
+/* « 6 h 30 » garde ses minuscules : en capitales, l'abréviation de l'heure deviendrait « 6 H 30 ». */
+.gen-time { text-transform: none; }
+.dateline-time { display: flex; flex-wrap: wrap; align-items: center; gap: 0 4pt; }
+.current-weather { display: inline-flex; align-items: center; gap: 3pt; padding-left: 5pt; margin-left: 2pt; border-left: 1px solid #c8c2b5; font-size: 8pt; text-transform: none; letter-spacing: 0; white-space: nowrap; }
+.current-weather .wx-icon { width: 12pt; height: 12pt; }
+h1 { font-family: "Playfair Display", Georgia, serif; font-weight: 900; font-size: 34pt; text-align: center; margin: 4pt 0 6pt; letter-spacing: -0.01em; }
+.subhead { display: flex; justify-content: space-between; align-items: center; gap: 10pt; border-top: 1px solid #1a1a1a; padding-top: 5pt; }
+blockquote { margin: 0; font-style: italic; flex: 1; }
+.wx-icon { display: block; flex: none; color: var(--accent, #1a1a1a); }
+.wx-cloud { fill: var(--wx-bg, #fff); }
+.columns { display: grid; grid-template-columns: 1.15fr 1fr; gap: 14pt; }
+.col + .col { border-left: 1px solid #c8c2b5; padding-left: 14pt; }
+section { margin-bottom: 9pt; break-inside: avoid; }
+h2 { font-family: "Playfair Display", Georgia, serif; font-size: 12.5pt; margin: 0 0 4pt; padding-bottom: 2pt; border-bottom: 1.5px solid #1a1a1a; }
+ul, ol { list-style: none; margin: 0; padding: 0; }
+li { padding: 3pt 0; border-bottom: 1px dotted #c8c2b5; }
+li:last-child { border-bottom: none; }
+.title { font-weight: 600; }
+.meta { color: #5c564b; font-size: 8pt; }
+.summary { font-size: 8.8pt; }
+.empty { color: #5c564b; font-style: italic; margin: 2pt 0; }
+.event { display: grid; grid-template-columns: 1.15in 1fr; gap: 6pt; }
+html[lang^="en"] .event { grid-template-columns: 1.3in 1fr; }
+.event .when { font-weight: 600; font-variant-numeric: tabular-nums; }
+.row { display: flex; justify-content: space-between; align-items: baseline; gap: 6pt; }
+.from { font-size: 8.5pt; text-transform: uppercase; letter-spacing: 0.04em; }
+.badge { font-size: 7pt; text-transform: uppercase; letter-spacing: 0.05em; padding: 0 4pt; border: 1px solid currentColor; border-radius: 2pt; white-space: nowrap; }
+.badge.high { color: #9b1c1c; }
+.badge.medium { color: #8a5a00; }
+.badge.low { color: #5c564b; }
+.highlight { background: #f4f1ea; padding: 6pt 8pt; border: 1px solid #1a1a1a; }
+.priorities li { display: flex; gap: 6pt; align-items: flex-start; border-bottom-color: #d9d3c6; }
+.box { flex: none; width: 8pt; height: 8pt; border: 1px solid #1a1a1a; margin-top: 3pt; }
+.tag { font-size: 7.5pt; text-transform: uppercase; letter-spacing: 0.04em; font-weight: 600; }
+footer { margin-top: 6pt; padding-top: 4pt; border-top: 1px solid #1a1a1a; text-align: center; font-size: 7.5pt; color: #5c564b; }
+.minihead { display: grid; grid-template-columns: 1fr auto 1fr; align-items: baseline; gap: 12pt; border-bottom: 3px double #1a1a1a; padding-bottom: 4pt; margin-bottom: 8pt; font-size: 8.5pt; text-transform: uppercase; letter-spacing: 0.06em; }
+.minihead > div:last-child { text-align: right; }
+.minihead h2 { font-size: 20pt; font-weight: 900; text-transform: none; letter-spacing: -0.01em; border: none; margin: 0; padding: 0; }
+/* La sélection est mesurée avant d'enregistrer le HTML statique et de produire le PDF. */
+.news-columns { flex: 1; min-height: 0; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14pt; }
+.news-column { position: relative; min-height: 0; min-width: 0; display: flex; flex-direction: column; }
+.news-column + .news-column::before { content: ""; position: absolute; left: -7pt; top: 0; bottom: 0; border-left: 1px solid #c8c2b5; }
+.news-stack { flex: 1; min-height: 0; }
+.news-group { margin-bottom: 8pt; break-inside: auto; }
+.news-group h3 { font-family: "Playfair Display", Georgia, serif; font-size: 11.5pt; margin: 0 0 2pt; padding-bottom: 2pt; border-bottom: 1.5px solid #1a1a1a; break-inside: avoid; break-after: avoid; }
+.news-group .kicker { display: block; font-family: "Source Serif 4", Georgia, serif; font-size: 7pt; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; color: #5c564b; }
+.news-group li { break-inside: avoid; }
+.news-group .title { overflow-wrap: anywhere; }
+.news-group .meta, .news-label { display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.front-feature { flex: none; display: grid; grid-template-columns: 1fr 1fr; gap: 14pt; margin-top: 8pt; padding-top: 6pt; border-top: 3px double #1a1a1a; }
+.front-feature .game-slot { margin-top: 0; padding-top: 0; border-top: none; }
+.front-local-news { min-width: 0; }
+.front-local-news .news-group { margin-bottom: 0; }
+.front-local-news .news-group h3 { font-size: 10pt; }
+.front-local-news .news-group li { padding: 2pt 0; }
+/* Articles locaux sous les définitions : texte réduit, deux colonnes, dans la seule hauteur laissée par la grille. */
+.g-extra .news-group { margin: 0; }
+.g-extra .news-group h3 { display: flex; align-items: baseline; gap: 4pt; margin-bottom: 2pt; font-size: 9.5pt; }
+.g-extra .news-label { min-width: 0; }
+.g-extra .news { column-count: 2; column-gap: 10pt; }
+.g-extra .news-group li { padding: 0 0 3pt; border: none; }
+.g-extra .title { font-size: 8.5pt; line-height: 1.15; }
+.g-extra .news-summary { margin: 1pt 0; font-size: 7pt; line-height: 1.15; }
+.g-extra .meta { font-size: 6.5pt; line-height: 1.15; }
+/* Bande boursière : indices, puis titres personnalisés en rangées de sept. */
+.page-1 .markets { flex: none; margin: 3pt 0 0; padding-top: 2pt; border-top: 1px solid #1a1a1a; }
+.market-overview { display: grid; grid-template-columns: auto; grid-auto-columns: minmax(0, 1fr); grid-auto-flow: column; align-items: center; gap: 0 6pt; }
+.page-1 .markets + .game-slot, .page-1 .markets + .front-feature { margin-top: 4pt; }
+.markets h2 { margin: 0; padding: 0 2pt 0 0; border: 0; font-size: 10pt; line-height: 1.05; max-width: 0.95in; }
+.markets-when { display: block; margin-top: 1pt; font-family: "Source Serif 4", Georgia, serif; font-size: 5.5pt; font-weight: 400; line-height: 1.05; text-transform: uppercase; letter-spacing: 0.04em; color: #5c564b; }
+.market-overview ul { display: contents; }
+.market-watchlist { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 4pt 0; margin-top: 4pt; padding-top: 4pt; border-top: 1px solid #c8c2b5; }
+.market-watchlist li:nth-child(7n + 1) { border-left: 0; padding-left: 0; }
+.market-watchlist li:nth-child(n + 8) { border-top: 1px solid #c8c2b5; padding-top: 4pt; }
+.market-watchlist .mk-value { font-size: 8pt; }
+.market-watchlist .mk-name { overflow-wrap: anywhere; white-space: normal; }
+.market-categories { gap: 0; padding-top: 0; border-top: 0; }
+.market-group { min-width: 0; padding: 2pt 3pt; border-top: 1px solid #c8c2b5; }
+.market-group ul { display: grid; grid-template-columns: repeat(var(--stock-columns), minmax(0, 1fr)); }
+.market-group li:first-child { border-left: 0; padding-left: 0; }
+.mk-category { min-height: 5.5pt; font-size: 5.5pt; font-weight: 600; line-height: 1; margin-bottom: 1pt; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.markets li { min-width: 0; padding: 0 0 0 6pt; border: 0; border-left: 1px solid #c8c2b5; line-height: 1.05; white-space: nowrap; }
+.mk-name { display: block; font-size: 6pt; text-transform: uppercase; letter-spacing: 0.05em; color: #5c564b; }
+.mk-value { display: block; font-size: 8pt; font-weight: 600; font-variant-numeric: tabular-nums; }
+.mk-change { display: flex; align-items: center; gap: 2pt; font-size: 6.5pt; font-weight: 600; font-variant-numeric: tabular-nums; }
+.mk-change.up { color: #1f6b3a; }
+.mk-change.down { color: #9b1c1c; }
+.mk-arrow { width: 5pt; height: 5pt; fill: currentColor; }
+.mk-change.down .mk-arrow { transform: rotate(180deg); }
+.game-slot { flex: none; margin-top: 8pt; padding-top: 6pt; border-top: 3px double #1a1a1a; display: flex; justify-content: center; }
+.solution-slot { flex: none; align-self: flex-end; max-width: 100%; margin-top: 8pt; padding: 4pt; border: 1px solid #c8c2b5; }
+.news-summary { margin: 2pt 0; font-size: 7.5pt; line-height: 1.15; overflow-wrap: anywhere; }
+.omitted { margin: 3pt 0 0; font-size: 7pt; line-height: 1.15; color: #5c564b; font-style: italic; }
+/* Journées chargées : trois colonnes et extraits raccourcis, sans masquer d'élément. */
+.compact .columns { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 9pt; font-size: 8pt; line-height: 1.15; }
+.compact .col + .col { padding-left: 9pt; }
+.compact .columns li { padding: 1pt 0; }
+.compact .columns h2 { font-size: 11pt; }
+.compact .columns .event { grid-template-columns: 0.66in minmax(0, 1fr); gap: 3pt; padding: 0; }
+.compact .event .when { font-size: 7pt; overflow-wrap: anywhere; }
+.compact .title, .compact .summary, .compact .priorities li > div > div:first-child, .compact .reminders li {
+  display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow: hidden; overflow-wrap: anywhere;
+}
+.compact .meta { font-size: 7pt; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.compact .summary { font-size: 8pt; }
+.compact .from { font-size: 7pt; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.compact .badge { font-size: 6pt; }
+.compact .highlight { padding: 4pt; }
+.daily.page { display: flex; flex-direction: column; height: 10.2in; }
+@media screen { .daily.page { height: 11in; } }
+.daily .masthead, .daily footer { flex: none; }
+.daily .columns { flex: 1; min-height: 0; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12pt; }
+/* Après la mesure, seul le pied de page reste ancré en bas : aucun vide avant la bourse. */
+.daily[data-page-layout="ready"] .columns { flex: none; }
+.daily[data-page-layout="ready"] footer { margin-top: auto; }
+.daily.compact .columns { grid-template-columns: repeat(3, minmax(0, 1fr)); font-size: 8.5pt; line-height: 1.22; gap: 9pt; }
+.daily .col { display: flex; flex-direction: column; gap: 7pt; min-width: 0; min-height: 0; }
+.daily .col + .col { padding-left: 0; border: none; }
+.daily section { flex: none; margin: 0; display: flow-root; }
+.daily .columns p { margin: 3pt 0; }
+.daily .columns [hidden] { display: none; }
+.daily .columns .event { display: block; }
+.daily.compact .event .when { font-size: 8pt; }
+.daily .title, .daily .summary, .daily .priorities li > div > div:first-child, .daily .reminders li { display: block; overflow: visible; }
+.daily .meta { white-space: normal; overflow-wrap: anywhere; }
+.daily .recipe .title { margin-top: 2pt; }
+.daily a { color: inherit; }
+.daily .recipe-photo { float: right; width: 75pt; margin: 4pt 0 4pt 6pt; }
+.daily .recipe-photo img { display: block; width: 75pt; height: 52.5pt; object-fit: cover; }
+.daily .recipe-photo figcaption { font-size: 6pt; line-height: 1.15; color: #5c564b; }
+.daily .recipe-steps { clear: both; list-style: decimal; padding-left: 12pt; }
+.daily .recipe-steps li { padding: 2pt 0; }
+.daily .daily-safety { font-size: 7pt; line-height: 1.2; color: #5c564b; }
+.daily.tight .columns { font-size: 8pt; line-height: 1.15; }
+.daily.tight .col { gap: 5pt; }
+.daily.tight .columns h2 { font-size: 10.5pt; margin-bottom: 3pt; }
+.daily.tight .columns p { margin: 2pt 0; }
+.daily.tight .recipe-steps li { padding: 1pt 0; }
+.daily.tight .g-sudoku td { width: 0.30in; height: 0.30in; }
+.daily.tight .g-kenken td { width: 0.4in; height: 0.4in; }
+.daily.tight .g-kakuro td { width: 0.4in; height: 0.4in; }
+.daily.tight .g-search td { width: 0.18in; height: 0.18in; font-size: 7.5pt; }
+.daily.tight .g-jumbles { gap: 2pt 8pt; }
+.daily.tight .g-jumble-boxes .g-box { width: 0.2in; height: 0.2in; }
+.daily.tight .g-jumble-final .g-box { width: 0.26in; height: 0.26in; }
+.daily.tight .g-jumble-final { margin-top: 3pt; }
+.daily.tight .g-jumble-mix { font-size: 9pt; }
+.daily.tight .g-crypto-cell { width: 0.26in; }
+.daily.tight .g-crypto-cell b { height: 0.24in; line-height: 0.24in; }
+.daily.tight .g-rung { padding: 2pt 0; }
+.daily.tight .g-rung .g-box { width: 0.3in; height: 0.3in; }
+.daily.tight .g-rung .g-filled { font-size: 12pt; line-height: 0.3in; }
+.daily.tight .g-cross td, .daily.tight .g-code td { width: 0.22in; height: 0.22in; }
+.daily.tight .g-instr { margin-bottom: 4pt; }
+.daily.tight.many-stocks .g-sudoku td { width: 0.27in; height: 0.27in; }
+.daily.tight.many-stocks .g-kenken td { width: 0.36in; height: 0.36in; }
+.daily.tight.many-stocks .g-kakuro td { width: 0.36in; height: 0.36in; }
+.daily.tight.many-stocks .g-cross td, .daily.tight.many-stocks .g-code td { width: 0.21in; height: 0.21in; }
+.daily.tight.many-stocks .game-slot, .daily.tight.many-stocks .front-feature { margin-top: 2pt; padding-top: 4pt; }
+.daily.tight.many-stocks .front-feature .game-slot { margin-top: 0; padding-top: 0; }
+.daily.tight.many-stocks .masthead h1 { margin-top: 2pt; margin-bottom: 3pt; }
+.daily.tight.many-stocks .col { gap: 4pt; }
+.quote-label { display: block; font-size: 7pt; font-style: normal; font-weight: 600; text-transform: uppercase; margin-bottom: 2pt; }
+.forecast { flex: 0 0 67%; min-width: 0; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 5pt; border-left: 1px solid #c8c2b5; padding-left: 7pt; font-size: 7pt; line-height: 1.2; }
+.forecast-summary { flex: 0 0 60%; text-align: right; font-size: 8pt; }
+.forecast strong { display: block; margin-bottom: 2pt; }
+.forecast > div { display: flex; align-items: flex-start; gap: 3pt; }
+.forecast .wx-icon { width: 15pt; height: 15pt; }
+.forecast .wx-text { min-width: 0; }
+.forecast .meta { font-size: 6pt; }
+
+.g-game { width: 100%; max-width: 7.6in; margin-bottom: 0; color: #1a1a1a; font-family: "Source Serif 4", Georgia, "Times New Roman", serif; font-size: 9pt; line-height: 1.25; break-inside: avoid; page-break-inside: avoid; }
+.g-game *, .g-game *::before, .g-game *::after { box-sizing: border-box; }
+.g-title { font-family: "Playfair Display", Georgia, serif; font-size: 11.5pt; font-weight: 700; margin: 0 0 2pt; padding-bottom: 1pt; border-bottom: 1.5px solid #1a1a1a; }
+.g-instr { margin: 0 0 6pt; font-size: 8pt; font-style: italic; }
+.g-body { display: flex; align-items: stretch; gap: 0.25in; }
+.g-board { flex: none; }
+.g-side { flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; gap: 6pt; }
+/* Reste de la hauteur de la grille : sa taille ne dépend jamais de son contenu, donc le bloc ne grandit pas. */
+.g-extra { flex: 1 1 0; min-height: 0; overflow: hidden; }
+.g-extra:empty { display: none; }
+.g-kind-sudoku .g-body, .g-kind-kenken .g-body, .g-kind-kakuro .g-body { justify-content: center; }
+.g-kind-jumble .g-body, .g-kind-cryptogram .g-body, .g-kind-wordsearch .g-body, .g-kind-wordladder .g-body { display: block; }
+.g-kind-jumble .g-board, .g-kind-cryptogram .g-board, .g-kind-wordsearch .g-board, .g-kind-wordladder .g-board { width: 100%; }
+.g-kind-sudoku .g-side { flex: none; }
+.g-jumbles { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 4pt 12pt; width: 100%; }
+.g-jumble-item, .g-jumble-final { min-width: 0; text-align: center; }
+.g-jumble-mix, .g-jumble-boxes, .g-jumble-final, .g-sol-line { margin: 0; }
+.g-jumble-mix { font-size: 11pt; font-weight: 700; letter-spacing: 0.05em; }
+.g-jumble-boxes, .g-jumble-word { font-size: 0; line-height: 0; }
+.g-jumble-final { display: flex; flex-wrap: wrap; justify-content: center; gap: 6pt 14pt; width: 100%; margin-top: 6pt; }
+.g-jumble-word { display: inline-flex; }
+.g-box { display: inline-block; width: 0.32in; height: 0.32in; margin: 0 1pt; border: 1px solid #1a1a1a; vertical-align: top; }
+.g-jumble-boxes .g-box { width: 0.32in; height: 0.32in; }
+.g-jumble-final .g-box { width: 0.38in; height: 0.38in; }
+.g-box-o { border-radius: 50%; }
+.g-filled { font-size: 13pt; font-weight: 700; line-height: 0.32in; text-align: center; }
+.g-sol-line { max-width: 2.15in; margin-left: auto; margin-right: auto; font-size: 7pt; font-weight: 700; letter-spacing: 0.03em; line-height: 1.35; }
+.g-circle { display: inline-block; min-width: 0.85em; border: 1px solid #1a1a1a; border-radius: 50%; line-height: 1.1; text-align: center; }
+.g-crypto { display: flex; flex-wrap: wrap; gap: 5pt 10pt; width: 100%; }
+.g-crypto-word { display: inline-flex; align-items: flex-end; }
+.g-crypto-punct { font-size: 12pt; font-weight: 700; padding: 0 1pt 2pt; }
+.g-crypto-cell { display: inline-flex; flex-direction: column; width: 0.3in; }
+.g-crypto-cell i { font-style: normal; font-size: 8pt; font-weight: 700; text-align: center; line-height: 1.1; }
+.g-crypto-cell b { display: block; height: 0.28in; border: 1px solid #1a1a1a; font-weight: 700; text-align: center; line-height: 0.28in; }
+.g-crypto-key { display: flex; flex-wrap: wrap; gap: 2pt 3pt; width: 100%; margin-top: 8pt; padding-top: 4pt; border-top: 1px solid #1a1a1a; }
+.g-plain { margin: 0; letter-spacing: 0.02em; line-height: 1.35; }
+.g-solution .g-plain { max-width: 2.1in; font-size: 7pt; }
+.g-search-wrap { display: flex; align-items: flex-start; gap: 12pt; width: 100%; }
+.g-search td { width: 0.24in; height: 0.24in; border: 0.4pt solid #8a8a8a; font-size: 9pt; font-weight: 700; }
+.g-search { border: 1.5px solid #1a1a1a; flex: none; }
+.g-search.g-mini td { width: 0.1in; height: 0.1in; font-size: 5pt; }
+.g-wordlist { flex: 1; columns: 2; margin: 0; padding: 0; list-style: none; font-size: 9pt; letter-spacing: 0.03em; }
+.g-wordlist li { break-inside: avoid; padding: 1pt 0; }
+.g-ladders { display: grid; gap: 4pt 12pt; width: 100%; }
+.g-ladders.g-cols-2 { grid-template-columns: 1fr 1fr; }
+.g-ladders.g-cols-3 { grid-template-columns: 1fr 1fr 1fr; }
+.g-ladder { min-width: 0; }
+.g-ladder-label { grid-column: 1 / -1; margin: 0; font-size: 9pt; font-weight: 700; letter-spacing: 0.06em; text-align: center; }
+.g-ladder-next { margin: 1pt 0 0; font-size: 11pt; font-weight: 700; text-align: center; }
+.g-ladder-rails { border-left: 5px solid #1a1a1a; border-right: 5px solid #1a1a1a; padding: 0 6pt; }
+.g-rung { display: flex; justify-content: center; gap: 3pt; border-top: 3px solid #1a1a1a; padding: 3pt 0; }
+.g-rung:last-child { border-bottom: 3px solid #1a1a1a; }
+.g-rung .g-box { width: var(--g-box, 0.34in); height: var(--g-box, 0.34in); }
+.g-rung .g-filled { font-size: 12pt; line-height: var(--g-box, 0.34in); }
+.g-across-rails { display: flex; align-items: stretch; border-top: 5px solid #1a1a1a; border-bottom: 5px solid #1a1a1a; }
+.g-across .g-rung { flex-direction: column; border-top: 0; border-bottom: 0; border-left: 3px solid #1a1a1a; padding: 0 3pt; }
+.g-across .g-rung:last-child { border-right: 3px solid #1a1a1a; border-bottom: 0; }
+.g-kenken, .g-kakuro { border: 1.5px solid #1a1a1a; }
+.g-kenken td { width: 0.44in; height: 0.44in; border: 0.4pt solid #b5b5b5; font-size: 12pt; font-weight: 700; }
+.g-kenken td.g-edge-r { border-right: 1.5pt solid #1a1a1a; }
+.g-kenken td.g-edge-b { border-bottom: 1.5pt solid #1a1a1a; }
+.g-kenken .g-n { font-size: 7pt; }
+.g-kenken.g-mini td { width: 0.16in; height: 0.16in; font-size: 6.5pt; }
+.g-kenken.g-mini .g-n { display: none; }
+.g-kakuro td { width: 0.44in; height: 0.44in; border: 0.6pt solid #1a1a1a; font-size: 11pt; font-weight: 700; position: relative; }
+.g-kakuro td.g-black { background: #1a1a1a; }
+.g-kakuro td.g-clue { background: linear-gradient(to top right, #fff 49%, #1a1a1a 49%, #1a1a1a 51%, #fff 51%); padding: 0; }
+.g-kdown, .g-kacross { position: absolute; color: #1a1a1a; font-size: 7pt; font-weight: 700; line-height: 1; }
+.g-kdown { top: 1pt; right: 2pt; }
+.g-kacross { bottom: 1pt; left: 2pt; }
+.g-kakuro.g-mini td { width: 0.14in; height: 0.14in; font-size: 6pt; }
+.g-kakuro.g-mini .g-kdown, .g-kakuro.g-mini .g-kacross { font-size: 3.5pt; }
+.g-caption { font-family: "Playfair Display", Georgia, serif; font-size: 8pt; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; margin: 0 0 2pt; }
+
+.g-grid { border-collapse: collapse; table-layout: fixed; width: auto; }
+.g-grid td { padding: 0; position: relative; text-align: center; vertical-align: middle; line-height: 1; }
+.g-n { position: absolute; top: 0.6pt; left: 1pt; font-size: 5.5pt; font-weight: 400; line-height: 1; }
+
+.g-sudoku { border: 2px solid #1a1a1a; }
+.g-sudoku td { width: 0.34in; height: 0.34in; border: 0.5pt solid #8a8a8a; font-size: 13pt; font-weight: 600; }
+.g-sudoku td.g-r3 { border-right: 1.5pt solid #1a1a1a; }
+.g-sudoku tr.g-b3 td { border-bottom: 1.5pt solid #1a1a1a; }
+.g-sudoku.g-mini { border-width: 1px; }
+.g-sudoku.g-mini td { width: 0.13in; height: 0.13in; border-width: 0.25pt; font-size: 6pt; font-weight: 400; }
+.g-sudoku.g-mini td.g-r3 { border-right-width: 0.9pt; }
+.g-sudoku.g-mini tr.g-b3 td { border-bottom-width: 0.9pt; }
+
+.g-cross td { width: 0.25in; height: 0.25in; border: none; }
+.g-cross td.g-cell { border: 1px solid #1a1a1a; background: #e9e3d3; }
+.g-cross.g-mini td { width: 0.1in; height: 0.1in; font-size: 5.5pt; }
+.g-cross.g-mini td.g-cell { border-width: 0.5pt; }
+
+.g-clues { display: grid; grid-template-columns: 1fr 1fr; gap: 0 10pt; font-size: 7.5pt; line-height: 1.22; }
+.g-clues ol { list-style: none; margin: 0; padding: 0; }
+.g-clues li { display: flex; gap: 3pt; padding: 0 0 1.5pt; border: none; }
+.g-clues li b { flex: none; min-width: 10pt; text-align: right; font-weight: 600; }
+.g-credit { margin: 3pt 0 0; font-size: 6.5pt; color: #5c564b; }
+
+.g-code td { width: 0.26in; height: 0.26in; border: none; }
+.g-code td.g-cell { border: 1px solid #1a1a1a; vertical-align: bottom; padding-bottom: 1pt; font-size: 10pt; font-weight: 600; }
+.g-key td { width: 0.26in; height: 0.34in; border: 0.75pt solid #1a1a1a; vertical-align: bottom; padding-bottom: 1.5pt; font-size: 10pt; font-weight: 600; }
+.g-key td.g-unused { background: #e2e2e2; }
+.g-alpha td { width: 0.26in; height: 0.19in; font-size: 8pt; }
+.g-alpha td.g-used { text-decoration: line-through; color: #8a8a8a; }
+.g-keymini td { width: 0.165in; height: 0.22in; border: 0.4pt solid #1a1a1a; font-size: 6pt; vertical-align: bottom; padding-bottom: 0.8pt; }
+.g-keymini .g-n { font-size: 4.5pt; top: 0.4pt; left: 0.6pt; }
+
+.g-answer { width: auto; max-width: 100%; }
+.g-solution { transform: rotate(180deg); text-align: center; }
+.g-sol-label { font-size: 6.5pt; text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 1.5pt; }
+.g-solution .g-grid { margin: 0 auto; }
+
+body {
+  --ink: #192638; --accent: #203e60; --secondary: #8b3547;
+  --muted: #536172; --wash: #edf2f7; --line: #b8c7d8;
+  --heading-font: "Playfair Display", Georgia, serif;
+  color: var(--ink);
+}
+.masthead, .dateline, .subhead, .minihead, footer, .game-slot, .front-feature, .page-1 .markets { border-color: var(--accent); }
+.masthead h1, .daily .columns h2, .news-group h3, .minihead h2, .g-title, .markets h2 {
+  color: var(--accent); font-family: var(--heading-font); border-color: var(--accent);
+}
+.current-weather, .forecast strong { color: var(--accent); }
+.meta, .empty, footer, .omitted, .daily .daily-safety, .news-group .kicker, .mk-name, .markets-when { color: var(--muted); }
+.quote-label, .tag, .news-group .kicker { color: var(--secondary); }
+.forecast, .solution-slot, li, .col + .col, .news-column + .news-column::before, .markets li { border-color: var(--line); }
+.highlight { background: var(--wash); border-color: var(--accent); }
+.priorities li { border-color: var(--line); }
+.box { border-color: var(--accent); }
+.g-solution { color: #1a1a1a; }
+
+    .masthead { border-bottom: 4px double var(--accent); }
+    .masthead h1 { letter-spacing: -0.035em; }
+    .quote-label, .news-group .kicker { color: var(--secondary); }
+    .minihead { border-top: 2pt solid var(--accent); padding-top: 5pt; }
+  
+
+.masthead h1 { background: var(--accent); color: #ffffff; padding: 0 8pt; }
+.minihead { background: var(--accent); color: #ffffff; padding: 6pt 7pt; border: 0; }
+.minihead h2 { color: #ffffff; }
+.daily .columns h2, .news-group h3 { background: var(--wash); padding: 0 4pt 2pt; border-bottom: 1.5px solid var(--secondary); }
+.forecast { background: var(--wash); --wx-bg: var(--wash); padding: 5pt 5pt 0; border: 0; }
+.game-slot, .front-feature { border-top: 3px solid var(--secondary); }
+.g-title { background: var(--wash); padding: 0 5pt 2pt; border-bottom: 1.5px solid var(--accent); }
+.solution-slot { border-color: var(--secondary); }
+
+</style>
+<style>
+.reader-controls { display: none; }
+@media screen {
+  body { padding-top: calc(4.5rem + env(safe-area-inset-top)); }
+  .page { width: 8.5in; max-width: none; }
+  .reader-controls {
+    position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+    display: flex; flex-wrap: wrap; align-items: center; gap: 0.6rem 1rem;
+    padding: calc(0.75rem + env(safe-area-inset-top)) 1rem 0.75rem;
+    background: white; border-bottom: 1px solid #ccc; color: #1a1a1a;
+    font: 16px/1.4 system-ui, sans-serif;
+  }
+  .reader-controls a { color: inherit; }
+  .reader-controls a.download {
+    font: inherit; padding: 0.6rem 1rem; border: 0; border-radius: 0.4rem;
+    background: #222; color: white; text-decoration: none;
+  }
+}
+</style></head>
+<body class="two-pages"><nav class="reader-controls" lang="en">
+<a href="/morning-press/editions/22222222-2222-4222-8222-222222222222">Back to the paper</a>
+<a class="download" href="/morning-press/demo/editions/22222222-2222-4222-8222-222222222222.en.pdf" download>Download</a>
+</nav>
+<main class="page page-1 daily compact" data-page-layout="ready">
+  <header class="masthead">
+    <div class="dateline">
+      <div class="dateline-time">Tuesday, November 24, 2026 · <span class="gen-time">6:30 a.m.</span><span class="current-weather" title="Sunny spells"><svg class="wx-icon" data-weather-icon="moon-cloud" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M7.54 4.12A4.8 4.8 0 1 0 13.28 9.86A4.22 4.22 0 0 1 7.54 4.12Z"/><path class="wx-cloud" d="M10.81 21.4A2.81 2.81 0 0 1 10.54 15.79A4.14 4.14 0 0 1 18.78 15.79A2.81 2.81 0 1 1 18.51 21.4Z"/></svg><span>3 °C</span></span></div>
+      <div>Montréal, Québec</div>
+    </div>
+    <h1>My Morning Paper</h1>
+    <div class="subhead">
+      <blockquote><span class="quote-label">Quote of the day</span>“All good things come to those who wait.”</blockquote>
+      <div class="forecast"><div data-weather-period="morning"><svg class="wx-icon" data-weather-icon="partly" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><circle cx="8.2" cy="8.2" r="3.4"/><path d="M3.2 8.2L1.2 8.2M4.66 4.66L3.25 3.25M8.2 3.2L8.2 1.2M11.74 4.66L13.15 3.25M4.66 11.74L3.25 13.15"/><path class="wx-cloud" d="M10.81 21.4A2.81 2.81 0 0 1 10.54 15.79A4.14 4.14 0 0 1 18.78 15.79A2.81 2.81 0 1 1 18.51 21.4Z"/></svg><div class="wx-text"><strong>Morning</strong>
+      <div>1 °C – 4 °C</div>
+      <div>Sunny spells</div><div class="meta">Precip. 10%</div></div></div><div data-weather-period="afternoon"><svg class="wx-icon" data-weather-icon="sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><circle cx="12" cy="12" r="4.2"/><path d="M18.9 12L21.9 12M16.88 16.88L19 19M12 18.9L12 21.9M7.12 16.88L5 19M5.1 12L2.1 12M7.12 7.12L5 5M12 5.1L12 2.1M16.88 7.12L19 5"/></svg><div class="wx-text"><strong>Afternoon</strong>
+      <div>4 °C – 7 °C</div>
+      <div>Sunny</div><div class="meta">Precip. 0%</div></div></div><div data-weather-period="evening"><svg class="wx-icon" data-weather-icon="moon-cloud" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M7.54 4.12A4.8 4.8 0 1 0 13.28 9.86A4.22 4.22 0 0 1 7.54 4.12Z"/><path class="wx-cloud" d="M10.81 21.4A2.81 2.81 0 0 1 10.54 15.79A4.14 4.14 0 0 1 18.78 15.79A2.81 2.81 0 1 1 18.51 21.4Z"/></svg><div class="wx-text"><strong>Evening</strong>
+      <div>2 °C – 4 °C</div>
+      <div>Sunny spells</div><div class="meta">Precip. 10%</div></div></div><div data-weather-period="night"><svg class="wx-icon" data-weather-icon="cloud" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M6.8 18.5A3.8 3.8 0 0 1 6.43 10.92A5.6 5.6 0 0 1 17.57 10.92A3.8 3.8 0 1 1 17.2 18.5Z"/></svg><div class="wx-text"><strong>Night</strong>
+      <div>0 °C – 2 °C</div>
+      <div>Cloudy</div><div class="meta">Precip. 30%</div></div></div></div>
+    </div>
+  </header>
+  <div class="columns">
+    <div class="col"><section data-page-section="priorities" class="highlight"><h2>Priorities</h2><p class="omitted" data-omitted="priorities" data-original="5" data-one="1 more item not printed to keep the page readable." data-many="99999 more items not printed to keep the page readable.">5 more items not printed to keep the page readable.</p></section><section data-page-section="events"><h2>Today</h2><ul class="events"><li data-page-item="events:0" class="event">
+  <div class="when">8:30–9:30 a.m.</div>
+  <div class="what">
+    <div class="title">Coffee with Léa on the corner</div>
+    <div class="meta">Google · Saint-Denis café · 2 participants</div>
+  </div>
+</li></ul><p class="omitted" data-omitted="events" data-original="2" data-one="1 more item not printed to keep the page readable." data-many="99999 more items not printed to keep the page readable.">2 more items not printed to keep the page readable.</p></section><section data-page-section="upcoming"><h2>The next 7 days</h2><ul><li data-page-item="upcoming:0"><div class="when">Wed, Nov 25 · 8:30 a.m.</div>
+    <div class="title">Deadline · Deadline: hand in the programme text</div>
+    <div class="meta">Google</div></li></ul><p class="omitted" data-omitted="upcoming" data-original="2" data-one="1 more item not printed to keep the page readable." data-many="99999 more items not printed to keep the page readable.">2 more items not printed to keep the page readable.</p></section></div>
+<div class="col"><section data-page-section="emails"><h2>Emails to check</h2><p class="omitted" data-omitted="emails" data-original="5" data-one="1 more item not printed to keep the page readable." data-many="99999 more items not printed to keep the page readable.">5 more items not printed to keep the page readable.</p></section><section data-page-section="exercise"><h2>Move today</h2><p>Sitting comfortably, make 5 small backward shoulder circles, then gently move your ankles for 30 seconds.</p><p>Or walk about 500 metres on an easy route, taking breaks as needed.</p><p class="daily-safety">Go at your own pace, without straining. Stop if you feel pain or unwell.</p></section><section data-page-section="fact"><h2>Did you know?</h2><p>Far more freshwater is stored underground than in rivers and lakes combined.</p><div class="meta">Source : <a href="https://www.usgs.gov/water-science-school/science/how-much-water-there-earth">USGS</a></div></section></div>
+<div class="col"><section data-page-section="reminders"><h2>Don’t forget</h2><p class="omitted" data-omitted="reminders" data-original="3" data-one="1 more item not printed to keep the page readable." data-many="99999 more items not printed to keep the page readable.">3 more items not printed to keep the page readable.</p></section><section data-page-section="recipe"><h2>Today&#39;s kitchen</h2><div class="recipe">
+    <div class="title">Lemon chickpea toast</div>
+    <div class="meta">10 min · 2 servings</div>
+    
+    <p><strong>Ingredients.</strong> 250 g cooked, rinsed chickpeas; 4 slices whole-wheat bread; 150 g tomatoes; 1 tbsp lemon juice; 1 tbsp olive oil.</p>
+    <ol class="recipe-steps"><li>Mash the chickpeas with the lemon and oil. Wash and slice the tomatoes.</li><li>Toast the bread. Spread with the chickpea mash and top with tomatoes.</li></ol>
+    <p class="daily-safety">Check labels and allergen traces. Keep cooked foods refrigerated.</p>
+    </div></section></div>
+  </div>
+  <section class="markets"><div class="market-overview"><h2>Markets<span class="markets-when">Close: Mon, Nov 23</span></h2><ul><li data-market="tsx"><span class="mk-name">S&amp;P/TSX</span><span class="mk-value">31,169.15</span><span class="mk-change down"><svg class="mk-arrow" viewBox="0 0 8 8" aria-hidden="true"><path d="M4 1 7.5 7h-7z"/></svg>0.26%</span></li><li data-market="sp500"><span class="mk-name">S&amp;P 500</span><span class="mk-value">6,814.69</span><span class="mk-change down"><svg class="mk-arrow" viewBox="0 0 8 8" aria-hidden="true"><path d="M4 1 7.5 7h-7z"/></svg>0.08%</span></li><li data-market="dow"><span class="mk-name">Dow Jones</span><span class="mk-value">47,149.76</span><span class="mk-change down"><svg class="mk-arrow" viewBox="0 0 8 8" aria-hidden="true"><path d="M4 1 7.5 7h-7z"/></svg>0.34%</span></li><li data-market="nasdaq"><span class="mk-name">Nasdaq</span><span class="mk-value">23,226.03</span><span class="mk-change up"><svg class="mk-arrow" viewBox="0 0 8 8" aria-hidden="true"><path d="M4 1 7.5 7h-7z"/></svg>0.52%</span></li><li data-market="oil"><span class="mk-name">WTI crude</span><span class="mk-value">US$74.75</span><span class="mk-change up"><svg class="mk-arrow" viewBox="0 0 8 8" aria-hidden="true"><path d="M4 1 7.5 7h-7z"/></svg>0.60%</span></li><li data-market="cad"><span class="mk-name">CDN dollar</span><span class="mk-value">US$0.7200</span><span class="mk-change up"><svg class="mk-arrow" viewBox="0 0 8 8" aria-hidden="true"><path d="M4 1 7.5 7h-7z"/></svg>0.11%</span></li></ul></div><div class="market-watchlist market-categories" aria-label="My watchlist"><div class="market-group" data-market-category="general" style="grid-row:1;grid-column:1/span 3;--stock-columns:3">
+      <div class="mk-category" aria-hidden="true"></div><ul><li data-stock="MDB"><span class="mk-name" title="MongoDB, Inc. · NASDAQ">MDB</span><span class="mk-value">277.52 USD</span><span class="mk-change down"><svg class="mk-arrow" viewBox="0 0 8 8" aria-hidden="true"><path d="M4 1 7.5 7h-7z"/></svg>1.52%</span></li><li data-stock="TSLA"><span class="mk-name" title="Tesla, Inc. · NASDAQ">TSLA</span><span class="mk-value">332.63 USD</span><span class="mk-change up"><svg class="mk-arrow" viewBox="0 0 8 8" aria-hidden="true"><path d="M4 1 7.5 7h-7z"/></svg>0.24%</span></li><li data-stock="SNOW"><span class="mk-name" title="Snowflake Inc. · NYSE">SNOW</span><span class="mk-value">165.66 USD</span><span class="mk-change up"><svg class="mk-arrow" viewBox="0 0 8 8" aria-hidden="true"><path d="M4 1 7.5 7h-7z"/></svg>1.90%</span></li></ul></div><div class="market-group" data-market-category="686ff587-7d2d-462c-b413-15c3d8144d5e" style="grid-row:1;grid-column:4/span 3;--stock-columns:3;background:#f3eef9;border-color:#c5b3dc">
+      <div class="mk-category" title="Banques/Assurances">Banques/Assurances</div><ul><li data-stock="MFC"><span class="mk-name" title="Manulife Financial Corporation · NYSE">MFC</span><span class="mk-value">40.61 USD</span><span class="mk-change up"><svg class="mk-arrow" viewBox="0 0 8 8" aria-hidden="true"><path d="M4 1 7.5 7h-7z"/></svg>2.03%</span></li><li data-stock="IAG.TO"><span class="mk-name" title="iA Financial Corporation Inc. · Toronto">IAG.TO</span><span class="mk-value">141.31 CAD</span><span class="mk-change up"><svg class="mk-arrow" viewBox="0 0 8 8" aria-hidden="true"><path d="M4 1 7.5 7h-7z"/></svg>0.35%</span></li><li data-stock="IFC.TO"><span class="mk-name" title="Intact Financial Corporation · Toronto">IFC.TO</span><span class="mk-value">285.53 CAD</span><span class="mk-change up"><svg class="mk-arrow" viewBox="0 0 8 8" aria-hidden="true"><path d="M4 1 7.5 7h-7z"/></svg>0.34%</span></li></ul></div><div class="market-group" data-market-category="f025a0ed-f74e-4530-9fe5-9fc58ae73e65" style="grid-row:1;grid-column:7/span 1;--stock-columns:1;background:#edf4fc;border-color:#a9c5e3">
+      <div class="mk-category" title="Comp. Processor &amp; AI Hardware">Comp. Processor &amp; AI Hardware</div><ul><li data-stock="NVDA"><span class="mk-name" title="NVIDIA Corporation · NASDAQ">NVDA</span><span class="mk-value">135.64 USD</span><span class="mk-change up"><svg class="mk-arrow" viewBox="0 0 8 8" aria-hidden="true"><path d="M4 1 7.5 7h-7z"/></svg>0.47%</span></li></ul></div><div class="market-group" data-market-category="f025a0ed-f74e-4530-9fe5-9fc58ae73e65" style="grid-row:2;grid-column:7/span 1;--stock-columns:1;background:#edf4fc;border-color:#a9c5e3">
+      <div class="mk-category" title="Comp. Processor &amp; AI Hardware">Comp. Processor &amp; AI Hardware</div><ul><li data-stock="INTC"><span class="mk-name" title="Intel Corporation · NASDAQ">INTC</span><span class="mk-value">24.11 USD</span><span class="mk-change down"><svg class="mk-arrow" viewBox="0 0 8 8" aria-hidden="true"><path d="M4 1 7.5 7h-7z"/></svg>1.73%</span></li></ul></div><div class="market-group" data-market-category="a8503f03-f72a-418c-93eb-9aef1da2d09f" style="grid-row:2;grid-column:1/span 6;--stock-columns:6;background:#fff7e6;border-color:#ddc78d">
+      <div class="mk-category" title="FAANG / MANGOS">FAANG / MANGOS</div><ul><li data-stock="OAIW"><span class="mk-name" title="OpenAI Lab Ecosystem ETF · NYSEArca">OAIW</span><span class="mk-value">33.57 USD</span><span class="mk-change up"><svg class="mk-arrow" viewBox="0 0 8 8" aria-hidden="true"><path d="M4 1 7.5 7h-7z"/></svg>0.81%</span></li><li data-stock="SPCX"><span class="mk-name" title="Space Exploration Technologies Corp. · NASDAQ">SPCX</span><span class="mk-value">142.52 USD</span><span class="mk-change up"><svg class="mk-arrow" viewBox="0 0 8 8" aria-hidden="true"><path d="M4 1 7.5 7h-7z"/></svg>1.41%</span></li><li data-stock="MSFT"><span class="mk-name" title="Microsoft Corporation · NASDAQ">MSFT</span><span class="mk-value">430.07 USD</span><span class="mk-change down"><svg class="mk-arrow" viewBox="0 0 8 8" aria-hidden="true"><path d="M4 1 7.5 7h-7z"/></svg>0.98%</span></li><li data-stock="META"><span class="mk-name" title="Meta Platforms, Inc. · NASDAQ">META</span><span class="mk-value">588.45 USD</span><span class="mk-change down"><svg class="mk-arrow" viewBox="0 0 8 8" aria-hidden="true"><path d="M4 1 7.5 7h-7z"/></svg>0.08%</span></li><li data-stock="AMZN"><span class="mk-name" title="Amazon.com, Inc. · NASDAQ">AMZN</span><span class="mk-value">218.61 USD</span><span class="mk-change up"><svg class="mk-arrow" viewBox="0 0 8 8" aria-hidden="true"><path d="M4 1 7.5 7h-7z"/></svg>1.69%</span></li><li data-stock="ANT"><span class="mk-name" title="Anthropic, PBC Class A Common Stock · NASDAQ">ANT</span><span class="mk-value">27.79 USD</span><span class="mk-change up"><svg class="mk-arrow" viewBox="0 0 8 8" aria-hidden="true"><path d="M4 1 7.5 7h-7z"/></svg>0.24%</span></li></ul></div></div></section>
+  <div class="game-slot"><section class="g-game g-kind-crossword"><h2 class="g-title">Game of the day — Crossword</h2><p class="g-instr">Solve the clues and write each answer in the grid, starting from its numbered square.</p><div class="g-body"><div class="g-board"><table class="g-grid g-cross"><tr><td class="g-cell"><span class="g-n">1</span></td><td></td><td></td><td></td><td></td><td></td><td class="g-cell"><span class="g-n">2</span></td><td></td><td></td><td></td></tr><tr><td class="g-cell"></td><td></td><td></td><td></td><td></td><td></td><td class="g-cell"></td><td></td><td></td><td></td></tr><tr><td class="g-cell"></td><td></td><td></td><td></td><td class="g-cell"><span class="g-n">3</span></td><td class="g-cell"></td><td class="g-cell"></td><td class="g-cell"></td><td class="g-cell"><span class="g-n">4</span></td><td></td></tr><tr><td class="g-cell"><span class="g-n">5</span></td><td class="g-cell"></td><td class="g-cell"></td><td class="g-cell"></td><td class="g-cell"></td><td></td><td class="g-cell"></td><td></td><td class="g-cell"></td><td></td></tr><tr><td class="g-cell"></td><td></td><td></td><td></td><td class="g-cell"></td><td></td><td class="g-cell"><span class="g-n">6</span></td><td class="g-cell"></td><td class="g-cell"></td><td class="g-cell"></td></tr><tr><td></td><td class="g-cell"><span class="g-n">7</span></td><td class="g-cell"></td><td class="g-cell"></td><td class="g-cell"></td><td></td><td class="g-cell"></td><td></td><td class="g-cell"></td><td></td></tr><tr><td></td><td class="g-cell"></td><td></td><td></td><td></td><td></td><td class="g-cell"></td><td></td><td class="g-cell"></td><td></td></tr><tr><td></td><td class="g-cell"></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr><tr><td></td><td class="g-cell"><span class="g-n">8</span></td><td class="g-cell"></td><td class="g-cell"><span class="g-n">9</span></td><td class="g-cell"></td><td></td><td></td><td class="g-cell"><span class="g-n">10</span></td><td></td><td></td></tr><tr><td></td><td></td><td></td><td class="g-cell"></td><td></td><td class="g-cell"><span class="g-n">11</span></td><td class="g-cell"></td><td class="g-cell"></td><td class="g-cell"></td><td></td></tr><tr><td></td><td></td><td></td><td class="g-cell"></td><td></td><td></td><td></td><td class="g-cell"></td><td></td><td></td></tr><tr><td></td><td class="g-cell"><span class="g-n">12</span></td><td class="g-cell"></td><td class="g-cell"></td><td class="g-cell"></td><td class="g-cell"></td><td class="g-cell"></td><td class="g-cell"></td><td></td><td></td></tr><tr><td></td><td></td><td></td><td class="g-cell"></td><td></td><td></td><td></td><td></td><td></td><td></td></tr></table></div><div class="g-side"><div class="g-clues"><div><p class="g-caption">Across</p><ol><li><b>3.</b><span>Happy face</span></li><li><b>5.</b><span>Broadcast receiver</span></li><li><b>6.</b><span>Feathered flier</span></li><li><b>7.</b><span>Hot bowl of broth</span></li><li><b>8.</b><span>It has a trunk and leaves</span></li><li><b>11.</b><span>Bearded farm animal</span></li><li><b>12.</b><span>Smart sea mammal</span></li></ol></div><div><p class="g-caption">Down</p><ol><li><b>1.</b><span>Thunder and lightning</span></li><li><b>2.</b><span>Colorful arc after a storm</span></li><li><b>3.</b><span>For washing hands</span></li><li><b>4.</b><span>Our planet</span></li><li><b>7.</b><span>Table seasoning</span></li><li><b>9.</b><span>Large bird of prey</span></li><li><b>10.</b><span>Farm building for animals</span></li></ol></div></div><div class="g-extra"><section class="news-group" data-news-group="local" data-news-group-id="local"><h3><span class="kicker">Local</span><span class="news-label" title="Montreal">Montreal</span></h3><ul class="news"><li data-news-item="local:0"><div class="title">The neighbourhood library keeps its doors open later</div><p class="news-summary">The Drolet Street library now stays open until 9 p.m. on Thursdays for people leaving work late. A homework table has lamps and outlets, and no booking is required.</p><div class="meta">Neighbourhood Gazette</div></li><li data-news-item="local:1"><div class="title">Jean-Talon Market paints a lane for bicycles</div><p class="news-summary">A painted lane now separates bicycles from the tightest stalls on Saturday mornings. Vendors asked for the path after several minor bumps between baskets and handlebars.</p><div class="meta">Demo Daily</div></li></ul></section></div></div></div></section></div>
+  <footer>
+    Generated automatically by My Morning Paper · 6:30 a.m. · Sources: Google, Outlook, Open-Meteo, Yahoo Finance, Google News
+  </footer>
+</main>
+<main class="page page-2">
+  <header class="minihead">
+    <div>My Morning Paper</div>
+    <h2>Quick read</h2>
+    <div>Tuesday, November 24, 2026</div>
+  </header>
+  <div class="news-columns"><div class="news-column" data-news-column="1">
+      <div class="news-stack"><section class="news-group" data-news-group="provincial" data-news-group-id="provincial"><h3><span class="kicker">Provincial</span><span class="news-label" title="Quebec">Quebec</span></h3><ul class="news"><li data-news-item="provincial:0"><div class="title">The Charlevoix train adds a Sunday departure</div><p class="news-summary">An extra Sunday morning departure links Quebec City to La Malbaie with no change of train. The panoramic car is open to every ticket, not only the most expensive seats.</p><div class="meta">Demo Daily</div></li><li data-news-item="provincial:1"><div class="title">Charlevoix makers open their workshops</div><p class="news-summary">A dozen ceramic, wool and wood workshops welcome visitors on Saturday. People may watch a piece being made with no need to buy, which the makers insisted on printing on the poster.</p><div class="meta">Regional Review</div></li><li data-news-item="provincial:2"><div class="title">Jacques-Cartier trails switch to their winter markings</div><p class="news-summary">The most exposed footbridges are now marked for snowshoes, not only for walking. The kilometre 10 parking lot stays open, with a shuttle on the busiest Saturdays.</p><div class="meta">Regional Review</div></li><li data-news-item="provincial:3"><div class="title">A survey of religious heritage begins in Trois-Rivières</div><p class="news-summary">Volunteers are photographing steeples, pews and stained glass before the winter work. The records will go into a public catalogue that needs no account to browse.</p><div class="meta">Morning Notebook</div></li></ul></section><section class="news-group" data-news-group="national" data-news-group-id="national"><h3><span class="kicker">National</span><span class="news-label" title="Canada">Canada</span></h3><ul class="news"><li data-news-item="national:0"><div class="title">An Ottawa lab lends its microscopes to schools</div><p class="news-summary">The federal lab is sending simple microscopes to classrooms that have none, for three weeks at a time. A one-page sheet explains how to prepare a pond-water slide without expensive gear.</p><div class="meta">National Wire</div></li><li data-news-item="national:1"><div class="title">The Winnipeg to Churchill train restores its full nights</div><p class="news-summary">Full overnight service resumes after weeks of daytime trips only. Lower berths are opened to ordinary tickets when space remains at boarding.</p><div class="meta">National Wire</div></li><li data-news-item="national:2"><div class="title">Village libraries trade crates of novels</div><p class="news-summary">Fifteen Prairie libraries rotate crates of novels their budgets could not buy twice. Each crate stays six weeks, long enough for a local waiting list to clear.</p><div class="meta">Regional Review</div></li></ul></section></div>
+      
+    </div><div class="news-column" data-news-column="2">
+      <div class="news-stack"><section class="news-group" data-news-group="american" data-news-group-id="american"><h3><span class="kicker">American</span><span class="news-label" title="United States">United States</span></h3><ul class="news"><li data-news-item="american:0"><div class="title">New England museums open one ticket-free morning</div><p class="news-summary">On the first Wednesday of the month, several museums in the region open for two hours with no ticket. The smallest rooms cap entry at the line already there at opening, to keep the rooms quiet.</p><div class="meta">Demo Daily</div></li><li data-news-item="american:1"><div class="title">Vermont&#39;s small bookshops put the bench back outside</div><p class="news-summary">A dozen bookshops have put a bench back outside, with a folded blanket for cold mornings. The book of the day sits on the bench, to be leafed through without going in if the line is long.</p><div class="meta">Morning Notebook</div></li><li data-news-item="american:2"><div class="title">Chicago schoolyards keep a winter garden strip</div><p class="news-summary">Five schools are leaving a strip of yard in perennial plants instead of salting all of it. Pupils watch which blades stay green under the snow, as part of science class.</p><div class="meta">National Wire</div></li><li data-news-item="american:3"><div class="title">A citizen count tallies birds at backyard feeders</div><p class="news-summary">A one-hour count from the window is enough to join the November survey. People need not know every name: a simple drawing is accepted.</p><div class="meta">Demo Daily</div></li></ul></section><section class="news-group" data-news-group="international" data-news-group-id="international"><h3><span class="kicker">International</span><span class="news-label" title="International">International</span></h3><ul class="news"><li data-news-item="international:0"><div class="title">Lisbon&#39;s shared gardens spend winter under low covers</div><p class="news-summary">Covers a metre high protect the salads in shared gardens without heating the air. Each plot keeps its key, and a posted calendar says who waters which week.</p><div class="meta">Elsewhere Wire</div></li><li data-news-item="international:1"><div class="title">A citizen log describes harbour noise at first light</div><p class="news-summary">Residents of three European harbours note, once a week, whether the quay wakes them before 7 a.m. The form fits on a postcard, to be left at the harbour office or the library.</p><div class="meta">Elsewhere Wire</div></li><li data-news-item="international:2"><div class="title">Seoul&#39;s night libraries lend reading lamps</div><p class="news-summary">Two libraries open at night lend a small lamp with the book, to be returned in the morning. The idea is to read outside, on the forecourt, when the room is already full.</p><div class="meta">Morning Notebook</div></li></ul></section></div>
+      
+    </div><div class="news-column" data-news-column="3">
+      <div class="news-stack"><section class="news-group" data-news-group="topics" data-news-group-id="topics"><h3>My topics</h3><ul class="news"><li data-news-item="topics:0"><div class="title">Markets offer a fixed-price bag of winter vegetables</div><p class="news-summary">A bag of winter vegetables, at the same price each week, is offered at three city markets. The contents change with the deliveries, but the stated weight is kept.</p><div class="meta">Morning Notebook · Cuisine de saison</div></li><li data-news-item="topics:1"><div class="title">A bakery teaches brioche in a single morning</div><p class="news-summary">The class fits in one morning, from dough to oven, without an endless shopping list. Every ingredient is on the table at the start, already measured, so kneading is not interrupted.</p><div class="meta">Neighbourhood Gazette · Cuisine de saison</div></li><li data-news-item="topics:2"><div class="title">Community soups return in three church basements</div><p class="news-summary">Three church basements reopen their pots on Thursdays, with a one-hour sign-up. People may come to cook or only to pick up a jar; both are counted.</p><div class="meta">Demo Daily · Cuisine de saison</div></li><li data-news-item="topics:3"><div class="title">An island orchard offers the last apples to pick</div><p class="news-summary">The island orchard is open for two more weekends for keeping apples. Visitors pick from the marked bins and pay by weight on the way out.</p><div class="meta">Regional Review · Cuisine de saison</div></li><li data-news-item="topics:4"><div class="title">A paper notebook stays on the desks of coding workshops</div><p class="news-summary">Several programming workshops now give each person a paper notebook, beside the screen. The idea is to write the morning&#39;s task before opening the inbox.</p><div class="meta">Morning Notebook · Technologie</div></li><li data-news-item="topics:5"><div class="title">Interface colours change how fast people read</div><p class="news-summary">A study at a Montreal university compared the same text in dark ink and in pale ink. Readers went a little faster with the plainest contrast, and stated no preference for a brand.</p><div class="meta">National Wire · Technologie</div></li></ul></section></div>
+      <div class="solution-slot"><div class="g-game g-answer g-kind-crossword"><div class="g-solution"><div class="g-sol-label">Solution — Crossword</div><table class="g-grid g-cross g-mini"><tr><td class="g-cell">S</td><td></td><td></td><td></td><td></td><td></td><td class="g-cell">R</td><td></td><td></td><td></td></tr><tr><td class="g-cell">T</td><td></td><td></td><td></td><td></td><td></td><td class="g-cell">A</td><td></td><td></td><td></td></tr><tr><td class="g-cell">O</td><td></td><td></td><td></td><td class="g-cell">S</td><td class="g-cell">M</td><td class="g-cell">I</td><td class="g-cell">L</td><td class="g-cell">E</td><td></td></tr><tr><td class="g-cell">R</td><td class="g-cell">A</td><td class="g-cell">D</td><td class="g-cell">I</td><td class="g-cell">O</td><td></td><td class="g-cell">N</td><td></td><td class="g-cell">A</td><td></td></tr><tr><td class="g-cell">M</td><td></td><td></td><td></td><td class="g-cell">A</td><td></td><td class="g-cell">B</td><td class="g-cell">I</td><td class="g-cell">R</td><td class="g-cell">D</td></tr><tr><td></td><td class="g-cell">S</td><td class="g-cell">O</td><td class="g-cell">U</td><td class="g-cell">P</td><td></td><td class="g-cell">O</td><td></td><td class="g-cell">T</td><td></td></tr><tr><td></td><td class="g-cell">A</td><td></td><td></td><td></td><td></td><td class="g-cell">W</td><td></td><td class="g-cell">H</td><td></td></tr><tr><td></td><td class="g-cell">L</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr><tr><td></td><td class="g-cell">T</td><td class="g-cell">R</td><td class="g-cell">E</td><td class="g-cell">E</td><td></td><td></td><td class="g-cell">B</td><td></td><td></td></tr><tr><td></td><td></td><td></td><td class="g-cell">A</td><td></td><td class="g-cell">G</td><td class="g-cell">O</td><td class="g-cell">A</td><td class="g-cell">T</td><td></td></tr><tr><td></td><td></td><td></td><td class="g-cell">G</td><td></td><td></td><td></td><td class="g-cell">R</td><td></td><td></td></tr><tr><td></td><td class="g-cell">D</td><td class="g-cell">O</td><td class="g-cell">L</td><td class="g-cell">P</td><td class="g-cell">H</td><td class="g-cell">I</td><td class="g-cell">N</td><td></td><td></td></tr><tr><td></td><td></td><td></td><td class="g-cell">E</td><td></td><td></td><td></td><td></td><td></td><td></td></tr></table></div></div></div>
+    </div></div>
+</main>
+</body>
+</html>

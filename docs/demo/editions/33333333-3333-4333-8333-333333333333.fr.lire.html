@@ -1,0 +1,467 @@
+<!doctype html>
+<html lang="fr-CA">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Mon Journal du Matin — Mercredi 25 novembre 2026</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=Source+Serif+4:opsz,wght@8..60,400;8..60,600&display=swap" rel="stylesheet">
+<style>
+@page { size: Letter; margin: 0.4in; }
+* { box-sizing: border-box; }
+html, body { margin: 0; padding: 0; }
+body {
+  font-family: "Source Serif 4", Georgia, "Times New Roman", serif;
+  font-size: 9.5pt;
+  line-height: 1.3;
+  color: #1a1a1a;
+  background: #fff;
+  -webkit-print-color-adjust: exact;
+  print-color-adjust: exact;
+}
+.page { width: 100%; max-width: 7.7in; margin: 0 auto; }
+@media screen {
+  body { background: #f4f1ea; padding: 0.25in 0; }
+  .page { max-width: 8.5in; padding: 0.4in; background: #fff; box-shadow: 0 1px 4px rgba(0, 0, 0, 0.12); }
+  .page + .page { margin-top: 0.25in; }
+}
+/* Chaque page a une hauteur fixe pour ne jamais déborder sur une feuille de plus. */
+.two-pages .page, .multi-pages .page { display: flex; flex-direction: column; height: 10.2in; overflow: hidden; }
+@media screen { .two-pages .page, .multi-pages .page { height: 11in; } }
+.two-pages .columns, .multi-pages .columns, .two-pages .news-columns, .multi-pages .news-columns { flex: 1; min-height: 0; }
+.page-2, .page-3, .page-4 { break-before: page; }
+.multi-pages .page-2 .markets { flex: none; margin: 0 0 8pt; padding-bottom: 4pt; border-bottom: 3px double #1a1a1a; }
+.masthead { border-bottom: 3px double #1a1a1a; padding-bottom: 4pt; margin-bottom: 4pt; }
+.dateline { display: flex; justify-content: space-between; font-size: 8.5pt; text-transform: uppercase; letter-spacing: 0.06em; border-bottom: 1px solid #1a1a1a; padding-bottom: 3pt; }
+/* « 6 h 30 » garde ses minuscules : en capitales, l'abréviation de l'heure deviendrait « 6 H 30 ». */
+.gen-time { text-transform: none; }
+.dateline-time { display: flex; flex-wrap: wrap; align-items: center; gap: 0 4pt; }
+.current-weather { display: inline-flex; align-items: center; gap: 3pt; padding-left: 5pt; margin-left: 2pt; border-left: 1px solid #c8c2b5; font-size: 8pt; text-transform: none; letter-spacing: 0; white-space: nowrap; }
+.current-weather .wx-icon { width: 12pt; height: 12pt; }
+h1 { font-family: "Playfair Display", Georgia, serif; font-weight: 900; font-size: 34pt; text-align: center; margin: 4pt 0 6pt; letter-spacing: -0.01em; }
+.subhead { display: flex; justify-content: space-between; align-items: center; gap: 10pt; border-top: 1px solid #1a1a1a; padding-top: 5pt; }
+blockquote { margin: 0; font-style: italic; flex: 1; }
+.wx-icon { display: block; flex: none; color: var(--accent, #1a1a1a); }
+.wx-cloud { fill: var(--wx-bg, #fff); }
+.columns { display: grid; grid-template-columns: 1.15fr 1fr; gap: 14pt; }
+.col + .col { border-left: 1px solid #c8c2b5; padding-left: 14pt; }
+section { margin-bottom: 9pt; break-inside: avoid; }
+h2 { font-family: "Playfair Display", Georgia, serif; font-size: 12.5pt; margin: 0 0 4pt; padding-bottom: 2pt; border-bottom: 1.5px solid #1a1a1a; }
+ul, ol { list-style: none; margin: 0; padding: 0; }
+li { padding: 3pt 0; border-bottom: 1px dotted #c8c2b5; }
+li:last-child { border-bottom: none; }
+.title { font-weight: 600; }
+.meta { color: #5c564b; font-size: 8pt; }
+.summary { font-size: 8.8pt; }
+.empty { color: #5c564b; font-style: italic; margin: 2pt 0; }
+.event { display: grid; grid-template-columns: 1.15in 1fr; gap: 6pt; }
+html[lang^="en"] .event { grid-template-columns: 1.3in 1fr; }
+.event .when { font-weight: 600; font-variant-numeric: tabular-nums; }
+.row { display: flex; justify-content: space-between; align-items: baseline; gap: 6pt; }
+.from { font-size: 8.5pt; text-transform: uppercase; letter-spacing: 0.04em; }
+.badge { font-size: 7pt; text-transform: uppercase; letter-spacing: 0.05em; padding: 0 4pt; border: 1px solid currentColor; border-radius: 2pt; white-space: nowrap; }
+.badge.high { color: #9b1c1c; }
+.badge.medium { color: #8a5a00; }
+.badge.low { color: #5c564b; }
+.highlight { background: #f4f1ea; padding: 6pt 8pt; border: 1px solid #1a1a1a; }
+.priorities li { display: flex; gap: 6pt; align-items: flex-start; border-bottom-color: #d9d3c6; }
+.box { flex: none; width: 8pt; height: 8pt; border: 1px solid #1a1a1a; margin-top: 3pt; }
+.tag { font-size: 7.5pt; text-transform: uppercase; letter-spacing: 0.04em; font-weight: 600; }
+footer { margin-top: 6pt; padding-top: 4pt; border-top: 1px solid #1a1a1a; text-align: center; font-size: 7.5pt; color: #5c564b; }
+.minihead { display: grid; grid-template-columns: 1fr auto 1fr; align-items: baseline; gap: 12pt; border-bottom: 3px double #1a1a1a; padding-bottom: 4pt; margin-bottom: 8pt; font-size: 8.5pt; text-transform: uppercase; letter-spacing: 0.06em; }
+.minihead > div:last-child { text-align: right; }
+.minihead h2 { font-size: 20pt; font-weight: 900; text-transform: none; letter-spacing: -0.01em; border: none; margin: 0; padding: 0; }
+/* La sélection est mesurée avant d'enregistrer le HTML statique et de produire le PDF. */
+.news-columns { flex: 1; min-height: 0; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14pt; }
+.news-column { position: relative; min-height: 0; min-width: 0; display: flex; flex-direction: column; }
+.news-column + .news-column::before { content: ""; position: absolute; left: -7pt; top: 0; bottom: 0; border-left: 1px solid #c8c2b5; }
+.news-stack { flex: 1; min-height: 0; }
+.news-group { margin-bottom: 8pt; break-inside: auto; }
+.news-group h3 { font-family: "Playfair Display", Georgia, serif; font-size: 11.5pt; margin: 0 0 2pt; padding-bottom: 2pt; border-bottom: 1.5px solid #1a1a1a; break-inside: avoid; break-after: avoid; }
+.news-group .kicker { display: block; font-family: "Source Serif 4", Georgia, serif; font-size: 7pt; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; color: #5c564b; }
+.news-group li { break-inside: avoid; }
+.news-group .title { overflow-wrap: anywhere; }
+.news-group .meta, .news-label { display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.front-feature { flex: none; display: grid; grid-template-columns: 1fr 1fr; gap: 14pt; margin-top: 8pt; padding-top: 6pt; border-top: 3px double #1a1a1a; }
+.front-feature .game-slot { margin-top: 0; padding-top: 0; border-top: none; }
+.front-local-news { min-width: 0; }
+.front-local-news .news-group { margin-bottom: 0; }
+.front-local-news .news-group h3 { font-size: 10pt; }
+.front-local-news .news-group li { padding: 2pt 0; }
+/* Articles locaux sous les définitions : texte réduit, deux colonnes, dans la seule hauteur laissée par la grille. */
+.g-extra .news-group { margin: 0; }
+.g-extra .news-group h3 { display: flex; align-items: baseline; gap: 4pt; margin-bottom: 2pt; font-size: 9.5pt; }
+.g-extra .news-label { min-width: 0; }
+.g-extra .news { column-count: 2; column-gap: 10pt; }
+.g-extra .news-group li { padding: 0 0 3pt; border: none; }
+.g-extra .title { font-size: 8.5pt; line-height: 1.15; }
+.g-extra .news-summary { margin: 1pt 0; font-size: 7pt; line-height: 1.15; }
+.g-extra .meta { font-size: 6.5pt; line-height: 1.15; }
+/* Bande boursière : indices, puis titres personnalisés en rangées de sept. */
+.page-1 .markets { flex: none; margin: 3pt 0 0; padding-top: 2pt; border-top: 1px solid #1a1a1a; }
+.market-overview { display: grid; grid-template-columns: auto; grid-auto-columns: minmax(0, 1fr); grid-auto-flow: column; align-items: center; gap: 0 6pt; }
+.page-1 .markets + .game-slot, .page-1 .markets + .front-feature { margin-top: 4pt; }
+.markets h2 { margin: 0; padding: 0 2pt 0 0; border: 0; font-size: 10pt; line-height: 1.05; max-width: 0.95in; }
+.markets-when { display: block; margin-top: 1pt; font-family: "Source Serif 4", Georgia, serif; font-size: 5.5pt; font-weight: 400; line-height: 1.05; text-transform: uppercase; letter-spacing: 0.04em; color: #5c564b; }
+.market-overview ul { display: contents; }
+.market-watchlist { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 4pt 0; margin-top: 4pt; padding-top: 4pt; border-top: 1px solid #c8c2b5; }
+.market-watchlist li:nth-child(7n + 1) { border-left: 0; padding-left: 0; }
+.market-watchlist li:nth-child(n + 8) { border-top: 1px solid #c8c2b5; padding-top: 4pt; }
+.market-watchlist .mk-value { font-size: 8pt; }
+.market-watchlist .mk-name { overflow-wrap: anywhere; white-space: normal; }
+.market-categories { gap: 0; padding-top: 0; border-top: 0; }
+.market-group { min-width: 0; padding: 2pt 3pt; border-top: 1px solid #c8c2b5; }
+.market-group ul { display: grid; grid-template-columns: repeat(var(--stock-columns), minmax(0, 1fr)); }
+.market-group li:first-child { border-left: 0; padding-left: 0; }
+.mk-category { min-height: 5.5pt; font-size: 5.5pt; font-weight: 600; line-height: 1; margin-bottom: 1pt; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.markets li { min-width: 0; padding: 0 0 0 6pt; border: 0; border-left: 1px solid #c8c2b5; line-height: 1.05; white-space: nowrap; }
+.mk-name { display: block; font-size: 6pt; text-transform: uppercase; letter-spacing: 0.05em; color: #5c564b; }
+.mk-value { display: block; font-size: 8pt; font-weight: 600; font-variant-numeric: tabular-nums; }
+.mk-change { display: flex; align-items: center; gap: 2pt; font-size: 6.5pt; font-weight: 600; font-variant-numeric: tabular-nums; }
+.mk-change.up { color: #1f6b3a; }
+.mk-change.down { color: #9b1c1c; }
+.mk-arrow { width: 5pt; height: 5pt; fill: currentColor; }
+.mk-change.down .mk-arrow { transform: rotate(180deg); }
+.game-slot { flex: none; margin-top: 8pt; padding-top: 6pt; border-top: 3px double #1a1a1a; display: flex; justify-content: center; }
+.solution-slot { flex: none; align-self: flex-end; max-width: 100%; margin-top: 8pt; padding: 4pt; border: 1px solid #c8c2b5; }
+.news-summary { margin: 2pt 0; font-size: 7.5pt; line-height: 1.15; overflow-wrap: anywhere; }
+.omitted { margin: 3pt 0 0; font-size: 7pt; line-height: 1.15; color: #5c564b; font-style: italic; }
+/* Journées chargées : trois colonnes et extraits raccourcis, sans masquer d'élément. */
+.compact .columns { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 9pt; font-size: 8pt; line-height: 1.15; }
+.compact .col + .col { padding-left: 9pt; }
+.compact .columns li { padding: 1pt 0; }
+.compact .columns h2 { font-size: 11pt; }
+.compact .columns .event { grid-template-columns: 0.66in minmax(0, 1fr); gap: 3pt; padding: 0; }
+.compact .event .when { font-size: 7pt; overflow-wrap: anywhere; }
+.compact .title, .compact .summary, .compact .priorities li > div > div:first-child, .compact .reminders li {
+  display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow: hidden; overflow-wrap: anywhere;
+}
+.compact .meta { font-size: 7pt; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.compact .summary { font-size: 8pt; }
+.compact .from { font-size: 7pt; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.compact .badge { font-size: 6pt; }
+.compact .highlight { padding: 4pt; }
+.daily.page { display: flex; flex-direction: column; height: 10.2in; }
+@media screen { .daily.page { height: 11in; } }
+.daily .masthead, .daily footer { flex: none; }
+.daily .columns { flex: 1; min-height: 0; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12pt; }
+/* Après la mesure, seul le pied de page reste ancré en bas : aucun vide avant la bourse. */
+.daily[data-page-layout="ready"] .columns { flex: none; }
+.daily[data-page-layout="ready"] footer { margin-top: auto; }
+.daily.compact .columns { grid-template-columns: repeat(3, minmax(0, 1fr)); font-size: 8.5pt; line-height: 1.22; gap: 9pt; }
+.daily .col { display: flex; flex-direction: column; gap: 7pt; min-width: 0; min-height: 0; }
+.daily .col + .col { padding-left: 0; border: none; }
+.daily section { flex: none; margin: 0; display: flow-root; }
+.daily .columns p { margin: 3pt 0; }
+.daily .columns [hidden] { display: none; }
+.daily .columns .event { display: block; }
+.daily.compact .event .when { font-size: 8pt; }
+.daily .title, .daily .summary, .daily .priorities li > div > div:first-child, .daily .reminders li { display: block; overflow: visible; }
+.daily .meta { white-space: normal; overflow-wrap: anywhere; }
+.daily .recipe .title { margin-top: 2pt; }
+.daily a { color: inherit; }
+.daily .recipe-photo { float: right; width: 75pt; margin: 4pt 0 4pt 6pt; }
+.daily .recipe-photo img { display: block; width: 75pt; height: 52.5pt; object-fit: cover; }
+.daily .recipe-photo figcaption { font-size: 6pt; line-height: 1.15; color: #5c564b; }
+.daily .recipe-steps { clear: both; list-style: decimal; padding-left: 12pt; }
+.daily .recipe-steps li { padding: 2pt 0; }
+.daily .daily-safety { font-size: 7pt; line-height: 1.2; color: #5c564b; }
+.daily.tight .columns { font-size: 8pt; line-height: 1.15; }
+.daily.tight .col { gap: 5pt; }
+.daily.tight .columns h2 { font-size: 10.5pt; margin-bottom: 3pt; }
+.daily.tight .columns p { margin: 2pt 0; }
+.daily.tight .recipe-steps li { padding: 1pt 0; }
+.daily.tight .g-sudoku td { width: 0.30in; height: 0.30in; }
+.daily.tight .g-kenken td { width: 0.4in; height: 0.4in; }
+.daily.tight .g-kakuro td { width: 0.4in; height: 0.4in; }
+.daily.tight .g-search td { width: 0.18in; height: 0.18in; font-size: 7.5pt; }
+.daily.tight .g-jumbles { gap: 2pt 8pt; }
+.daily.tight .g-jumble-boxes .g-box { width: 0.2in; height: 0.2in; }
+.daily.tight .g-jumble-final .g-box { width: 0.26in; height: 0.26in; }
+.daily.tight .g-jumble-final { margin-top: 3pt; }
+.daily.tight .g-jumble-mix { font-size: 9pt; }
+.daily.tight .g-crypto-cell { width: 0.26in; }
+.daily.tight .g-crypto-cell b { height: 0.24in; line-height: 0.24in; }
+.daily.tight .g-rung { padding: 2pt 0; }
+.daily.tight .g-rung .g-box { width: 0.3in; height: 0.3in; }
+.daily.tight .g-rung .g-filled { font-size: 12pt; line-height: 0.3in; }
+.daily.tight .g-cross td, .daily.tight .g-code td { width: 0.22in; height: 0.22in; }
+.daily.tight .g-instr { margin-bottom: 4pt; }
+.daily.tight.many-stocks .g-sudoku td { width: 0.27in; height: 0.27in; }
+.daily.tight.many-stocks .g-kenken td { width: 0.36in; height: 0.36in; }
+.daily.tight.many-stocks .g-kakuro td { width: 0.36in; height: 0.36in; }
+.daily.tight.many-stocks .g-cross td, .daily.tight.many-stocks .g-code td { width: 0.21in; height: 0.21in; }
+.daily.tight.many-stocks .game-slot, .daily.tight.many-stocks .front-feature { margin-top: 2pt; padding-top: 4pt; }
+.daily.tight.many-stocks .front-feature .game-slot { margin-top: 0; padding-top: 0; }
+.daily.tight.many-stocks .masthead h1 { margin-top: 2pt; margin-bottom: 3pt; }
+.daily.tight.many-stocks .col { gap: 4pt; }
+.quote-label { display: block; font-size: 7pt; font-style: normal; font-weight: 600; text-transform: uppercase; margin-bottom: 2pt; }
+.forecast { flex: 0 0 67%; min-width: 0; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 5pt; border-left: 1px solid #c8c2b5; padding-left: 7pt; font-size: 7pt; line-height: 1.2; }
+.forecast-summary { flex: 0 0 60%; text-align: right; font-size: 8pt; }
+.forecast strong { display: block; margin-bottom: 2pt; }
+.forecast > div { display: flex; align-items: flex-start; gap: 3pt; }
+.forecast .wx-icon { width: 15pt; height: 15pt; }
+.forecast .wx-text { min-width: 0; }
+.forecast .meta { font-size: 6pt; }
+
+.g-game { width: 100%; max-width: 7.6in; margin-bottom: 0; color: #1a1a1a; font-family: "Source Serif 4", Georgia, "Times New Roman", serif; font-size: 9pt; line-height: 1.25; break-inside: avoid; page-break-inside: avoid; }
+.g-game *, .g-game *::before, .g-game *::after { box-sizing: border-box; }
+.g-title { font-family: "Playfair Display", Georgia, serif; font-size: 11.5pt; font-weight: 700; margin: 0 0 2pt; padding-bottom: 1pt; border-bottom: 1.5px solid #1a1a1a; }
+.g-instr { margin: 0 0 6pt; font-size: 8pt; font-style: italic; }
+.g-body { display: flex; align-items: stretch; gap: 0.25in; }
+.g-board { flex: none; }
+.g-side { flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; gap: 6pt; }
+/* Reste de la hauteur de la grille : sa taille ne dépend jamais de son contenu, donc le bloc ne grandit pas. */
+.g-extra { flex: 1 1 0; min-height: 0; overflow: hidden; }
+.g-extra:empty { display: none; }
+.g-kind-sudoku .g-body, .g-kind-kenken .g-body, .g-kind-kakuro .g-body { justify-content: center; }
+.g-kind-jumble .g-body, .g-kind-cryptogram .g-body, .g-kind-wordsearch .g-body, .g-kind-wordladder .g-body { display: block; }
+.g-kind-jumble .g-board, .g-kind-cryptogram .g-board, .g-kind-wordsearch .g-board, .g-kind-wordladder .g-board { width: 100%; }
+.g-kind-sudoku .g-side { flex: none; }
+.g-jumbles { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 4pt 12pt; width: 100%; }
+.g-jumble-item, .g-jumble-final { min-width: 0; text-align: center; }
+.g-jumble-mix, .g-jumble-boxes, .g-jumble-final, .g-sol-line { margin: 0; }
+.g-jumble-mix { font-size: 11pt; font-weight: 700; letter-spacing: 0.05em; }
+.g-jumble-boxes, .g-jumble-word { font-size: 0; line-height: 0; }
+.g-jumble-final { display: flex; flex-wrap: wrap; justify-content: center; gap: 6pt 14pt; width: 100%; margin-top: 6pt; }
+.g-jumble-word { display: inline-flex; }
+.g-box { display: inline-block; width: 0.32in; height: 0.32in; margin: 0 1pt; border: 1px solid #1a1a1a; vertical-align: top; }
+.g-jumble-boxes .g-box { width: 0.32in; height: 0.32in; }
+.g-jumble-final .g-box { width: 0.38in; height: 0.38in; }
+.g-box-o { border-radius: 50%; }
+.g-filled { font-size: 13pt; font-weight: 700; line-height: 0.32in; text-align: center; }
+.g-sol-line { max-width: 2.15in; margin-left: auto; margin-right: auto; font-size: 7pt; font-weight: 700; letter-spacing: 0.03em; line-height: 1.35; }
+.g-circle { display: inline-block; min-width: 0.85em; border: 1px solid #1a1a1a; border-radius: 50%; line-height: 1.1; text-align: center; }
+.g-crypto { display: flex; flex-wrap: wrap; gap: 5pt 10pt; width: 100%; }
+.g-crypto-word { display: inline-flex; align-items: flex-end; }
+.g-crypto-punct { font-size: 12pt; font-weight: 700; padding: 0 1pt 2pt; }
+.g-crypto-cell { display: inline-flex; flex-direction: column; width: 0.3in; }
+.g-crypto-cell i { font-style: normal; font-size: 8pt; font-weight: 700; text-align: center; line-height: 1.1; }
+.g-crypto-cell b { display: block; height: 0.28in; border: 1px solid #1a1a1a; font-weight: 700; text-align: center; line-height: 0.28in; }
+.g-crypto-key { display: flex; flex-wrap: wrap; gap: 2pt 3pt; width: 100%; margin-top: 8pt; padding-top: 4pt; border-top: 1px solid #1a1a1a; }
+.g-plain { margin: 0; letter-spacing: 0.02em; line-height: 1.35; }
+.g-solution .g-plain { max-width: 2.1in; font-size: 7pt; }
+.g-search-wrap { display: flex; align-items: flex-start; gap: 12pt; width: 100%; }
+.g-search td { width: 0.24in; height: 0.24in; border: 0.4pt solid #8a8a8a; font-size: 9pt; font-weight: 700; }
+.g-search { border: 1.5px solid #1a1a1a; flex: none; }
+.g-search.g-mini td { width: 0.1in; height: 0.1in; font-size: 5pt; }
+.g-wordlist { flex: 1; columns: 2; margin: 0; padding: 0; list-style: none; font-size: 9pt; letter-spacing: 0.03em; }
+.g-wordlist li { break-inside: avoid; padding: 1pt 0; }
+.g-ladders { display: grid; gap: 4pt 12pt; width: 100%; }
+.g-ladders.g-cols-2 { grid-template-columns: 1fr 1fr; }
+.g-ladders.g-cols-3 { grid-template-columns: 1fr 1fr 1fr; }
+.g-ladder { min-width: 0; }
+.g-ladder-label { grid-column: 1 / -1; margin: 0; font-size: 9pt; font-weight: 700; letter-spacing: 0.06em; text-align: center; }
+.g-ladder-next { margin: 1pt 0 0; font-size: 11pt; font-weight: 700; text-align: center; }
+.g-ladder-rails { border-left: 5px solid #1a1a1a; border-right: 5px solid #1a1a1a; padding: 0 6pt; }
+.g-rung { display: flex; justify-content: center; gap: 3pt; border-top: 3px solid #1a1a1a; padding: 3pt 0; }
+.g-rung:last-child { border-bottom: 3px solid #1a1a1a; }
+.g-rung .g-box { width: var(--g-box, 0.34in); height: var(--g-box, 0.34in); }
+.g-rung .g-filled { font-size: 12pt; line-height: var(--g-box, 0.34in); }
+.g-across-rails { display: flex; align-items: stretch; border-top: 5px solid #1a1a1a; border-bottom: 5px solid #1a1a1a; }
+.g-across .g-rung { flex-direction: column; border-top: 0; border-bottom: 0; border-left: 3px solid #1a1a1a; padding: 0 3pt; }
+.g-across .g-rung:last-child { border-right: 3px solid #1a1a1a; border-bottom: 0; }
+.g-kenken, .g-kakuro { border: 1.5px solid #1a1a1a; }
+.g-kenken td { width: 0.44in; height: 0.44in; border: 0.4pt solid #b5b5b5; font-size: 12pt; font-weight: 700; }
+.g-kenken td.g-edge-r { border-right: 1.5pt solid #1a1a1a; }
+.g-kenken td.g-edge-b { border-bottom: 1.5pt solid #1a1a1a; }
+.g-kenken .g-n { font-size: 7pt; }
+.g-kenken.g-mini td { width: 0.16in; height: 0.16in; font-size: 6.5pt; }
+.g-kenken.g-mini .g-n { display: none; }
+.g-kakuro td { width: 0.44in; height: 0.44in; border: 0.6pt solid #1a1a1a; font-size: 11pt; font-weight: 700; position: relative; }
+.g-kakuro td.g-black { background: #1a1a1a; }
+.g-kakuro td.g-clue { background: linear-gradient(to top right, #fff 49%, #1a1a1a 49%, #1a1a1a 51%, #fff 51%); padding: 0; }
+.g-kdown, .g-kacross { position: absolute; color: #1a1a1a; font-size: 7pt; font-weight: 700; line-height: 1; }
+.g-kdown { top: 1pt; right: 2pt; }
+.g-kacross { bottom: 1pt; left: 2pt; }
+.g-kakuro.g-mini td { width: 0.14in; height: 0.14in; font-size: 6pt; }
+.g-kakuro.g-mini .g-kdown, .g-kakuro.g-mini .g-kacross { font-size: 3.5pt; }
+.g-caption { font-family: "Playfair Display", Georgia, serif; font-size: 8pt; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; margin: 0 0 2pt; }
+
+.g-grid { border-collapse: collapse; table-layout: fixed; width: auto; }
+.g-grid td { padding: 0; position: relative; text-align: center; vertical-align: middle; line-height: 1; }
+.g-n { position: absolute; top: 0.6pt; left: 1pt; font-size: 5.5pt; font-weight: 400; line-height: 1; }
+
+.g-sudoku { border: 2px solid #1a1a1a; }
+.g-sudoku td { width: 0.34in; height: 0.34in; border: 0.5pt solid #8a8a8a; font-size: 13pt; font-weight: 600; }
+.g-sudoku td.g-r3 { border-right: 1.5pt solid #1a1a1a; }
+.g-sudoku tr.g-b3 td { border-bottom: 1.5pt solid #1a1a1a; }
+.g-sudoku.g-mini { border-width: 1px; }
+.g-sudoku.g-mini td { width: 0.13in; height: 0.13in; border-width: 0.25pt; font-size: 6pt; font-weight: 400; }
+.g-sudoku.g-mini td.g-r3 { border-right-width: 0.9pt; }
+.g-sudoku.g-mini tr.g-b3 td { border-bottom-width: 0.9pt; }
+
+.g-cross td { width: 0.25in; height: 0.25in; border: none; }
+.g-cross td.g-cell { border: 1px solid #1a1a1a; background: #e9e3d3; }
+.g-cross.g-mini td { width: 0.1in; height: 0.1in; font-size: 5.5pt; }
+.g-cross.g-mini td.g-cell { border-width: 0.5pt; }
+
+.g-clues { display: grid; grid-template-columns: 1fr 1fr; gap: 0 10pt; font-size: 7.5pt; line-height: 1.22; }
+.g-clues ol { list-style: none; margin: 0; padding: 0; }
+.g-clues li { display: flex; gap: 3pt; padding: 0 0 1.5pt; border: none; }
+.g-clues li b { flex: none; min-width: 10pt; text-align: right; font-weight: 600; }
+.g-credit { margin: 3pt 0 0; font-size: 6.5pt; color: #5c564b; }
+
+.g-code td { width: 0.26in; height: 0.26in; border: none; }
+.g-code td.g-cell { border: 1px solid #1a1a1a; vertical-align: bottom; padding-bottom: 1pt; font-size: 10pt; font-weight: 600; }
+.g-key td { width: 0.26in; height: 0.34in; border: 0.75pt solid #1a1a1a; vertical-align: bottom; padding-bottom: 1.5pt; font-size: 10pt; font-weight: 600; }
+.g-key td.g-unused { background: #e2e2e2; }
+.g-alpha td { width: 0.26in; height: 0.19in; font-size: 8pt; }
+.g-alpha td.g-used { text-decoration: line-through; color: #8a8a8a; }
+.g-keymini td { width: 0.165in; height: 0.22in; border: 0.4pt solid #1a1a1a; font-size: 6pt; vertical-align: bottom; padding-bottom: 0.8pt; }
+.g-keymini .g-n { font-size: 4.5pt; top: 0.4pt; left: 0.6pt; }
+
+.g-answer { width: auto; max-width: 100%; }
+.g-solution { transform: rotate(180deg); text-align: center; }
+.g-sol-label { font-size: 6.5pt; text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 1.5pt; }
+.g-solution .g-grid { margin: 0 auto; }
+
+body {
+  --ink: #263d30; --accent: #38614a; --secondary: #96482f;
+  --muted: #566153; --wash: #edf3ea; --line: #b9cbb8;
+  --heading-font: "Source Serif 4", Georgia, serif;
+  color: var(--ink);
+}
+.masthead, .dateline, .subhead, .minihead, footer, .game-slot, .front-feature, .page-1 .markets { border-color: var(--accent); }
+.masthead h1, .daily .columns h2, .news-group h3, .minihead h2, .g-title, .markets h2 {
+  color: var(--accent); font-family: var(--heading-font); border-color: var(--accent);
+}
+.current-weather, .forecast strong { color: var(--accent); }
+.meta, .empty, footer, .omitted, .daily .daily-safety, .news-group .kicker, .mk-name, .markets-when { color: var(--muted); }
+.quote-label, .tag, .news-group .kicker { color: var(--secondary); }
+.forecast, .solution-slot, li, .col + .col, .news-column + .news-column::before, .markets li { border-color: var(--line); }
+.highlight { background: var(--wash); border-color: var(--accent); }
+.priorities li { border-color: var(--line); }
+.box { border-color: var(--accent); }
+.g-solution { color: #1a1a1a; }
+
+    .masthead h1 { text-align: left; font-weight: 600; font-size: 32pt; }
+    .forecast > div { border-top: 2pt solid var(--line); padding-top: 3pt; }
+    .highlight { border-radius: 5pt; }
+    .news-group h3 { border-bottom-style: dotted; }
+    .recipe-photo img { border-radius: 5pt; }
+  
+
+</style>
+<style>
+.reader-controls { display: none; }
+@media screen {
+  body { padding-top: calc(4.5rem + env(safe-area-inset-top)); }
+  .page { width: 8.5in; max-width: none; }
+  .reader-controls {
+    position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+    display: flex; flex-wrap: wrap; align-items: center; gap: 0.6rem 1rem;
+    padding: calc(0.75rem + env(safe-area-inset-top)) 1rem 0.75rem;
+    background: white; border-bottom: 1px solid #ccc; color: #1a1a1a;
+    font: 16px/1.4 system-ui, sans-serif;
+  }
+  .reader-controls a { color: inherit; }
+  .reader-controls a.download {
+    font: inherit; padding: 0.6rem 1rem; border: 0; border-radius: 0.4rem;
+    background: #222; color: white; text-decoration: none;
+  }
+}
+</style></head>
+<body class="multi-pages"><nav class="reader-controls" lang="fr">
+<a href="/morning-press/editions/33333333-3333-4333-8333-333333333333">Retour au journal</a>
+<a class="download" href="/morning-press/demo/editions/33333333-3333-4333-8333-333333333333.fr.pdf" download>Télécharger</a>
+</nav>
+<main class="page page-1 daily compact" data-page-layout="ready">
+  <header class="masthead">
+    <div class="dateline">
+      <div class="dateline-time">Mercredi 25 novembre 2026 · <span class="gen-time">6 h 30</span><span class="current-weather" title="Pluie faible"><svg class="wx-icon" data-weather-icon="rain" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M7.02 14.4A3.42 3.42 0 0 1 6.69 7.58A5.04 5.04 0 0 1 16.71 7.58A3.42 3.42 0 1 1 16.38 14.4Z"/><path d="M8.2 16.8l-1.6 4.2M12.6 18.4l-1.6 4.2M17 16.8l-1.6 4.2"/></svg><span>4 °C</span></span></div>
+      <div>Montréal, Québec</div>
+    </div>
+    <h1>Mon Journal du Matin</h1>
+    <div class="subhead">
+      <blockquote><span class="quote-label">Citation du jour</span>« Chose promise, chose due. »</blockquote>
+      <div class="forecast"><div data-weather-period="morning"><svg class="wx-icon" data-weather-icon="rain" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M7.02 14.4A3.42 3.42 0 0 1 6.69 7.58A5.04 5.04 0 0 1 16.71 7.58A3.42 3.42 0 1 1 16.38 14.4Z"/><path d="M8.2 16.8l-1.6 4.2M12.6 18.4l-1.6 4.2M17 16.8l-1.6 4.2"/></svg><div class="wx-text"><strong>Avant-midi</strong>
+      <div>3 °C – 5 °C</div>
+      <div>Pluie faible</div><div class="meta">Précip. 70 %</div></div></div><div data-weather-period="afternoon"><svg class="wx-icon" data-weather-icon="rain" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M7.02 14.4A3.42 3.42 0 0 1 6.69 7.58A5.04 5.04 0 0 1 16.71 7.58A3.42 3.42 0 1 1 16.38 14.4Z"/><path d="M8.2 16.8l-1.6 4.2M12.6 18.4l-1.6 4.2M17 16.8l-1.6 4.2"/></svg><div class="wx-text"><strong>Après-midi</strong>
+      <div>4 °C – 6 °C</div>
+      <div>Averses</div><div class="meta">Précip. 60 %</div></div></div><div data-weather-period="evening"><svg class="wx-icon" data-weather-icon="cloud" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M6.8 18.5A3.8 3.8 0 0 1 6.43 10.92A5.6 5.6 0 0 1 17.57 10.92A3.8 3.8 0 1 1 17.2 18.5Z"/></svg><div class="wx-text"><strong>Soir</strong>
+      <div>3 °C – 4 °C</div>
+      <div>Nuageux</div><div class="meta">Précip. 30 %</div></div></div><div data-weather-period="night"><svg class="wx-icon" data-weather-icon="cloud" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M6.8 18.5A3.8 3.8 0 0 1 6.43 10.92A5.6 5.6 0 0 1 17.57 10.92A3.8 3.8 0 1 1 17.2 18.5Z"/></svg><div class="wx-text"><strong>Nuit</strong>
+      <div>1 °C – 3 °C</div>
+      <div>Nuageux</div><div class="meta">Précip. 20 %</div></div></div></div>
+    </div>
+  </header>
+  <div class="columns">
+    <div class="col"><section data-page-section="priorities" class="highlight"><h2>Priorités</h2><ol class="priorities"><li data-page-item="priorities:0"><span class="box"></span><div><div>Échéance (demain 8 h 30) : Échéance : rendre le texte du programme</div><div class="meta">Google</div></div></li><li data-page-item="priorities:1"><span class="box"></span><div><div>Payer ou vérifier : Facture du cours de brioche</div><div class="meta">Google</div></div></li><li data-page-item="priorities:2"><span class="box"></span><div><div>Échéance : Date limite vendredi pour le texte</div><div class="meta">Outlook</div></div></li></ol><p class="omitted" data-omitted="priorities" data-original="2" data-one="1 autre élément non imprimé pour garder la page lisible." data-many="99999 autres éléments non imprimés pour garder la page lisible.">2 autres éléments non imprimés pour garder la page lisible.</p></section><section data-page-section="emails"><h2>Courriels à consulter</h2><ul class="emails"><li data-page-item="emails:0">
+  <div class="row"><span class="from">Fournil Saint-Denis</span><span class="badge high">Élevé</span></div>
+  <div class="title">Facture du cours de brioche</div>
+  <div class="summary">Votre facture est prête.</div>
+  <div class="meta">Google · 5 h 30</div>
+</li><li data-page-item="emails:1">
+  <div class="row"><span class="from">Via Rail</span><span class="badge high">Élevé</span></div>
+  <div class="title">Confirmation de votre billet de train</div>
+  <div class="summary">Confirmation de réservation.</div>
+  <div class="meta">Outlook · 22 h 30</div>
+</li></ul><p class="omitted" data-omitted="emails" data-original="3" data-one="1 autre élément non imprimé pour garder la page lisible." data-many="99999 autres éléments non imprimés pour garder la page lisible.">3 autres éléments non imprimés pour garder la page lisible.</p></section><section data-page-section="fact"><h2>Le saviez-vous?</h2><p>Saturne tourne sur elle-même en environ 10,7 heures, mais une année saturnienne dure près de 29,4 années terrestres.</p><div class="meta">Source : <a href="https://science.nasa.gov/saturn/facts/">NASA</a></div></section></div>
+<div class="col"><section data-page-section="events"><h2>Aujourd’hui</h2><ul class="events"><li data-page-item="events:0" class="event">
+  <div class="when">8 h 30 – 9 h 30</div>
+  <div class="what">
+    <div class="title">Café avec Léa au coin de la rue</div>
+    <div class="meta">Google · Café Saint-Denis · 2 participants</div>
+  </div>
+</li><li data-page-item="events:1" class="event">
+  <div class="when">10 h 30 – 11 h 30</div>
+  <div class="what">
+    <div class="title">Réunion d&#39;équipe — maquettes du journal</div>
+    <div class="meta">Outlook · Lien de réunion · 4 participants</div>
+  </div>
+</li><li data-page-item="events:2" class="event">
+  <div class="when">13 h 30 – 14 h 30</div>
+  <div class="what">
+    <div class="title">Promenade au parc Laurier</div>
+    <div class="meta">Google · Parc Laurier</div>
+  </div>
+</li></ul><p class="omitted" data-omitted="events" data-original="0" data-one="1 autre élément non imprimé pour garder la page lisible." data-many="99999 autres éléments non imprimés pour garder la page lisible." hidden></p></section><section data-page-section="recipe"><h2>Cuisine du jour</h2><div class="recipe">
+    <div class="title">Trempette de haricots et crudités</div>
+    <div class="meta">10 min · 2 portions</div>
+    
+    <p><strong>Ingrédients.</strong> 250 g haricots blancs cuits, rincés; 150 g carotte; 150 g concombre; 1 c. à s. jus de citron; 1 c. à s. huile d&#39;olive; 30 ml eau.</p>
+    <ol class="recipe-steps"><li>Écrasez finement les haricots avec le citron, l&#39;huile et l&#39;eau jusqu&#39;à une texture crémeuse.</li><li>Lavez les légumes, coupez-les en bâtonnets et servez avec la trempette. Gardez au frais.</li></ol>
+    <p class="daily-safety">Vérifiez les étiquettes et les traces d&#39;allergènes. Conservez les aliments cuits au froid.</p>
+    </div></section></div>
+<div class="col"><section data-page-section="upcoming"><h2>Les 7 prochains jours</h2><ul><li data-page-item="upcoming:0"><div class="when">jeu. 26 nov. · 8 h 30</div>
+    <div class="title">Échéance · Échéance : rendre le texte du programme</div>
+    <div class="meta">Google</div></li><li data-page-item="upcoming:1"><div class="when">jeu. 26 nov. · 14 h 30</div>
+    <div class="title">Souper chez les voisins</div>
+    <div class="meta">Google</div></li><li data-page-item="upcoming:2"><div class="when">sam. 28 nov. · 9 h 30</div>
+    <div class="title">Cours de brioche</div>
+    <div class="meta">Outlook</div></li></ul><p class="omitted" data-omitted="upcoming" data-original="0" data-one="1 autre élément non imprimé pour garder la page lisible." data-many="99999 autres éléments non imprimés pour garder la page lisible." hidden></p></section><section data-page-section="reminders"><h2>À ne pas oublier</h2><ul class="reminders"><li data-page-item="reminders:0"><span class="tag">Demain 8 h 30</span> Échéance : rendre le texte du programme <span class="meta">· Google</span></li><li data-page-item="reminders:1"><span class="tag">Demain 14 h 30</span> Souper chez les voisins <span class="meta">· Google</span></li><li data-page-item="reminders:2"><span class="tag">Voyage</span> Confirmation de votre billet de train <span class="meta">· Outlook</span></li></ul><p class="omitted" data-omitted="reminders" data-original="0" data-one="1 autre élément non imprimé pour garder la page lisible." data-many="99999 autres éléments non imprimés pour garder la page lisible." hidden></p></section><section data-page-section="exercise"><h2>Bouger aujourd&#39;hui</h2><p>Prenez une pause active : marchez doucement dans la maison pendant 3 minutes et relâchez les épaules.</p><p>Ou faites deux petites promenades de 5 minutes, à des moments différents de la journée.</p><p class="daily-safety">À votre rythme, sans forcer. Arrêtez en cas de douleur ou de malaise.</p></section></div>
+  </div>
+  
+  <div class="game-slot"><section class="g-game g-kind-codeword"><h2 class="g-title">Jeu du jour — Mots codés</h2><p class="g-instr">Chaque nombre représente une lettre. Trouvez les mots à partir des lettres données et complétez le tableau des codes.</p><div class="g-body"><div class="g-board"><table class="g-grid g-code"><tr><td></td><td></td><td></td><td></td><td class="g-cell"><span class="g-n">14</span></td><td class="g-cell"><span class="g-n">16</span>O</td><td class="g-cell"><span class="g-n">23</span></td><td class="g-cell"><span class="g-n">10</span></td><td class="g-cell"><span class="g-n">14</span></td><td class="g-cell"><span class="g-n">4</span></td><td></td><td class="g-cell"><span class="g-n">16</span>O</td><td></td></tr><tr><td></td><td></td><td class="g-cell"><span class="g-n">4</span></td><td></td><td class="g-cell"><span class="g-n">19</span></td><td></td><td></td><td class="g-cell"><span class="g-n">7</span></td><td></td><td class="g-cell"><span class="g-n">14</span></td><td></td><td class="g-cell"><span class="g-n">4</span></td><td></td></tr><tr><td></td><td></td><td class="g-cell"><span class="g-n">18</span></td><td class="g-cell"><span class="g-n">1</span></td><td class="g-cell"><span class="g-n">13</span></td><td class="g-cell"><span class="g-n">13</span></td><td></td><td class="g-cell"><span class="g-n">7</span></td><td></td><td class="g-cell"><span class="g-n">10</span></td><td></td><td class="g-cell"><span class="g-n">2</span>A</td><td></td></tr><tr><td></td><td></td><td class="g-cell"><span class="g-n">14</span></td><td></td><td class="g-cell"><span class="g-n">11</span></td><td></td><td class="g-cell"><span class="g-n">23</span></td><td class="g-cell"><span class="g-n">18</span></td><td class="g-cell"><span class="g-n">12</span></td><td class="g-cell"><span class="g-n">2</span>A</td><td class="g-cell"><span class="g-n">3</span></td><td class="g-cell"><span class="g-n">12</span></td><td></td></tr><tr><td class="g-cell"><span class="g-n">20</span></td><td class="g-cell"><span class="g-n">11</span></td><td class="g-cell"><span class="g-n">16</span>O</td><td class="g-cell"><span class="g-n">4</span></td><td></td><td></td><td></td><td class="g-cell"><span class="g-n">23</span></td><td></td><td></td><td></td><td></td><td></td></tr><tr><td></td><td></td><td class="g-cell"><span class="g-n">3</span></td><td></td><td class="g-cell"><span class="g-n">1</span></td><td class="g-cell"><span class="g-n">16</span>O</td><td class="g-cell"><span class="g-n">23</span></td><td class="g-cell"><span class="g-n">10</span></td><td></td><td class="g-cell"><span class="g-n">8</span></td><td class="g-cell"><span class="g-n">7</span></td><td class="g-cell"><span class="g-n">16</span>O</td><td class="g-cell"><span class="g-n">12</span></td></tr><tr><td></td><td class="g-cell"><span class="g-n">5</span></td><td></td><td class="g-cell"><span class="g-n">14</span></td><td></td><td></td><td></td><td class="g-cell"><span class="g-n">3</span></td><td></td><td class="g-cell"><span class="g-n">10</span></td><td></td><td></td><td></td></tr><tr><td></td><td class="g-cell"><span class="g-n">16</span>O</td><td class="g-cell"><span class="g-n">22</span></td><td class="g-cell"><span class="g-n">13</span></td><td class="g-cell"><span class="g-n">7</span></td><td></td><td class="g-cell"><span class="g-n">1</span></td><td class="g-cell"><span class="g-n">2</span>A</td><td class="g-cell"><span class="g-n">10</span></td><td class="g-cell"><span class="g-n">3</span></td><td></td><td></td><td></td></tr><tr><td></td><td class="g-cell"><span class="g-n">7</span></td><td></td><td class="g-cell"><span class="g-n">5</span></td><td></td><td></td><td></td><td class="g-cell"><span class="g-n">3</span></td><td></td><td class="g-cell"><span class="g-n">14</span></td><td></td><td></td><td></td></tr><tr><td></td><td class="g-cell"><span class="g-n">2</span>A</td><td></td><td class="g-cell"><span class="g-n">2</span>A</td><td class="g-cell"><span class="g-n">24</span></td><td class="g-cell"><span class="g-n">24</span></td><td class="g-cell"><span class="g-n">18</span></td><td class="g-cell"><span class="g-n">12</span></td><td class="g-cell"><span class="g-n">10</span></td><td class="g-cell"><span class="g-n">2</span>A</td><td class="g-cell"><span class="g-n">18</span></td><td class="g-cell"><span class="g-n">9</span></td><td></td></tr></table></div><div class="g-side"><div><p class="g-caption">Tableau des codes</p><table class="g-grid g-key"><tr><td><span class="g-n">1</span></td><td><span class="g-n">2</span>A</td><td><span class="g-n">3</span></td><td><span class="g-n">4</span></td><td><span class="g-n">5</span></td><td class="g-unused"><span class="g-n">6</span></td><td><span class="g-n">7</span></td><td><span class="g-n">8</span></td><td><span class="g-n">9</span></td><td><span class="g-n">10</span></td><td><span class="g-n">11</span></td><td><span class="g-n">12</span></td><td><span class="g-n">13</span></td></tr><tr><td><span class="g-n">14</span></td><td class="g-unused"><span class="g-n">15</span></td><td><span class="g-n">16</span>O</td><td class="g-unused"><span class="g-n">17</span></td><td><span class="g-n">18</span></td><td><span class="g-n">19</span></td><td><span class="g-n">20</span></td><td class="g-unused"><span class="g-n">21</span></td><td><span class="g-n">22</span></td><td><span class="g-n">23</span></td><td><span class="g-n">24</span></td><td class="g-unused"><span class="g-n">25</span></td><td class="g-unused"><span class="g-n">26</span></td></tr></table></div><div><p class="g-caption">Alphabet</p><table class="g-grid g-alpha"><tr><td class="g-used">A</td><td>B</td><td>C</td><td>D</td><td>E</td><td>F</td><td>G</td><td>H</td><td>I</td><td>J</td><td>K</td><td>L</td><td>M</td></tr><tr><td>N</td><td class="g-used">O</td><td>P</td><td>Q</td><td>R</td><td>S</td><td>T</td><td>U</td><td>V</td><td>W</td><td>X</td><td>Y</td><td>Z</td></tr></table></div><div class="g-extra"></div></div></div></section></div>
+  <footer>
+    Généré automatiquement par Mon Journal du Matin · 6 h 30 · Sources : Google, Outlook, Open-Meteo, Yahoo Finance, Google Actualités
+  </footer>
+</main>
+<main class="page page-2" data-news-page="2">
+  <header class="minihead">
+    <div>Mon Journal du Matin</div>
+    <h2>Lecture rapide</h2>
+    <div>Mercredi 25 novembre 2026</div>
+  </header>
+  <section class="markets"><div class="market-overview"><h2>Bourse<span class="markets-when">Clôture du mar. 24 nov.</span></h2><ul><li data-market="tsx"><span class="mk-name">S&amp;P/TSX</span><span class="mk-value">31 284,78</span><span class="mk-change up"><svg class="mk-arrow" viewBox="0 0 8 8" aria-hidden="true"><path d="M4 1 7.5 7h-7z"/></svg>0,11 %</span></li><li data-market="sp500"><span class="mk-name">S&amp;P 500</span><span class="mk-value">6 789,46</span><span class="mk-change down"><svg class="mk-arrow" viewBox="0 0 8 8" aria-hidden="true"><path d="M4 1 7.5 7h-7z"/></svg>0,45 %</span></li><li data-market="dow"><span class="mk-name">Dow Jones</span><span class="mk-value">46 974,71</span><span class="mk-change down"><svg class="mk-arrow" viewBox="0 0 8 8" aria-hidden="true"><path d="M4 1 7.5 7h-7z"/></svg>0,71 %</span></li><li data-market="nasdaq"><span class="mk-name">Nasdaq</span><span class="mk-value">23 140,54</span><span class="mk-change up"><svg class="mk-arrow" viewBox="0 0 8 8" aria-hidden="true"><path d="M4 1 7.5 7h-7z"/></svg>0,15 %</span></li><li data-market="oil"><span class="mk-name">Pétrole WTI</span><span class="mk-value">74,47 $ US</span><span class="mk-change up"><svg class="mk-arrow" viewBox="0 0 8 8" aria-hidden="true"><path d="M4 1 7.5 7h-7z"/></svg>0,23 %</span></li><li data-market="cad"><span class="mk-name">Dollar CA</span><span class="mk-value">0,7200 $ US</span><span class="mk-change down"><svg class="mk-arrow" viewBox="0 0 8 8" aria-hidden="true"><path d="M4 1 7.5 7h-7z"/></svg>0,26 %</span></li></ul></div><div class="market-watchlist market-categories" aria-label="Mes titres"><div class="market-group" data-market-category="general" style="grid-row:1;grid-column:1/span 4;--stock-columns:4">
+      <div class="mk-category" aria-hidden="true"></div><ul><li data-stock="MDB"><span class="mk-name" title="MongoDB, Inc. · NASDAQ">MDB</span><span class="mk-value">288,74 USD</span><span class="mk-change down"><svg class="mk-arrow" viewBox="0 0 8 8" aria-hidden="true"><path d="M4 1 7.5 7h-7z"/></svg>1,57 %</span></li><li data-stock="SNOW"><span class="mk-name" title="Snowflake Inc. · NYSE">SNOW</span><span class="mk-value">157,68 USD</span><span class="mk-change down"><svg class="mk-arrow" viewBox="0 0 8 8" aria-hidden="true"><path d="M4 1 7.5 7h-7z"/></svg>1,12 %</span></li><li data-stock="SHOP"><span class="mk-name" title="Shopify Inc. · NASDAQ">SHOP</span><span class="mk-value">113,85 USD</span><span class="mk-change up"><svg class="mk-arrow" viewBox="0 0 8 8" aria-hidden="true"><path d="M4 1 7.5 7h-7z"/></svg>0,54 %</span></li><li data-stock="TSLA"><span class="mk-name" title="Tesla, Inc. · NASDAQ">TSLA</span><span class="mk-value">340,68 USD</span><span class="mk-change down"><svg class="mk-arrow" viewBox="0 0 8 8" aria-hidden="true"><path d="M4 1 7.5 7h-7z"/></svg>0,24 %</span></li></ul></div><div class="market-group" data-market-category="686ff587-7d2d-462c-b413-15c3d8144d5e" style="grid-row:1;grid-column:5/span 3;--stock-columns:3;background:#f3eef9;border-color:#c5b3dc">
+      <div class="mk-category" title="Banques/Assurances">Banques/Assurances</div><ul><li data-stock="RY"><span class="mk-name" title="Royal Bank of Canada · NYSE">RY</span><span class="mk-value">162,35 USD</span><span class="mk-change down"><svg class="mk-arrow" viewBox="0 0 8 8" aria-hidden="true"><path d="M4 1 7.5 7h-7z"/></svg>1,42 %</span></li><li data-stock="IFC.TO"><span class="mk-name" title="Intact Financial Corporation · Toronto">IFC.TO</span><span class="mk-value">283,50 CAD</span><span class="mk-change up"><svg class="mk-arrow" viewBox="0 0 8 8" aria-hidden="true"><path d="M4 1 7.5 7h-7z"/></svg>0,79 %</span></li><li data-stock="TD"><span class="mk-name" title="The Toronto-Dominion Bank · NYSE">TD</span><span class="mk-value">84,64 USD</span><span class="mk-change down"><svg class="mk-arrow" viewBox="0 0 8 8" aria-hidden="true"><path d="M4 1 7.5 7h-7z"/></svg>0,63 %</span></li></ul></div><div class="market-group" data-market-category="686ff587-7d2d-462c-b413-15c3d8144d5e" style="grid-row:2;grid-column:5/span 3;--stock-columns:3;background:#f3eef9;border-color:#c5b3dc">
+      <div class="mk-category" title="Banques/Assurances">Banques/Assurances</div><ul><li data-stock="NA.TO"><span class="mk-name" title="National Bank of Canada · Toronto">NA.TO</span><span class="mk-value">127,74 CAD</span><span class="mk-change up"><svg class="mk-arrow" viewBox="0 0 8 8" aria-hidden="true"><path d="M4 1 7.5 7h-7z"/></svg>0,36 %</span></li><li data-stock="IAG.TO"><span class="mk-name" title="iA Financial Corporation Inc. · Toronto">IAG.TO</span><span class="mk-value">143,95 CAD</span><span class="mk-change up"><svg class="mk-arrow" viewBox="0 0 8 8" aria-hidden="true"><path d="M4 1 7.5 7h-7z"/></svg>0,05 %</span></li><li data-stock="MFC"><span class="mk-name" title="Manulife Financial Corporation · NYSE">MFC</span><span class="mk-value">41,69 USD</span><span class="mk-change up"><svg class="mk-arrow" viewBox="0 0 8 8" aria-hidden="true"><path d="M4 1 7.5 7h-7z"/></svg>0,90 %</span></li></ul></div><div class="market-group" data-market-category="f025a0ed-f74e-4530-9fe5-9fc58ae73e65" style="grid-row:2;grid-column:2/span 3;--stock-columns:3;background:#edf4fc;border-color:#a9c5e3">
+      <div class="mk-category" title="Comp. Processor &amp; AI Hardware">Comp. Processor &amp; AI Hardware</div><ul><li data-stock="INTC"><span class="mk-name" title="Intel Corporation · NASDAQ">INTC</span><span class="mk-value">24,78 USD</span><span class="mk-change up"><svg class="mk-arrow" viewBox="0 0 8 8" aria-hidden="true"><path d="M4 1 7.5 7h-7z"/></svg>1,36 %</span></li><li data-stock="NVDA"><span class="mk-name" title="NVIDIA Corporation · NASDAQ">NVDA</span><span class="mk-value">143,29 USD</span><span class="mk-change down"><svg class="mk-arrow" viewBox="0 0 8 8" aria-hidden="true"><path d="M4 1 7.5 7h-7z"/></svg>1,47 %</span></li><li data-stock="AMD"><span class="mk-name" title="Advanced Micro Devices, Inc. · NASDAQ">AMD</span><span class="mk-value">144,20 USD</span><span class="mk-change down"><svg class="mk-arrow" viewBox="0 0 8 8" aria-hidden="true"><path d="M4 1 7.5 7h-7z"/></svg>0,14 %</span></li></ul></div><div class="market-group" data-market-category="a8503f03-f72a-418c-93eb-9aef1da2d09f" style="grid-row:2;grid-column:1/span 1;--stock-columns:1;background:#fff7e6;border-color:#ddc78d">
+      <div class="mk-category" title="FAANG / MANGOS">FAANG / MANGOS</div><ul><li data-stock="OAIW"><span class="mk-name" title="OpenAI Lab Ecosystem ETF · NYSEArca">OAIW</span><span class="mk-value">33,53 USD</span><span class="mk-change down"><svg class="mk-arrow" viewBox="0 0 8 8" aria-hidden="true"><path d="M4 1 7.5 7h-7z"/></svg>0,03 %</span></li></ul></div><div class="market-group" data-market-category="a8503f03-f72a-418c-93eb-9aef1da2d09f" style="grid-row:3;grid-column:1/span 7;--stock-columns:7;background:#fff7e6;border-color:#ddc78d">
+      <div class="mk-category" title="FAANG / MANGOS">FAANG / MANGOS</div><ul><li data-stock="GOOG"><span class="mk-name" title="Alphabet Inc. · NASDAQ">GOOG</span><span class="mk-value">175,47 USD</span><span class="mk-change down"><svg class="mk-arrow" viewBox="0 0 8 8" aria-hidden="true"><path d="M4 1 7.5 7h-7z"/></svg>0,46 %</span></li><li data-stock="META"><span class="mk-name" title="Meta Platforms, Inc. · NASDAQ">META</span><span class="mk-value">568,95 USD</span><span class="mk-change up"><svg class="mk-arrow" viewBox="0 0 8 8" aria-hidden="true"><path d="M4 1 7.5 7h-7z"/></svg>1,54 %</span></li><li data-stock="ANT"><span class="mk-name" title="Anthropic, PBC Class A Common Stock · NASDAQ">ANT</span><span class="mk-value">27,05 USD</span><span class="mk-change down"><svg class="mk-arrow" viewBox="0 0 8 8" aria-hidden="true"><path d="M4 1 7.5 7h-7z"/></svg>1,11 %</span></li><li data-stock="AAPL"><span class="mk-name" title="Apple Inc. · NASDAQ">AAPL</span><span class="mk-value">219,08 USD</span><span class="mk-change up"><svg class="mk-arrow" viewBox="0 0 8 8" aria-hidden="true"><path d="M4 1 7.5 7h-7z"/></svg>0,90 %</span></li><li data-stock="MSFT"><span class="mk-name" title="Microsoft Corporation · NASDAQ">MSFT</span><span class="mk-value">406,66 USD</span><span class="mk-change up"><svg class="mk-arrow" viewBox="0 0 8 8" aria-hidden="true"><path d="M4 1 7.5 7h-7z"/></svg>0,96 %</span></li><li data-stock="AMZN"><span class="mk-name" title="Amazon.com, Inc. · NASDAQ">AMZN</span><span class="mk-value">220,56 USD</span><span class="mk-change down"><svg class="mk-arrow" viewBox="0 0 8 8" aria-hidden="true"><path d="M4 1 7.5 7h-7z"/></svg>1,38 %</span></li><li data-stock="SPCX"><span class="mk-name" title="Space Exploration Technologies Corp. · NASDAQ">SPCX</span><span class="mk-value">135,94 USD</span><span class="mk-change down"><svg class="mk-arrow" viewBox="0 0 8 8" aria-hidden="true"><path d="M4 1 7.5 7h-7z"/></svg>0,21 %</span></li></ul></div></div></section>
+  <div class="news-columns"><div class="news-column" data-news-column="1"><div class="news-stack"><section class="news-group" data-news-group="local" data-news-group-id="local"><h3><span class="kicker">Locale</span><span class="news-label" title="Montréal">Montréal</span></h3><ul class="news"><li data-news-item="local:0"><div class="title">La bibliothèque du quartier allonge ses soirées</div><p class="news-summary">La bibliothèque de la rue Drolet reste ouverte jusqu&#39;à 21 h le jeudi, pour celles et ceux qui sortent tard du travail. Une table est réservée aux devoirs, avec des lampes et des prises, sans qu&#39;il faille réserver. Le rayon des revues a été rapproché des fauteuils, afin de lire sans tenir un livre à bout de bras. Le personnel rappelle que la carte d&#39;abonné du réseau reste valable dans cette succursale.</p><div class="meta">Gazette du quartier</div></li><li data-news-item="local:1"><div class="title">Le marché Jean-Talon ouvre un allée pour les vélos</div><p class="news-summary">Une allée peinte sépare désormais les vélos des étals les plus serrés, les samedis matin. Les commerçants ont demandé ce passage après plusieurs accrochages sans gravité entre paniers et guidons. Des arceaux neufs ont été posés du côté de la rue Henri-Julien, à l&#39;ombre des auvents. Le projet est un essai jusqu&#39;à la fin de l&#39;automne, puis la ville décidera s&#39;il reste. La participation reste libre : aucun billet n&#39;est demandé pour venir écouter.</p><div class="meta">Le Quotidien démo</div></li><li data-news-item="local:2"><div class="title">Un fournil de la Petite-Patrie cuit son pain plus tôt</div><p class="news-summary">La boulangerie de la rue Saint-Denis sort sa première fournée à 6 h 30, pour les gens qui partent avant le jour. Le pain au levain et les brioches sont prêts en même temps, afin d&#39;éviter une deuxième file. Les invendus de la veille sont proposés à prix réduit dès l&#39;ouverture, dans un panier à part. La boulangère dit vouloir garder le même prix de la miche malgré le changement d&#39;heure.</p><div class="meta">Carnet du matin</div></li><li data-news-item="local:3"><div class="title">Le parc Laurier installe des bancs chauffés par le soleil</div><p class="news-summary">Trois bancs de bois foncé ont été placés face au sud, là où le soleil d&#39;hiver tape le plus longtemps. L&#39;idée vient d&#39;un atelier d&#39;élèves du collège voisin, qui ont mesuré les coins les plus clairs du parc. Chaque banc porte une petite plaque qui explique pourquoi l&#39;endroit a été choisi. Les anciens bancs à l&#39;ombre restent en place pour l&#39;été, quand on cherche plutôt la fraîcheur. Un court compte rendu sera publié dans les prochains jours, sans autre engagement.</p><div class="meta">Gazette du quartier</div></li></ul></section></div></div><div class="news-column" data-news-column="2"><div class="news-stack"><section class="news-group" data-news-group="local" data-news-group-id="local"><h3><span class="kicker">Locale</span><span class="news-label" title="Montréal">Montréal</span></h3><ul class="news"><li data-news-item="local:0"><div class="title">Une chorale amateur répète dans l&#39;ancienne poste</div><p class="news-summary">La chorale du plateau répète le mardi dans la salle de l&#39;ancienne poste, gracieusement prêtée. Aucune audition n&#39;est demandée : il suffit d&#39;arriver dix minutes avant pour prendre une partition. Le répertoire de novembre mêle des chansons traditionnelles et deux pièces écrites par des membres. Le concert de fin de mois aura lieu dans la même salle, avec les portes ouvertes.</p><div class="meta">Le Quotidien démo</div></li></ul></section><section class="news-group" data-news-group="provincial" data-news-group-id="provincial"><h3><span class="kicker">Provinciale</span><span class="news-label" title="Québec">Québec</span></h3><ul class="news"><li data-news-item="provincial:0"><div class="title">Le train de Charlevoix ajoute un départ du dimanche</div><p class="news-summary">Un départ supplémentaire le dimanche matin relie Québec à La Malbaie sans changement. Le wagon panoramique est ouvert à tous les billets, pas seulement aux places les plus chères. Les vélos sont acceptés dans la limite de huit emplacements, à réserver avec le billet. Le trajet reste soumis à la météo de la côte, comme les autres dimanches de la saison.</p><div class="meta">Le Quotidien démo</div></li><li data-news-item="provincial:1"><div class="title">Les artisans de Charlevoix ouvrent leurs ateliers</div><p class="news-summary">Une douzaine d&#39;ateliers de céramique, de laine et de bois accueillent les visiteurs samedi. On peut regarder une pièce se faire sans obligation d&#39;acheter, ce que les artisans ont tenu à écrire sur l&#39;affiche. Un circuit à pied relie les portes participantes, avec une carte imprimée à l&#39;office de tourisme. L&#39;événement revient chaque automne depuis six ans, toujours sans droit d&#39;entrée.</p><div class="meta">Revue des régions</div></li><li data-news-item="provincial:2"><div class="title">Les sentiers de la Jacques-Cartier passent en mode hivernal</div><p class="news-summary">Les passerelles les plus exposées sont désormais balisées pour la raquette, pas seulement pour la marche. Le stationnement du kilomètre 10 reste ouvert, avec une navette les samedis de fort achalandage. Les gardes rappellent d&#39;emporter une lampe : le jour tombe tôt sous les épinettes. Les refuges non gardés restent accessibles, à condition de laisser le bois sec pour les suivants.</p><div class="meta">Revue des régions</div></li></ul></section></div></div><div class="news-column" data-news-column="3"><div class="news-stack"><section class="news-group" data-news-group="provincial" data-news-group-id="provincial"><h3><span class="kicker">Provinciale</span><span class="news-label" title="Québec">Québec</span></h3><ul class="news"><li data-news-item="provincial:0"><div class="title">Un inventaire du patrimoine religieux commence à Trois-Rivières</div><p class="news-summary">Des bénévoles photographient clochers, bancs et vitraux avant les travaux de l&#39;hiver. Les fiches seront versées dans un catalogue public, consultable sans compte. Les paroisses qui le souhaitent peuvent signaler un objet fragile à ne pas déplacer. Le projet couvre d&#39;abord le centre-ville, puis les villages de la rive nord au printemps.</p><div class="meta">Carnet du matin</div></li><li data-news-item="provincial:1"><div class="title">Les librairies indépendantes du Québec font caisse commune</div><p class="news-summary">Vingt-deux librairies partagent un entrepôt pour les réimpressions que chacune ne vend qu&#39;à quelques exemplaires. Le lecteur commande dans sa ville et récupère le livre deux jours plus tard, sans frais de port. Les éditeurs participants ont accepté de garder le prix indiqué en quatrième de couverture. L&#39;essai dure jusqu&#39;en mars, le temps de voir si les petits tirages trouvent preneur.</p><div class="meta">Le Quotidien démo</div></li></ul></section><section class="news-group" data-news-group="national" data-news-group-id="national"><h3><span class="kicker">Nationale</span><span class="news-label" title="Canada">Canada</span></h3><ul class="news"><li data-news-item="national:0"><div class="title">Un laboratoire d&#39;Ottawa prête ses microscopes aux écoles</div><p class="news-summary">Le laboratoire fédéral envoie des microscopes simples dans les classes qui n&#39;en ont pas, pour trois semaines. Une fiche d&#39;une page explique comment préparer une lame d&#39;eau de mare sans matériel coûteux. Les écoles éloignées passent en premier, parce que le déplacement d&#39;un spécialiste y coûte plus cher. À la fin du prêt, les appareils reviennent vérifiés, puis repartent vers une autre province.</p><div class="meta">Fil national</div></li><li data-news-item="national:1"><div class="title">Le train de Winnipeg à Churchill reprend ses nuits complètes</div><p class="news-summary">Le service de nuit complet reprend après des semaines de trajets de jour seulement. Les couchettes du bas sont ouvertes aux billets ordinaires quand il reste de la place à l&#39;embarquement. Le wagon-restaurant sert de nouveau un petit déjeuner chaud avant l&#39;arrivée. Les voyageurs sont invités à prévoir une marge, le vent de la baie pouvant encore ralentir le convoi.</p><div class="meta">Fil national</div></li></ul></section></div></div></div>
+</main>
+<main class="page page-3" data-news-page="3">
+  <header class="minihead">
+    <div>Mon Journal du Matin</div>
+    <h2>Lecture rapide</h2>
+    <div>Mercredi 25 novembre 2026</div>
+  </header>
+  
+  <div class="news-columns"><div class="news-column" data-news-column="4"><div class="news-stack"><section class="news-group" data-news-group="national" data-news-group-id="national"><h3><span class="kicker">Nationale</span><span class="news-label" title="Canada">Canada</span></h3><ul class="news"><li data-news-item="national:0"><div class="title">Des bibliothèques de village s&#39;échangent leurs caisses de romans</div><p class="news-summary">Quinze bibliothèques des Prairies font tourner des caisses de romans que leur budget ne pourrait pas acheter en double. Chaque caisse reste six semaines, le temps qu&#39;une liste d&#39;attente locale s&#39;épuise. Les titres voyagent par le car déjà affrété pour le courrier municipal. Un cahier dans chaque caisse recueille une phrase des lecteurs, que la bibliothèque suivante affiche.</p><div class="meta">Revue des régions</div></li><li data-news-item="national:1"><div class="title">L&#39;art public de Halifax gagne trois nouveaux bancs sculptés</div><p class="news-summary">Trois bancs sculptés ont été installés sur le front de mer, chacun par un atelier différent. On peut s&#39;y asseoir : ce ne sont pas des œuvres à regarder de loin seulement. Les noms des ateliers sont gravés sous l&#39;assise, à hauteur de main. La ville les laissera dehors tout l&#39;hiver et vérifiera le bois au dégel. Un court compte rendu sera publié dans les prochains jours, sans autre engagement.</p><div class="meta">Fil national</div></li><li data-news-item="national:2"><div class="title">Un atlas des marchés publics canadien est mis en ligne</div><p class="news-summary">Une carte recense les marchés de plein air encore ouverts en novembre, du Pacifique à l&#39;Atlantique. Chaque fiche indique le jour, l&#39;heure et si les chiens sont admis dans les allées. Les organismes locaux peuvent corriger une information sans passer par un formulaire payant. La première version compte 180 marchés, et d&#39;autres seront ajoutés au fil des signalements.</p><div class="meta">Carnet du matin</div></li></ul></section><section class="news-group" data-news-group="american" data-news-group-id="american"><h3><span class="kicker">Américaine</span><span class="news-label" title="États-Unis">États-Unis</span></h3><ul class="news"><li data-news-item="american:0"><div class="title">Les musées de la Nouvelle-Angleterre ouvrent un matin sans billet</div><p class="news-summary">Le premier mercredi du mois, plusieurs musées de la région ouvrent deux heures sans demander de billet. Les salles les plus petites limitent l&#39;entrée à la file déjà présente à l&#39;ouverture, pour garder le silence. Un feuillet d&#39;une page remplace l&#39;audioguide payant pendant ces deux heures. L&#39;essai a commencé à Boston et gagne Portland et Burlington ce mois-ci. Une rencontre ouverte est prévue cette semaine pour répondre aux questions sur le matin sans billet.</p><div class="meta">Demo Daily</div></li><li data-news-item="american:1"><div class="title">Les petites librairies du Vermont remettent le banc devant la porte</div><p class="news-summary">Une dizaine de librairies reposent un banc dehors, avec une couverture pliée pour les matinées froides. Le livre du jour est posé sur le banc, à feuilleter sans entrer si la file est longue. Les libraires disent que le banc fait revenir des passants qui n&#39;auraient pas poussé la porte. L&#39;idée a circulé par une lettre commune, pas par une campagne publicitaire.</p><div class="meta">Morning Notebook</div></li></ul></section></div></div><div class="news-column" data-news-column="5"><div class="news-stack"><section class="news-group" data-news-group="american" data-news-group-id="american"><h3><span class="kicker">Américaine</span><span class="news-label" title="États-Unis">États-Unis</span></h3><ul class="news"><li data-news-item="american:0"><div class="title">Des cours d&#39;école de Chicago redeviennent des jardins l&#39;hiver</div><p class="news-summary">Cinq écoles laissent une bande de cour en plantes vivaces au lieu de la saler entièrement. Les élèves y observent quels brins restent verts sous la neige, dans le cadre du cours de sciences. Un passage dégagé longe le jardin pour que la récréation ne le piétine pas. Les parents qui le souhaitent peuvent venir aider au paillage un samedi matin. Les horaires de les jardins de cour d&#39;école seront affichés à l&#39;entrée et rappelés aux personnes inscrites.</p><div class="meta">National Wire</div></li><li data-news-item="american:1"><div class="title">La science citoyenne compte les oiseaux des mangeoires</div><p class="news-summary">Un comptage d&#39;une heure, depuis la fenêtre, suffit pour participer au relevé de novembre. Il n&#39;est pas nécessaire de connaître tous les noms : un dessin simple est accepté. Les résultats servent à voir quelles espèces restent en ville quand les parcs se vident. Les feuilles explicatives sont disponibles en anglais et en espagnol à la bibliothèque de quartier.</p><div class="meta">Demo Daily</div></li><li data-news-item="american:2"><div class="title">Les marchés de producteurs de l&#39;Oregon tiennent jusqu&#39;aux fêtes</div><p class="news-summary">Plusieurs marchés de producteurs restent ouverts les samedis de décembre, sous des tentes chauffées sans excès. On y trouve surtout des courges, des pommes de garde et du pain, plutôt que les fleurs de l&#39;été. Les étals acceptent la monnaie et les paiements habituels, sans application obligatoire. Un plan publié chaque vendredi indique quels producteurs seront là le lendemain.</p><div class="meta">Regional Review</div></li></ul></section><section class="news-group" data-news-group="topics" data-news-group-id="topics"><h3>Mes sujets</h3><ul class="news"><li data-news-item="topics:0"><div class="title">Les marchés proposent un sac de légumes d&#39;hiver à prix fixe</div><p class="news-summary">Un sac de légumes d&#39;hiver, au même prix chaque semaine, est proposé à trois marchés de la ville. Le contenu change selon les arrivages, mais le poids annoncé est tenu. Une recette d&#39;une page est agrafée au sac, prévue pour un soir de semaine. Les sacs non vendus à la fermeture sont donnés à la cuisine collective du quartier. Une rencontre ouverte est prévue cette semaine pour répondre aux questions sur le sac de légumes. La participation reste libre : aucun billet n&#39;est demandé pour venir écouter.</p><div class="meta">Carnet du matin · Cuisine de saison</div></li><li data-news-item="topics:1"><div class="title">Une boulangerie enseigne la brioche en une matinée</div><p class="news-summary">Le cours tient en une matinée, de la pâte au four, sans liste de courses interminable. Tous les ingrédients sont sur la table au début, mesurés, afin de ne pas interrompre le pétrissage. Chacun repart avec sa brioche et la fiche, qui tient sur une carte bristol. Les places sont limitées à huit, et la suivante est déjà notée sur l&#39;ardoise. La participation reste libre : aucun billet n&#39;est demandé pour venir écouter.</p><div class="meta">Gazette du quartier · Cuisine de saison</div></li></ul></section></div></div><div class="news-column" data-news-column="6"><div class="news-stack"><section class="news-group" data-news-group="topics" data-news-group-id="topics"><h3>Mes sujets</h3><ul class="news"><li data-news-item="topics:0"><div class="title">Les soupes collectives reprennent dans trois sous-sols d&#39;église</div><p class="news-summary">Trois sous-sols d&#39;église rouvrent leur marmite le jeudi, sur inscription d&#39;une heure. On vient cuisiner ou seulement chercher un pot, les deux sont prévus dans le décompte. Les recettes évitent les arachides et indiquent les autres allergènes sur l&#39;ardoise. Le bouillon de la semaine est aux lentilles, avec du pain donné par le fournil voisin.</p><div class="meta">Le Quotidien démo · Cuisine de saison</div></li><li data-news-item="topics:1"><div class="title">Un verger de l&#39;île propose les dernières pommes à cueillir</div><p class="news-summary">Le verger de l&#39;île ouvre encore deux fins de semaine pour les pommes de garde. Les visiteurs cueillent dans les bacs indiqués et paient au poids en partant. Un hangar sert un cidre chaud sans alcool, compris pour qui a rempli au moins un sac. Ensuite les arbres seront laissés aux oiseaux pour le reste de l&#39;hiver. Un court compte rendu sera publié dans les prochains jours, sans autre engagement.</p><div class="meta">Revue des régions · Cuisine de saison</div></li><li data-news-item="topics:2"><div class="title">Un carnet papier reste sur les bureaux des ateliers de code</div><p class="news-summary">Plusieurs ateliers de programmation remettent un carnet papier à chaque personne, à côté de l&#39;écran. L&#39;idée est d&#39;y noter la tâche du matin avant d&#39;ouvrir la messagerie. Les carnets ne sont pas ramassés : ce qui y est écrit reste à leur propriétaire. L&#39;essai a réduit, selon les équipes, le nombre de messages envoyés dans la première heure. La participation reste libre : aucun billet n&#39;est demandé pour venir écouter.</p><div class="meta">Carnet du matin · Technologie</div></li><li data-news-item="topics:3"><div class="title">Les couleurs d&#39;une interface changent la vitesse de lecture</div><p class="news-summary">Une étude menée dans une université montréalaise a comparé le même texte en encre foncée et en encre pâle. Les lecteurs allaient un peu plus vite avec le contraste le plus simple, sans préférence déclarée pour une marque. L&#39;expérience utilisait des articles ordinaires, pas des consignes d&#39;urgence. Les auteurs publient la méthode en entier, afin qu&#39;une autre équipe puisse la refaire.</p><div class="meta">Fil national · Technologie</div></li><li data-news-item="topics:4"><div class="title">Un club du mercredi apprend à héberger son propre site</div><p class="news-summary">Un club du mercredi soir montre comment mettre un site simple en ligne sans abonnement mensuel. La séance dure une heure et demie, et chacun repart avec une page qui s&#39;affiche vraiment. Il faut apporter un ordinateur portable ; le café du coin prête le courant et deux rallonges. La prochaine date est affichée sur la porte, pas seulement sur un réseau social.</p><div class="meta">Gazette du quartier · Technologie</div></li></ul></section></div><div class="solution-slot"><div class="g-game g-answer g-kind-codeword"><div class="g-solution"><div class="g-sol-label">Solution — Mots codés</div><table class="g-grid g-keymini"><tr><td><span class="g-n">1</span>V</td><td><span class="g-n">2</span>A</td><td><span class="g-n">3</span>N</td><td><span class="g-n">4</span>S</td><td><span class="g-n">5</span>D</td><td><span class="g-n">6</span>·</td><td><span class="g-n">7</span>L</td><td><span class="g-n">8</span>P</td><td><span class="g-n">9</span>X</td><td><span class="g-n">10</span>I</td><td><span class="g-n">11</span>R</td><td><span class="g-n">12</span>T</td><td><span class="g-n">13</span>E</td></tr><tr><td><span class="g-n">14</span>C</td><td><span class="g-n">15</span>·</td><td><span class="g-n">16</span>O</td><td><span class="g-n">17</span>·</td><td><span class="g-n">18</span>U</td><td><span class="g-n">19</span>H</td><td><span class="g-n">20</span>G</td><td><span class="g-n">21</span>·</td><td><span class="g-n">22</span>B</td><td><span class="g-n">23</span>M</td><td><span class="g-n">24</span>F</td><td><span class="g-n">25</span>·</td><td><span class="g-n">26</span>·</td></tr></table></div></div></div></div></div>
+</main>
+</body>
+</html>

@@ -11,6 +11,8 @@ import type {
 import type { AccountUpdate, SettingsUpdate } from "@shared/schemas";
 import { getLanguage, messages } from "@/lib/i18n";
 import type { NewspaperDesign } from "@shared/newspaper-design";
+import { demoRequest } from "@/demo/api";
+import { isDemo } from "@/demo/mode";
 
 export class ApiError extends Error {
   readonly status: number;
@@ -53,6 +55,7 @@ async function requestResponse(path: string, init: RequestInit = {}): Promise<Re
 }
 
 async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
+  if (isDemo) return demoRequest<T>(path, init);
   return (await (await requestResponse(path, init)).json()) as T;
 }
 
@@ -100,15 +103,21 @@ export const queryKeys = {
   editionPdf: (id: string) => ["editions", id, "pdf"] as const,
 };
 
+const demoFile = (path: string) => `${import.meta.env.BASE_URL}${path}`;
+
 export const editionUrls = {
-  html: (id: string) => `/api/editions/${id}/html`,
-  read: (id: string, language: Language) => `/api/editions/${id}/html?lire=1&lang=${language}`,
-  pdf: (id: string) => `/api/editions/${id}/pdf`,
-  download: (id: string) => `/api/editions/${id}/pdf?telecharger=1`,
+  html: (id: string) => isDemo ? demoFile(`demo/editions/${id}.${getLanguage()}.html`) : `/api/editions/${id}/html`,
+  read: (id: string, language: Language) => isDemo
+    ? demoFile(`demo/editions/${id}.${language}.lire.html`)
+    : `/api/editions/${id}/html?lire=1&lang=${language}`,
+  pdf: (id: string) => isDemo ? demoFile(`demo/editions/${id}.${getLanguage()}.pdf`) : `/api/editions/${id}/pdf`,
+  download: (id: string) => isDemo ? demoFile(`demo/editions/${id}.${getLanguage()}.pdf`) : `/api/editions/${id}/pdf?telecharger=1`,
 };
 
 export const newspaperPreviewUrl = (design: NewspaperDesign, language: Language) =>
-  `/api/newspaper-preview?${new URLSearchParams({ ...design, language })}`;
+  isDemo
+    ? demoFile(`demo/preview.${language}.html`)
+    : `/api/newspaper-preview?${new URLSearchParams({ ...design, language })}`;
 
 export const connectUrl = (provider: string, accountId?: string) => {
   const params = new URLSearchParams({ provider });
