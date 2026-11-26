@@ -58,5 +58,23 @@
 			"ACCESS_AUD",
 			"ALLOWED_EMAILS"
 		]
+	},
+	// Les prévisualisations de branche n'héritent pas de la production.
+	// Les fichiers vont dans un KV distinct. Le workflow de production n'est pas relié :
+	// une prévisualisation exécuterait alors le code déjà déployé, pas celui de la branche.
+	"previews": {
+		"vars": {
+			"NYLAS_API_URI": "https://api.us.nylas.com",
+			"DEV_AUTH_EMAIL": ""
+		},
+		"kv_namespaces": [
+			{
+				"binding": "EDITIONS",
+				"id": "cb7c732753c54b1087d307f667238c31"
+			}
+		],
+		"browser": {
+			"binding": "BROWSER"
+		}
 	}
 }
