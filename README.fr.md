@@ -1,12 +1,12 @@
 # Mon Journal du Matin
 
+**Démo en ligne :** [alwaysbeshels.github.io/morning-press](https://alwaysbeshels.github.io/morning-press/). C’est le même site, avec quatre journaux déjà prêts (1 à 4 pages, en français et en anglais) et des données fictives. La génération et les préférences y sont verrouillées ; un fork de ce dépôt les débloque.
+
 > Documentation anglaise : [README.md](./README.md). Installation from scratch : [docs/SETUP.fr.md](./docs/SETUP.fr.md). Utilisation : [docs/USAGE.fr.md](./docs/USAGE.fr.md).
 
 Plateforme web personnelle qui prépare chaque matin un **journal en PDF**, en français ou en anglais, à partir de vos comptes Google, Outlook et Apple (courriels et calendriers), de la météo et des actualités. En mode 2 pages, le jeu du jour (sudoku, mots croisés ou mots codés) est sur la première page. La deuxième présente les actualités résumées par section (locale, provinciale, nationale, américaine, internationale), puis la solution du jeu en bas, à l'envers. Le journal se consulte et se télécharge depuis le site ; l'envoi par courriel viendra plus tard.
 
-**Gratuit, et pour tout le monde.** Ce dépôt est public : vous êtes les bienvenus pour l’utiliser, le cloner et l’auto-héberger. Déployez votre instance sur les forfaits gratuits Cloudflare + Neon, et invitez les adresses que vous voulez. Il n’y a pas de produit Morning Press payant — seulement de l’auto-hébergement. (Votre site reste privé derrière Cloudflare Access ; le *logiciel*, lui, est disponible pour quiconque veut son propre journal.)
-
-**Démo en ligne :** [alwaysbeshels.github.io/morning-press](https://alwaysbeshels.github.io/morning-press/). C’est le même site, avec quatre journaux déjà prêts (1 à 4 pages, en français et en anglais) et des données fictives. La génération et les préférences y sont verrouillées ; un fork de ce dépôt les débloque. Ce mode est dans `main`, avec le reste du code : les prochains changements du site y sont déjà. En local : `npm run demo:dev`, puis [http://127.0.0.1:5174/morning-press/](http://127.0.0.1:5174/morning-press/). GitHub Pages publie le dossier `/docs` de `main` (Settings → Pages → Deploy from a branch → `main`, dossier `/docs`).
+**Gratuit, et pour tout le monde.** Ce dépôt est public : vous êtes les bienvenus pour l’utiliser, le cloner et l’auto-héberger. Déployez votre instance sur les forfaits gratuits Cloudflare + Neon, et invitez les adresses que vous voulez. Il n’y a pas de produit Morning Press payant — seulement de l’auto-hébergement. (Votre site reste privé derrière Cloudflare Access ; le *logiciel*, lui, est disponible pour quiconque veut son propre journal.) La démo suit `main`. En local : `npm run demo:dev`, puis [http://127.0.0.1:5174/morning-press/](http://127.0.0.1:5174/morning-press/). GitHub Pages publie le dossier `/docs` de `main`.
 
 ## Aperçu
 
