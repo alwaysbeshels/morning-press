@@ -17,6 +17,9 @@ import { formatEditionDate, formatTime } from "@/lib/format";
 import { errorMessage, useGenerateEdition } from "@/lib/hooks";
 import { sourceErrorLabel, useI18n } from "@/lib/i18n";
 
+/** Les deux dates d'édition les plus récentes de la liste sont ouvertes, même si elles sont anciennes. */
+const OPEN_RECENT_DAYS = 2;
+
 export function EditionsPage() {
   const editions = useQuery({
     queryKey: queryKeys.editions,
@@ -52,8 +55,8 @@ export function EditionsPage() {
         <Card className="py-0">
           <CardContent className="px-0">
             <ul className="divide-y">
-              {groupEditionsByDate(editions.data).map((group) => (
-                <EditionDay key={group.date} group={group} />
+              {groupEditionsByDate(editions.data).map((group, index) => (
+                <EditionDay key={group.date} group={group} defaultOpen={index < OPEN_RECENT_DAYS} />
               ))}
             </ul>
           </CardContent>
@@ -63,8 +66,8 @@ export function EditionsPage() {
   );
 }
 
-/** Une date : l'édition la plus récente d'abord, les autres repliées en dessous. */
-function EditionDay({ group }: { group: EditionGroup }) {
+/** Une date : l'édition la plus récente d'abord, les précédentes ouvertes ou repliées selon l'ancienneté du jour. */
+function EditionDay({ group, defaultOpen }: { group: EditionGroup; defaultOpen: boolean }) {
   const { t, language } = useI18n();
   const ed = t.editions;
   const { latest, older } = group;
@@ -74,7 +77,7 @@ function EditionDay({ group }: { group: EditionGroup }) {
 
   return (
     <li>
-      <Collapsible>
+      <Collapsible defaultOpen={defaultOpen}>
         <div className="flex flex-col gap-3 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
           <div className="min-w-0">
             <Link to="/editions/$id" params={{ id: latest.id }} className="font-medium hover:underline">
@@ -138,7 +141,12 @@ function EditionDay({ group }: { group: EditionGroup }) {
 
 function EditionDetails({ edition, prefix, withTime = true }: { edition: EditionDto; prefix?: string; withTime?: boolean }) {
   const { t, language } = useI18n();
-  const parts = [prefix, t.trigger[edition.trigger], withTime ? formatTime(edition.createdAt, language) : undefined];
+  const parts = [
+    prefix,
+    t.trigger[edition.trigger],
+    withTime ? formatTime(edition.createdAt, language) : undefined,
+    edition.stats?.pages ? t.editions.pages(edition.stats.pages) : undefined,
+  ];
   if (edition.errors.length > 0) {
     parts.push(t.editions.unavailable([...new Set(edition.errors.map((error) => sourceErrorLabel(error, t)))].join(", ")));
   }
