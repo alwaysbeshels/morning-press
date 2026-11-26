@@ -69,7 +69,7 @@ describe("manifeste de l'application installable", () => {
 
   it("déclare l'icône Apple du même éclair mauve que le favicon", async () => {
     const html = await readFile(join(process.cwd(), "index.html"), "utf8");
-    expect(html).toContain('<link rel="apple-touch-icon" href="/icons/apple-touch-icon.png"');
+    expect(html).toContain('<link rel="apple-touch-icon" href="%BASE_URL%icons/apple-touch-icon.png"');
     const png = await readFile(join(process.cwd(), "public", "icons", "apple-touch-icon.png"));
     expect(`${png.readUInt32BE(16)}x${png.readUInt32BE(20)}`).toBe("180x180");
     expect(await readFile(join(process.cwd(), "public", "favicon.svg"), "utf8")).toContain('fill="#863bff"');
