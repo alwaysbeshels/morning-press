@@ -393,8 +393,8 @@ export function buildNewspaper(input: BuildInput): Newspaper {
   const newsGroups = extended
     ? grouped.map((group) => ({
         ...group,
-        items: group.items.map((item) => {
-          const clipped = clipSummary(item.summary, preferences.newsSummary);
+        items: group.items.map((item, index) => {
+          const clipped = clipSummary(item.summary, preferences.newsSummary, index === 0);
           return { ...item, summary: clipped.summary, ...(clipped.more.length > 0 ? { summaryMore: clipped.more } : {}) };
         }),
       }))

@@ -96,7 +96,13 @@ export function DashboardPage() {
                 <EditionStatusBadge edition={latest} />
                 {latest.stats && (
                   <p className="text-sm text-muted-foreground">
-                    {d.stats(latest.stats, latest.stats.game ? t.games[latest.stats.game] : null)}
+                    {d.stats(
+                      latest.stats,
+                      latest.stats.game ? t.games[latest.stats.game] : null,
+                      latest.stats.newsSummary
+                        ? t.edition.summaryLength(t.preferences.summarySizes[latest.stats.newsSummary])
+                        : null,
+                    )}
                   </p>
                 )}
                 {latest.errors.length > 0 && (

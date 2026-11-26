@@ -123,7 +123,7 @@ const fr = {
     generatedOn: (date: string, when: string) => `${date} · générée le ${when}`,
     noEdition: "Aucune édition pour l’instant.",
     firstEditionHint: "Cliquez sur « Générer maintenant » pour créer votre premier journal.",
-    stats: (stats: EditionStats, gameLabel: string | null) =>
+    stats: (stats: EditionStats, gameLabel: string | null, summaryLabel: string | null) =>
       [
         count(stats.events, "événement", "événements", "fr"),
         stats.upcoming ? `${stats.upcoming} rendez-vous à venir` : null,
@@ -132,7 +132,8 @@ const fr = {
         count(stats.news, "brève", "brèves", "fr"),
         stats.recipe ? "Recette du jour" : null,
         stats.exercise ? "Exercices" : null,
-        stats.pages ? `${stats.pages} ${stats.pages === 1 ? "page" : "pages"}` : null,
+        stats.pages === 1 ? "1 page" : stats.pages ? `${stats.pages} pages` : null,
+        summaryLabel,
         gameLabel ? `Jeu : ${gameLabel}` : null,
       ]
         .filter(Boolean)
@@ -169,6 +170,8 @@ const fr = {
     back: "Toutes les éditions",
     notFound: "Édition introuvable",
     generatedOn: (when: string) => `Générée le ${when}`,
+    pageCount: (pages: number) => (pages === 1 ? "1 page" : `${pages} pages`),
+    summaryLength: (label: string) => `Résumés : ${label}`,
     openPdf: "Ouvrir le PDF",
     download: "Télécharger",
     downloadFailed: "Impossible de préparer ou d’enregistrer le PDF.",
@@ -342,7 +345,7 @@ const fr = {
           : "Au plus deux brèves avec résumés fournis par les sources, sur la page 1.",
     summarySize: "Longueur des résumés",
     summarySizes: { small: "Court", medium: "Moyen", large: "Long" },
-    summaryHelp: "Court : comme maintenant. Moyen : environ le double. Long : trois à quatre fois plus de texte. Un résumé plus long laisse moins de sujets, pour que les pages restent pleines.",
+    summaryHelp: "Court : deux phrases, comme en 1 ou 2 pages. Moyen : l’ancien format long, jusqu’à huit phrases. Long : le double, jusqu’à seize phrases. Seule la nouvelle en tête de chaque rubrique passe sur deux paragraphes, et seulement si le texte le permet. Un résumé plus long laisse moins de sujets.",
     newsEnabled: "Inclure des actualités",
     sections: {
       local: "Locale",
@@ -548,7 +551,7 @@ const en: Messages = {
     generatedOn: (date, when) => `${date} · generated ${when}`,
     noEdition: "No edition yet.",
     firstEditionHint: "Click “Generate now” to create your first paper.",
-    stats: (stats, gameLabel) =>
+    stats: (stats, gameLabel, summaryLabel) =>
       [
         count(stats.events, "event", "events"),
         stats.upcoming ? count(stats.upcoming, "upcoming appointment", "upcoming appointments") : null,
@@ -557,7 +560,8 @@ const en: Messages = {
         count(stats.news, "headline", "headlines"),
         stats.recipe ? "Daily recipe" : null,
         stats.exercise ? "Exercise ideas" : null,
-        stats.pages ? `${stats.pages} ${stats.pages === 1 ? "page" : "pages"}` : null,
+        stats.pages === 1 ? "1 page" : stats.pages ? `${stats.pages} pages` : null,
+        summaryLabel,
         gameLabel ? `Game: ${gameLabel}` : null,
       ]
         .filter(Boolean)
@@ -594,6 +598,8 @@ const en: Messages = {
     back: "All editions",
     notFound: "Edition not found",
     generatedOn: (when) => `Generated ${when}`,
+    pageCount: (pages) => (pages === 1 ? "1 page" : `${pages} pages`),
+    summaryLength: (label) => `Summaries: ${label}`,
     openPdf: "Open the PDF",
     download: "Download",
     downloadFailed: "Unable to prepare or save the PDF.",
@@ -765,7 +771,7 @@ const en: Messages = {
           : "Up to two news items with source-provided summaries on page 1.",
     summarySize: "Summary length",
     summarySizes: { small: "Short", medium: "Medium", large: "Long" },
-    summaryHelp: "Short: as it is now. Medium: about twice as long. Long: three to four times more text. A longer summary allows fewer topics, so the pages stay full.",
+    summaryHelp: "Short: two sentences, as on a 1- or 2-page paper. Medium: the former long format, up to eight sentences. Long: twice that, up to sixteen sentences. Only the lead story of each section uses two paragraphs, and only when the source text is long enough. A longer summary allows fewer topics.",
     newsEnabled: "Include news",
     sections: {
       local: "Local",

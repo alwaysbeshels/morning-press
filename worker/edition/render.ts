@@ -145,6 +145,14 @@ export function newsGroupId(group: NewsGroup): string {
   return group.id ?? group.key;
 }
 
+function renderNewsSummary(summary: string, more: string): string {
+  const parts = summary.split(/\n+/).map((part) => part.trim()).filter(Boolean);
+  const body = parts.length <= 1
+    ? escapeHtml(summary)
+    : parts.map((part) => `<span class="para">${escapeHtml(part)}</span>`).join("");
+  return `<p class="news-summary">${body}${more}</p>`;
+}
+
 function renderNewsGroup(group: NewsGroup, t: JournalText): string {
   const kicker = t.newsSections[group.key];
   const heading = group.label
@@ -154,7 +162,7 @@ function renderNewsGroup(group: NewsGroup, t: JournalText): string {
     .map((item, index) => {
       const meta = group.key === "topics" ? `${item.source} · ${item.topic}` : item.source;
       const more = (item.summaryMore ?? []).map((sentence) => `<span class="extra" hidden> ${escapeHtml(sentence)}</span>`).join("");
-      return `<li data-news-item="${newsGroupId(group)}:${index}"><div class="title">${escapeHtml(item.title)}</div><p class="news-summary">${escapeHtml(item.summary)}${more}</p><div class="meta">${escapeHtml(meta)}</div></li>`;
+      return `<li data-news-item="${newsGroupId(group)}:${index}"><div class="title">${escapeHtml(item.title)}</div>${renderNewsSummary(item.summary, more)}<div class="meta">${escapeHtml(meta)}</div></li>`;
     })
     .join("");
   return `<section class="news-group" data-news-group="${group.key}" data-news-group-id="${escapeHtml(newsGroupId(group))}"><h3>${heading}</h3><ul class="news">${items}</ul></section>`;
@@ -497,6 +505,8 @@ footer { margin-top: 6pt; padding-top: 4pt; border-top: 1px solid #1a1a1a; text-
 .game-slot { flex: none; margin-top: 8pt; padding-top: 6pt; border-top: 3px double #1a1a1a; display: flex; justify-content: center; }
 .solution-slot { flex: none; align-self: flex-end; max-width: 100%; margin-top: 8pt; padding: 4pt; border: 1px solid #c8c2b5; }
 .news-summary { margin: 2pt 0; font-size: 7.5pt; line-height: 1.15; overflow-wrap: anywhere; }
+.news-summary .para { display: block; }
+.news-summary .para + .para { margin-top: 3pt; }
 .omitted { margin: 3pt 0 0; font-size: 7pt; line-height: 1.15; color: #5c564b; font-style: italic; }
 /* Journées chargées : trois colonnes et extraits raccourcis, sans masquer d'élément. */
 .compact .columns { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 9pt; font-size: 8pt; line-height: 1.15; }

@@ -235,6 +235,17 @@ describe("résumés des actualités", () => {
     });
   });
 
+  it("réserve deux paragraphes au format long, et seulement pour une nouvelle importante", () => {
+    const sentences = Array.from({ length: 8 }, (_, index) =>
+      `La phrase numéro ${index + 1} décrit un fait précis et complet du dossier.`);
+    const text = sentences.join(" ");
+    const lead = clipSummary(text, "large", true);
+    expect(lead.summary.split("\n\n")).toHaveLength(2);
+    expect(clipSummary(text, "large").summary).not.toContain("\n\n");
+    expect(clipSummary(text, "medium", true).summary).not.toContain("\n\n");
+    expect(clipSummary(text, "medium").summary.split(/[.!?]/).filter((part) => part.trim()).length).toBe(8);
+  });
+
   it("garde au plus deux phrases complètes, sans rallonger un extrait coupé", () => {
     const second = "Les travaux commenceront au mois de septembre.";
     expect(newsSummary(`${SUMMARY} ${second} Les résidents seront consultés.`, "Un parc")).toBe(`${SUMMARY} ${second}`);

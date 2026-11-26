@@ -4,29 +4,32 @@ import { normalizeText } from "../edition/text";
 import type { NewsGroup, NewsItem, NewsProvider } from "../edition/types";
 import { cleanNewsText, isReferralSentence, newsQualityIssue, sameStory, titleTokens } from "./news-quality";
 
-/** Brèves conservées par flux (assez pour remplir la page 2). */
-export const ITEMS_PER_FEED = 16;
+/** Brèves lues par flux. Les pages 3 et 4 en gardent davantage pour combler les colonnes. */
+export const ITEMS_PER_FEED = 24;
 
-/** Court = le journal actuel. Moyen = le double. Long = environ quatre fois plus de texte. */
+/**
+ * Court = le journal d'une ou deux pages.
+ * Moyen = l'ancien format long. Long = le double de ce format.
+ */
 export const SUMMARY_LIMITS: Record<NewsSummarySize, { sentences: number; chars: number }> = {
   small: { sentences: 2, chars: 320 },
-  medium: { sentences: 4, chars: 640 },
-  large: { sentences: 8, chars: 1280 },
+  medium: { sentences: 8, chars: 1280 },
+  large: { sentences: 16, chars: 2560 },
 };
 
 /**
- * Candidats gardés avant la mesure. Le navigateur n'imprime que ce qui remplit les colonnes,
- * puis allonge les résumés s'il reste un vide.
+ * Candidats gardés avant la mesure. On en conserve assez pour remplir chaque colonne :
+ * le navigateur écarte le surplus, puis allonge les résumés s'il reste un petit vide.
  */
 export function newsBudgets(pages: 3 | 4, size: NewsSummarySize): { perSection: number; perTopic: number } {
   if (pages === 4) {
-    if (size === "large") return { perSection: 5, perTopic: 2 };
-    if (size === "medium") return { perSection: 8, perTopic: 3 };
-    return { perSection: 12, perTopic: 4 };
+    if (size === "large") return { perSection: 12, perTopic: 4 };
+    if (size === "medium") return { perSection: 16, perTopic: 5 };
+    return { perSection: 20, perTopic: 6 };
   }
-  if (size === "large") return { perSection: 4, perTopic: 2 };
-  if (size === "medium") return { perSection: 6, perTopic: 2 };
-  return { perSection: 8, perTopic: 3 };
+  if (size === "large") return { perSection: 8, perTopic: 3 };
+  if (size === "medium") return { perSection: 12, perTopic: 4 };
+  return { perSection: 16, perTopic: 5 };
 }
 
 /** Un journal du matin reprend la veille et la nuit : au-delà, un article d'éditeur n'est plus d'actualité. */
@@ -441,8 +444,11 @@ export function newsSummary(description: string, title: string, source = "", siz
   return summary.length >= 45 ? summary : "";
 }
 
-/** Coupe un résumé déjà nettoyé : la partie visible, puis les phrases gardées en réserve pour remplir la colonne. */
-export function clipSummary(summary: string, size: NewsSummarySize): { summary: string; more: string[] } {
+/**
+ * Coupe un résumé déjà nettoyé : la partie visible, puis les phrases gardées en réserve pour remplir la colonne.
+ * En format long, la nouvelle en tête de rubrique passe sur deux paragraphes quand elle a assez de texte.
+ */
+export function clipSummary(summary: string, size: NewsSummarySize, important = false): { summary: string; more: string[] } {
   const limit = SUMMARY_LIMITS[size];
   const kept: string[] = [];
   const more: string[] = [];
@@ -461,7 +467,10 @@ export function clipSummary(summary: string, size: NewsSummarySize): { summary: 
     const first = more.shift();
     return { summary: first ?? summary, more };
   }
-  return { summary: kept.join(" "), more };
+  const paragraphs = size === "large" && important && kept.length >= 4
+    ? [kept.slice(0, Math.ceil(kept.length / 2)).join(" "), kept.slice(Math.ceil(kept.length / 2)).join(" ")]
+    : [kept.join(" ")];
+  return { summary: paragraphs.join("\n\n"), more };
 }
 
 /** Mémorise les sujets déjà retenus pour écarter un même sujet repris par un autre titre ou un autre éditeur. */
@@ -538,7 +547,7 @@ export function groupNews(
     const lists = results.filter((result) => result.group === key);
     if (lists.length === 0) continue;
     // Les sujets sont un réservoir pour remplir la page, pas un quota d'un article par sujet.
-    const cap = key === "topics" ? Math.max(perGroup, 24) : perGroup;
+    const cap = key === "topics" ? Math.max(perGroup, 36) : perGroup;
     const items: NewsItem[] = [];
     for (const item of pickNews(lists.map((list) => list.items), cap * 2)) {
       if (items.length >= cap || !seen.claim(item)) continue;

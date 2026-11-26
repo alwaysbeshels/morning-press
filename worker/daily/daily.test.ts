@@ -69,4 +69,17 @@ describe("catalogue intégré", () => {
     }
     expect(factOfTheDay("2026-11-01", "fr").text).not.toBe(factOfTheDay("2026-11-01", "en").text);
   });
+  it("ne répète pas le même fait pendant plus d'un mois et varie les sources", () => {
+    const texts = new Set<string>();
+    const sources = new Set<string>();
+    const start = Date.parse("2026-01-01T12:00:00Z");
+    for (let day = 0; day < 45; day++) {
+      const date = new Date(start + day * 86_400_000).toISOString().slice(0, 10);
+      const fact = factOfTheDay(date, "fr");
+      texts.add(fact.text);
+      sources.add(fact.source);
+    }
+    expect(texts.size).toBe(45);
+    expect(sources.size).toBeGreaterThanOrEqual(5);
+  });
 });

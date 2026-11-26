@@ -53,7 +53,7 @@ describe.each(["fr", "en"] as Language[])("dictionnaire %s", (language) => {
 
 describe("titres Wiktionnaire", () => {
   it("retrouve l’orthographe accentuée", () => {
-    expect(frenchTitle("ETE")).toBe("été");
+    expect(frenchTitle("ANXIETE")).toBe("anxiété");
     expect(frenchTitle("ELEPHANT")).toBe("éléphant");
     expect(frenchTitle("COTE")).toBe("côte");
     expect(frenchTitle("MAISON")).toBe("maison");

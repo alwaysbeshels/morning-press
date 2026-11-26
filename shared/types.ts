@@ -202,6 +202,8 @@ export interface EditionStats {
   reminders: number;
   news: number;
   pages?: PageCount;
+  /** Longueur réellement imprimée. Absente si l'édition n'a pas d'actualités, ou si elle date d'avant ce champ. */
+  newsSummary?: NewsSummarySize;
   game?: GameKind | null;
   upcoming?: number;
   recipe?: boolean;

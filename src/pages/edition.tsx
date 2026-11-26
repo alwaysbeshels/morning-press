@@ -132,8 +132,14 @@ export function EditionPage() {
         }
       />
 
-      <div className="mb-4 flex flex-wrap items-center gap-2">
+      <div className="mb-4 flex flex-wrap items-center gap-x-3 gap-y-1">
         <EditionStatusBadge edition={data} />
+        {data.stats?.pages ? <span className="text-sm text-muted-foreground">{e.pageCount(data.stats.pages)}</span> : null}
+        {data.stats?.newsSummary ? (
+          <span className="text-sm text-muted-foreground">
+            {e.summaryLength(t.preferences.summarySizes[data.stats.newsSummary])}
+          </span>
+        ) : null}
         {data.errors.map((error) => (
           <span key={`${error.source}-${error.message}`} className="text-sm text-muted-foreground">
             {describeSourceError(error, t)}

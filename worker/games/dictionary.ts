@@ -190,7 +190,7 @@ export function clueFromRest(word: string, payload: unknown): string | null {
   return null;
 }
 
-async function fetchJson(url: string): Promise<unknown> {
+async function fetchJson(url: string | URL): Promise<unknown> {
   const response = await fetch(url, {
     headers: { "user-agent": USER_AGENT, accept: "application/json" },
     signal: AbortSignal.timeout(12_000),

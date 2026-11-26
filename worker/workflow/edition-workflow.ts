@@ -268,6 +268,7 @@ export class EditionWorkflow extends WorkflowEntrypoint<Env, EditionParams> {
         exercise: !!printed.daily?.exercise,
         news: printed.news.length + printed.newsGroups.reduce((total, group) => total + group.items.length, 0),
         pages: paper.pages,
+        newsSummary: printed.newsEnabled ? (printed.pages >= 3 ? printed.newsSummary ?? "small" : "small") : undefined,
         game: paper.game?.kind ?? null,
       };
       return { html, stats, recipeMissing };

@@ -36,7 +36,7 @@ for (const line of parse(frTitles)) {
   if (space > 0) FRENCH_TITLES.set(line.slice(0, space), line.slice(space + 1));
 }
 
-/** Titre Wiktionnaire : « ETE » devient « été », « MAISON » reste « maison ». */
+/** Titre Wiktionnaire : « ANXIETE » devient « anxiété », « MAISON » reste « maison ». */
 export function frenchTitle(word: string): string {
   return FRENCH_TITLES.get(word) ?? word.toLowerCase();
 }
