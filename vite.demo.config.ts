@@ -39,10 +39,18 @@ function demoSite(): Plugin {
     configResolved(config) {
       outDir = join(config.root, config.build.outDir);
     },
-    transformIndexHtml(html) {
-      return html
-        .replace('content="noindex, nofollow"', 'content="index, follow"')
-        .replace(/\s*<link rel="manifest"[^>]*>/, "");
+    transformIndexHtml: {
+      order: "post",
+      handler(html) {
+        const base = (process.env.DEMO_BASE ?? "/morning-press/").replace(/\/?$/, "/");
+        const doubled = `${base.slice(0, -1)}${base}`;
+        const png = `<link rel="icon" type="image/png" sizes="192x192" href="${base}icons/icon-192.png" />`;
+        const withIcon = html.includes('type="image/png"') ? html : html.replace("<link rel=\"icon\"", `${png}\n    <link rel="icon"`);
+        return withIcon
+          .split(doubled).join(base)
+          .replace('content="noindex, nofollow"', 'content="index, follow"')
+          .replace(/\s*<link rel="manifest"[^>]*>/, "");
+      },
     },
     configureServer(server) {
       server.middlewares.use(serveDemo);
