@@ -138,7 +138,12 @@ function EditionDay({ group }: { group: EditionGroup }) {
 
 function EditionDetails({ edition, prefix, withTime = true }: { edition: EditionDto; prefix?: string; withTime?: boolean }) {
   const { t, language } = useI18n();
-  const parts = [prefix, t.trigger[edition.trigger], withTime ? formatTime(edition.createdAt, language) : undefined];
+  const parts = [
+    prefix,
+    t.trigger[edition.trigger],
+    withTime ? formatTime(edition.createdAt, language) : undefined,
+    edition.stats?.pages ? t.edition.pageCount(edition.stats.pages) : undefined,
+  ];
   if (edition.errors.length > 0) {
     parts.push(t.editions.unavailable([...new Set(edition.errors.map((error) => sourceErrorLabel(error, t)))].join(", ")));
   }
