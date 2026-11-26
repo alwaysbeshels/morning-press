@@ -50,6 +50,7 @@ const fr = {
     saving: "Enregistrement…",
   },
   demo: {
+    badge: "Démo",
     locked: "Cette action n’est pas disponible dans la démo.",
     generateHint: "Ces éditions sont déjà prêtes, à partir de données fictives. La génération n’est pas possible dans la démo. Chaque style d’article est en exemple dans l’onglet Éditions.",
     preferencesTitle: "Site de démonstration",
@@ -475,6 +476,7 @@ const en: Messages = {
     saving: "Saving…",
   },
   demo: {
+    badge: "Demo",
     locked: "This action is not available in the demo.",
     generateHint: "These editions are already prepared from fictional data. Generation is not available in the demo. Every article style is shown as an example under Editions.",
     preferencesTitle: "Demo site",
