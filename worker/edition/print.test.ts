@@ -121,18 +121,24 @@ describe.skipIf(!process.env.CHROME_PATH)("PDF Lettre dans Chrome", () => {
   beforeAll(async () => {
     profile = await mkdtemp(join(tmpdir(), "morning-press-print-"));
     chrome = spawn(process.env.CHROME_PATH!, [
-      "--headless", "--no-first-run", "--no-default-browser-check", "--remote-debugging-port=0",
+      "--headless=new", "--disable-gpu", "--disable-dev-shm-usage", "--no-sandbox",
+      "--no-first-run", "--no-default-browser-check", "--remote-debugging-port=0",
       `--user-data-dir=${profile}`, "about:blank",
     ], { stdio: ["ignore", "ignore", "pipe"] });
     endpoint = await new Promise<string>((resolve, reject) => {
-      const timeout = setTimeout(() => reject(new Error("Chrome did not start")), 15_000);
-      chrome.once("error", reject);
+      let stderr = "";
+      let timeout: ReturnType<typeof setTimeout>;
+      const fail = (error: Error) => { clearTimeout(timeout); reject(error); };
+      timeout = setTimeout(() => fail(new Error(`Chrome did not start\n${stderr.slice(-1500)}`)), 30_000);
+      chrome.once("error", fail);
+      chrome.once("exit", (code) => fail(new Error(`Chrome exited ${code}\n${stderr.slice(-1500)}`)));
       chrome.stderr!.on("data", (data: Buffer) => {
-        const match = data.toString().match(/DevTools listening on ws:\/\/(127\.0\.0\.1:\d+)/);
+        stderr += data.toString();
+        const match = stderr.match(/DevTools listening on ws:\/\/(127\.0\.0\.1:\d+)/);
         if (match) { clearTimeout(timeout); resolve(`http://${match[1]}`); }
       });
     });
-  }, 20_000);
+  }, 40_000);
 
   afterAll(async () => {
     if (chrome && chrome.exitCode === null) {
